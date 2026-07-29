@@ -108,6 +108,9 @@
   .tr-nome{font-weight:800;font-size:14.5px}
   .tr-presc{font-size:13px;color:var(--txt);margin-top:3px}
   .tr-presc b{color:var(--pink-deep)}
+  .ficha-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    padding:10px 12px;background:#f1f5f9;border:1px solid var(--line);border-radius:12px}
+  .ficha-head select{padding:8px;border:1px solid var(--line);border-radius:9px;font-size:12.5px}
   .empty{font-size:13px;color:var(--muted);padding:8px 0}
   .assess-item{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
   .assess-item:last-child{border-bottom:none}
@@ -186,7 +189,7 @@
   let ME = null, STUDENTS = [], INVITES = [], ASSESS = [], VIEW = null, EDIT_ID = null, ASSESS_S = null, MANUAL_CALC = false;
   let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
   let EXERCICIOS = [], EX_FILTRO = "";
-  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null;
+  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false;
   let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [];
 
   // campos das avaliações
@@ -743,6 +746,7 @@
         <h3>🏋️ Treino — <span id="fichaAluno"></span></h3>
         <p>Monte o treino do aluno em dias (A, B, C…). Ele vê tudo no app, na aba "Meu treino".</p>
         <input type="hidden" id="fichaStudentId">
+        <div id="fichaHeader" class="ficha-head"></div>
         <div id="fichaDias" style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0"></div>
         <div id="fichaConteudo"></div>
       </div>`;
@@ -1373,17 +1377,78 @@
   function fecharTreino(){ const c=document.getElementById("fichaCard"); if(c) c.style.display="none"; FICHA=null; FICHA_DIA=null; }
 
   async function carregarFicha(studentId){
-    let { data: fichas } = await sb.from("fichas").select("*").eq("student_id", studentId).eq("ativa", true).limit(1);
-    if(!fichas || !fichas.length){
+    const { data: todas } = await sb.from("fichas").select("*")
+      .eq("student_id", studentId).order("created_at", { ascending:false });
+    FICHAS_TODAS = todas || [];
+    let ativa = FICHAS_TODAS.find(f=>f.ativa);
+    if(!ativa){
       const { data: nova } = await sb.from("fichas")
         .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true }).select().single();
-      FICHA = nova;
-    } else { FICHA = fichas[0]; }
+      ativa = nova; FICHAS_TODAS.unshift(nova);
+    }
+    FICHA = ativa; FICHA_READONLY = false;
+    await abrirFichaDias();
+  }
+
+  async function abrirFichaDias(){
     const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", FICHA.id).order("ordem");
     FICHA_DIAS = dias || [];
-    if(FICHA_DIAS.length && !FICHA_DIAS.some(d=>d.id===FICHA_DIA)) FICHA_DIA = FICHA_DIAS[0].id;
-    if(!FICHA_DIAS.length) FICHA_DIA = null;
+    FICHA_DIA = FICHA_DIAS.length ? FICHA_DIAS[0].id : null;
+    renderFichaHeader();
     renderDias();
+  }
+
+  function fmtDiaMes(v){ const p=String(v).slice(0,10).split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:v; }
+
+  function renderFichaHeader(){
+    const h = document.getElementById("fichaHeader");
+    if(!h) return;
+    const passadas = FICHAS_TODAS.filter(f=>!f.ativa);
+    const selPassadas = passadas.length
+      ? `<select onchange="if(this.value)abrirPassada(this.value)">
+           <option value="">Treinos passados (${passadas.length})…</option>
+           ${passadas.map(f=>`<option value="${f.id}">${fmtDiaMes(f.created_at)}</option>`).join("")}
+         </select>`
+      : `<span class="meta-sm">Sem treinos passados ainda.</span>`;
+    if(FICHA_READONLY){
+      h.innerHTML = `
+        <div><span class="tag">treino de ${fmtDiaMes(FICHA.created_at)} · somente leitura</span></div>
+        <button class="btn small" onclick="voltarAtual()">← Voltar ao treino atual</button>`;
+    } else {
+      h.innerHTML = `
+        <div><b>Treino atual</b> <span class="meta-sm">criado em ${fmtDiaMes(FICHA.created_at)}</span></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${selPassadas}
+          <button class="btn small" onclick="novoTreino()">＋ Novo treino</button>
+        </div>`;
+    }
+  }
+
+  async function novoTreino(){
+    if(!confirm("Criar um novo treino?\n\nO treino atual vira histórico (treinos passados) e um novo, em branco, fica ativo.")) return;
+    const studentId = FICHA.student_id;
+    await sb.from("fichas").update({ ativa:false }).eq("id", FICHA.id);
+    const { data: nova, error } = await sb.from("fichas")
+      .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true }).select().single();
+    if(error){ alert("Erro: "+error.message); return; }
+    FICHAS_TODAS.forEach(f=>f.ativa=false);
+    FICHAS_TODAS.unshift(nova);
+    FICHA = nova; FICHA_READONLY = false;
+    await abrirFichaDias();
+  }
+
+  async function abrirPassada(fichaId){
+    const f = FICHAS_TODAS.find(x=>x.id===fichaId);
+    if(!f) return;
+    FICHA = f; FICHA_READONLY = true;
+    await abrirFichaDias();
+  }
+
+  async function voltarAtual(){
+    const ativa = FICHAS_TODAS.find(f=>f.ativa);
+    if(!ativa){ await carregarFicha(FICHA.student_id); return; }
+    FICHA = ativa; FICHA_READONLY = false;
+    await abrirFichaDias();
   }
 
   function renderDias(){
@@ -1391,7 +1456,7 @@
     if(!box) return;
     box.innerHTML = FICHA_DIAS.map(d=>
       `<button class="chip-f ${d.id===FICHA_DIA?"sel":""}" onclick="selDia('${d.id}')">${esc(d.label)}</button>`
-    ).join("") + `<button class="chip-f" style="border-style:dashed" onclick="addDia()">＋ Dia</button>`;
+    ).join("") + (FICHA_READONLY ? "" : `<button class="chip-f" style="border-style:dashed" onclick="addDia()">＋ Dia</button>`);
     renderConteudoDia();
   }
 
@@ -1428,6 +1493,20 @@
     box.innerHTML = `<div class="empty">Carregando…</div>`;
     const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("dia_id", FICHA_DIA).order("ordem");
     const lista = exs || [];
+
+    // modo leitura (treino passado): só mostra, sem editar
+    if(FICHA_READONLY){
+      box.innerHTML = lista.length ? lista.map(x=>{
+        const partes=[];
+        if(x.series!=null && x.reps) partes.push(`<b>${x.series}x${esc(x.reps)}</b>`);
+        else if(x.series!=null) partes.push(`<b>${x.series} séries</b>`);
+        if(x.carga_alvo!=null) partes.push(`${x.carga_alvo} kg`);
+        if(x.descanso_seg!=null) partes.push(`descanso ${x.descanso_seg}s`);
+        return `<div class="tr-ex"><div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div><div class="tr-presc">${partes.join(" · ")}</div></div>`;
+      }).join("") : `<div class="empty">Sem exercícios neste dia.</div>`;
+      return;
+    }
+
     const rows = lista.map(x=>`
       <div class="fx-row">
         <div class="fx-nome">${esc(x.nome_cache || "Exercício")}</div>
@@ -1439,11 +1518,15 @@
         </div>
         <button class="btn small ghost" title="Remover" onclick="removerEx('${x.id}')">🗑</button>
       </div>`).join("");
-    const opcoes = EXERCICIOS.map(e=>`<option value="${e.id}">${esc(e.nome)}${e.grupo?" · "+esc(e.grupo):""}</option>`).join("");
+
+    // não repetir na busca os exercícios já adicionados neste dia
+    const jaTem = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
+    const disponiveis = EXERCICIOS.filter(e=>!jaTem.has(e.id));
+    const opcoes = disponiveis.map(e=>`<option value="${e.id}">${esc(e.nome)}${e.grupo?" · "+esc(e.grupo):""}</option>`).join("");
     box.innerHTML = `
       ${lista.length ? rows : `<div class="empty">Nenhum exercício neste dia ainda.</div>`}
       <div class="fx-add">
-        <select id="fxAdd"><option value="">+ escolher exercício…</option>${opcoes}</select>
+        <select id="fxAdd"><option value="">${disponiveis.length?"+ escolher exercício…":"todos os exercícios já foram adicionados"}</option>${opcoes}</select>
         <button class="btn small" onclick="addEx()">Adicionar</button>
         <button class="btn small ghost" onclick="removerDia()" style="margin-left:auto">Remover dia</button>
       </div>`;
