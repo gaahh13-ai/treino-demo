@@ -185,6 +185,19 @@
   .modal-cx{background:#fff;border-radius:18px;padding:22px;max-width:340px;width:100%;
     box-shadow:0 20px 50px rgba(30,20,40,.3)}
   .modal-cx h3{font-size:17px;font-weight:800;color:var(--pink-deep)}
+  /* alerta de fim de descanso (tela cheia) */
+  .rest-done-ov{position:fixed;inset:0;z-index:90;padding:24px;
+    background:linear-gradient(160deg,#6366f1,#818cf8);
+    display:flex;align-items:center;justify-content:center;animation:restFade .18s ease}
+  .rest-done-cx{text-align:center;color:#fff}
+  .rest-done-ico{width:140px;height:140px;margin:0 auto;border-radius:50%;
+    background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;
+    font-size:82px;font-weight:800;animation:restPop .4s ease}
+  .rest-done-txt{font-size:28px;font-weight:800;margin-top:16px}
+  .rest-done-sub{font-size:15px;opacity:.92;margin:6px 0 24px}
+  .rest-done-cx .btn{background:#fff;color:var(--pink-deep);font-size:17px;font-weight:800;padding:15px 34px}
+  @keyframes restFade{from{opacity:0}to{opacity:1}}
+  @keyframes restPop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
   /* avaliação do treino */
   .rate-stars{display:flex;justify-content:center;gap:6px;margin:4px 0 6px}
   .rate-star{background:none;border:none;font-size:38px;line-height:1;cursor:pointer;color:#e5d3e0;transition:.12s;padding:0}
@@ -811,9 +824,10 @@
       <button onclick="pararDescanso()">Parar</button>`; };
     const tick = ()=>{
       if(t<=0){ clearInterval(TIMER_INT);
-        render("Descanso concluído! 💪");
-        try{ navigator.vibrate && navigator.vibrate(200); }catch(e){}
-        setTimeout(pararDescanso, 2500); return; }
+        pararDescanso();
+        try{ navigator.vibrate && navigator.vibrate([400,150,400,150,400]); }catch(e){}
+        mostrarFimDescanso();
+        return; }
       render("⏱️ Descanso: " + t + "s"); t--;
     };
     tick(); TIMER_INT = setInterval(tick, 1000);
@@ -822,6 +836,24 @@
     clearInterval(TIMER_INT);
     const bar = document.getElementById("descFloat");
     if(bar) bar.remove();
+  }
+  // alerta grande de fim de descanso (vibra + símbolo + botão OK)
+  function mostrarFimDescanso(){
+    if(document.getElementById("restDone")) return;
+    const ov = document.createElement("div");
+    ov.id = "restDone"; ov.className = "rest-done-ov";
+    ov.innerHTML = `
+      <div class="rest-done-cx">
+        <div class="rest-done-ico">✓</div>
+        <div class="rest-done-txt">Descanso concluído!</div>
+        <div class="rest-done-sub">Bora para a próxima série 💪</div>
+        <button class="btn" onclick="fecharFimDescanso()">OK, continuar</button>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function fecharFimDescanso(){
+    try{ navigator.vibrate && navigator.vibrate(0); }catch(e){}
+    const m = document.getElementById("restDone"); if(m) m.remove();
   }
 
   // cronômetro de DURAÇÃO do treino (conta pra cima desde o iniciar)
