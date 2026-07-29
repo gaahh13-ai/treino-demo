@@ -640,9 +640,8 @@
       if(x.series!=null && x.reps) partes.push(`<b>${x.series}x${esc(x.reps)}</b>`);
       else if(x.series!=null) partes.push(`<b>${x.series} séries</b>`);
       if(x.carga_alvo!=null) partes.push(`${x.carga_alvo} kg`);
+      if(x.descanso_seg!=null) partes.push(`descanso ${x.descanso_seg}s`);
       const img = x.media_url ? `<img src="${esc(x.media_url)}" alt="">` : iconeExercicio(x);
-      const descBtn = (x.descanso_seg!=null) ?
-        `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descanso ${x.descanso_seg}s</button>` : "";
       return `<div class="tr-ex">
         <div class="tr-ex-row">
           <div class="ex-thumb-al">${img}</div>
@@ -650,7 +649,6 @@
             <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
             <div class="tr-presc">${partes.join(" · ")||"—"}</div>
             ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
-            ${descBtn}
           </div>
         </div>
       </div>`;
@@ -702,6 +700,8 @@
       const alvo = [];
       if(x.series!=null && x.reps) alvo.push(`${x.series}x${esc(x.reps)}`);
       if(x.carga_alvo!=null) alvo.push(`alvo ${x.carga_alvo} kg`);
+      const descBtn = (x.descanso_seg!=null) ?
+        `<button class="desc-btn" style="margin-top:12px" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
       return `<div class="ex-card">
         <div class="ex-card-top">
           <div><div class="ex-card-nome">${esc(x.nome_cache||"Exercício")}</div>
@@ -709,6 +709,7 @@
         </div>
         <div class="ser-head"><span>série</span><span>carga</span><span>reps</span><span>ok</span></div>
         ${series}
+        ${descBtn}
       </div>`;
     }).join("");
 
