@@ -35,7 +35,7 @@
   .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 22px rgba(30,41,59,.06)}
   .card h3{font-size:14px;font-weight:800;color:var(--pink-deep);margin-bottom:12px}
 
-  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:18px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
   .kpi{padding:16px;border-top:3px solid var(--pink)}
   .kpi .label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
   .kpi .val{font-size:23px;font-weight:800;margin:6px 0 2px}
@@ -110,8 +110,6 @@
       <div class="card kpi">   <div class="label">Peso atual</div>   <div class="val" id="k_peso">—</div>   <div class="delta" id="d_peso">sem dados</div></div>
       <div class="card kpi l"> <div class="label">% Gordura</div>    <div class="val" id="k_bf">—</div>     <div class="delta" id="d_bf">sem dados</div></div>
       <div class="card kpi b"> <div class="label">Massa magra</div>  <div class="val" id="k_lean">—</div>   <div class="delta" id="d_lean">sem dados</div></div>
-      <div class="card kpi b"> <div class="label">Sono</div>         <div class="val" id="k_sono">—</div>   <div class="delta">em breve</div></div>
-      <div class="card kpi g"> <div class="label">Dieta</div>        <div class="val" id="k_dieta">—</div>  <div class="delta">em breve</div></div>
       <div class="card kpi a"> <div class="label">Falta p/ meta</div><div class="val" id="k_meta">—</div>   <div class="delta" id="d_meta">defina uma meta</div></div>
     </div>
 
@@ -122,29 +120,19 @@
         <h3>Rumo à meta</h3>
         <div class="bar-track"><div class="bar-fill" id="progressFill"></div></div>
         <div class="bar-legend"><span id="progIni">Início —</span><span id="progAtual">Atual —</span><span id="progMeta">Meta —</span></div>
-        <div class="empty" id="progEmpty" style="margin-top:14px">Sua meta aparecerá aqui assim que a seu profissional definir seu objetivo.</div>
+        <div class="empty" id="progEmpty" style="margin-top:14px">Sua meta aparecerá aqui assim que seu profissional definir seu objetivo.</div>
       </div>
       <div class="card">
         <h3>Treinos do mês — realizado × meta</h3>
         <div id="treinoBox">
-          <div class="empty">Sem reports ainda. Envie mensagens pelo Telegram para este bloco ganhar vida.</div>
+          <div class="empty">Carregando…</div>
         </div>
       </div>
     </div>
 
     <!-- Acompanhamento -->
-    <div class="section-title">💬 Acompanhamento</div>
-    <div class="grid2">
-      <div class="card"><h3>Meus reports</h3><div id="reportsBox"><div class="empty">Nenhum report enviado ainda.</div></div></div>
-      <div class="card"><h3>🧑‍⚕️ Observações da nutricionista</h3><div id="obsBox"><div class="empty">Nenhuma observação registrada ainda.</div></div></div>
-    </div>
-
-    <!-- Sono e dieta -->
-    <div class="section-title">😴 Sono &amp; 🍽️ Dieta</div>
-    <div class="grid2">
-      <div class="card"><h3>Qualidade do sono</h3><div class="empty">Em breve.</div></div>
-      <div class="card"><h3>Dieta — nota &amp; comentário</h3><div class="empty">Em breve.</div></div>
-    </div>
+    <div class="section-title">🧑‍⚕️ Acompanhamento</div>
+    <div class="card"><h3>Observações do profissional</h3><div id="obsBox"><div class="empty">Nenhuma observação registrada ainda.</div></div></div>
 
     <!-- Evolução -->
     <div class="section-title">📈 Evolução — composição corporal</div>
@@ -249,15 +237,13 @@
       ALVO = me;
     }
 
-    const [{ data: avals }, { data: metas }, { data: consultas }, { data: reports }, { data: sessoes }] = await Promise.all([
+    const [{ data: avals }, { data: metas }, { data: consultas }, { data: sessoes }] = await Promise.all([
       sb.from("assessments").select("*").eq("student_id", ALVO.id).order("date",{ascending:true}),
       sb.from("goals").select("*").eq("student_id", ALVO.id).limit(1),
       sb.from("consultations").select("scheduled_at").eq("student_id", ALVO.id).order("scheduled_at",{ascending:true}),
-      sb.from("reports").select("*").eq("student_id", ALVO.id).order("date",{ascending:false}).limit(60),
       sb.from("sessoes").select("data,dia_id").eq("student_id", ALVO.id).eq("finalizada", true).order("data",{ascending:false})
     ]);
 
-    REPORTS = reports || [];
     SESSOES = sessoes || [];
 
     const agora = new Date();
@@ -301,8 +287,7 @@
     document.getElementById("content").style.display = "block";
 
     META = meta;
-    renderReports();
-    if(SESSOES.length) renderTreinoReal();   // treinos concluídos têm prioridade sobre os do Telegram
+    renderTreinoReal();
     renderObs(avals);
 
     if(avals.length){
@@ -515,6 +500,21 @@
   }
 
   /* ---- treinos concluídos (sessões finalizadas no app de treino) ---- */
+  // meta do mês = dias de treino previstos, a partir da meta "treinos por semana".
+  // Considera os primeiros N dias úteis de cada semana (seg=0) que caem no mês.
+  // Ex.: 5x/semana em julho/2026 (dia 1 = quarta) = 3 + 4x5 = 23 dias.
+  function previstoMesTreinos(porSemana){
+    porSemana = Number(porSemana);
+    if(!porSemana || porSemana<=0) return null;
+    const now = new Date(); const y=now.getFullYear(), m=now.getMonth();
+    const diasNoMes = new Date(y, m+1, 0).getDate();
+    let cont = 0;
+    for(let d=1; d<=diasNoMes; d++){
+      const wd = (new Date(y,m,d).getDay()+6)%7;  // 0=segunda ... 6=domingo
+      if(wd < porSemana) cont++;
+    }
+    return cont;
+  }
   // conta treinos por semana (segunda a domingo) nas últimas nSemanas
   function semanalCount(sess, nSemanas){
     const hoje = new Date(); hoje.setHours(0,0,0,0);
@@ -540,7 +540,8 @@
     const dias = ultimo ? Math.floor((Date.now()-new Date(ultimo).getTime())/86400000) : null;
     const quando = dias==null ? "" : (dias===0 ? "Treinou hoje" : dias===1 ? "Treinou ontem" : `Último treino há ${dias} dias`);
     const mes = agora.toLocaleDateString("pt-BR",{month:"long"});
-    const alvo = (META && META.monthly_workouts != null) ? Number(META.monthly_workouts) : null;
+    // META.monthly_workouts guarda a meta SEMANAL; o alvo do mês é calculado a partir dela
+    const alvo = previstoMesTreinos(META && META.monthly_workouts);
 
     let head;
     if(alvo && alvo > 0){
