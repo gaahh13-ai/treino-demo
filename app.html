@@ -179,6 +179,12 @@
     padding:14px 22px;border-radius:16px;box-shadow:0 10px 30px rgba(30,41,59,.3);display:flex;align-items:center;gap:14px}
   .desc-float button{background:rgba(255,255,255,.25);border:none;color:#fff;font-weight:800;
     border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px}
+  /* modal (sair do treino) */
+  .modal-ov{position:fixed;inset:0;z-index:70;background:rgba(30,20,40,.45);
+    display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal-cx{background:#fff;border-radius:18px;padding:22px;max-width:340px;width:100%;
+    box-shadow:0 20px 50px rgba(30,20,40,.3)}
+  .modal-cx h3{font-size:17px;font-weight:800;color:var(--pink-deep)}
   .empty{font-size:13px;color:var(--muted);padding:8px 0}
   /* desempenho / retenção (profissional) */
   .ret-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -835,8 +841,37 @@
   }
 
   function sairExecucao(){
-    if(!confirm("Sair do treino? O que você já registrou fica salvo.")) return;
+    if(document.getElementById("sairModal")) return;
+    const ov = document.createElement("div");
+    ov.id = "sairModal"; ov.className = "modal-ov";
+    ov.innerHTML = `
+      <div class="modal-cx">
+        <h3 style="margin:0 0 6px">Sair do treino?</h3>
+        <p class="meta-sm" style="margin:0 0 16px">As cargas que você já registrou ficam guardadas se você salvar. Para contar como treino concluído, use “✅ Finalizar treino”.</p>
+        <button class="btn" style="width:100%;margin-bottom:8px" onclick="salvarESair()">💾 Salvar e sair</button>
+        <button class="btn ghost" style="width:100%;margin-bottom:8px" onclick="descartarTreino()">🗑️ Sair sem salvar</button>
+        <button class="btn ghost" style="width:100%" onclick="fecharModalSair()">↩️ Voltar ao treino</button>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function fecharModalSair(){ const m = document.getElementById("sairModal"); if(m) m.remove(); }
+
+  async function salvarESair(){
+    fecharModalSair();
     pararDescanso(); pararCronoTreino();
+    EXEC_SESSAO = null;
+    go("meutreino");
+    setTimeout(()=>{ const b=document.getElementById("treinoBoxAluno");
+      if(b) b.insertAdjacentHTML("afterbegin", `<div class="msg ok" style="display:block">💾 Progresso salvo. Você pode retomar e finalizar quando quiser.</div>`); }, 400);
+  }
+
+  async function descartarTreino(){
+    fecharModalSair();
+    pararDescanso(); pararCronoTreino();
+    if(EXEC_SESSAO){
+      await sb.from("series_feitas").delete().eq("sessao_id", EXEC_SESSAO.id);
+      await sb.from("sessoes").delete().eq("id", EXEC_SESSAO.id);
+    }
     EXEC_SESSAO = null;
     go("meutreino");
   }
