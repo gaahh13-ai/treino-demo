@@ -164,6 +164,19 @@
   .desc-float button{background:rgba(255,255,255,.25);border:none;color:#fff;font-weight:800;
     border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px}
   .empty{font-size:13px;color:var(--muted);padding:8px 0}
+  /* desempenho / retenção (profissional) */
+  .ret-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  @media(max-width:560px){ .ret-cards{grid-template-columns:1fr 1fr} }
+  .ret-card{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:.15s}
+  .ret-card:hover{filter:brightness(.98)}
+  .ret-card.sel{outline:2px solid var(--pink-deep);outline-offset:1px}
+  .ret-card .rc-num{font-size:24px;font-weight:800;line-height:1}
+  .ret-card .rc-lbl{font-size:11.5px;font-weight:700;margin-top:3px}
+  .ret-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px;background:#ffffff}
+  .ret-row .rr-nome{font-weight:800;font-size:14px}
+  .ret-row .rr-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .ret-badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
   .assess-item{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
   .assess-item:last-child{border-bottom:none}
   .assess-item b{color:var(--pink-deep)}
@@ -330,7 +343,10 @@
       {id:"cadastrar",  ico:"➕", label:"Cadastrar aluno"}
     ];
     // módulo de treino só para profissionais habilitados (personal). Nutri (TreinoApp) não vê.
-    if(temTreino()) m.push({id:"exercicios", ico:"🏋️", label:"Exercícios"});
+    if(temTreino()){
+      m.push({id:"exercicios", ico:"🏋️", label:"Exercícios"});
+      m.push({id:"desempenho", ico:"📈", label:"Desempenho"});
+    }
     m.push({id:"inativos", ico:"📁", label:"Alunos inativos"});
     m.push({id:"perfil",   ico:"👤", label:"Meu perfil"});
     if(role === "creator") m.push({id:"admin", ico:"🛠️", label:"Painel do criador"});
@@ -392,6 +408,7 @@
     else if(id === "alunos"){    p.innerHTML = viewAlunos();    loadStudents(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
+    else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); carregarDesempenho(); }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -1165,6 +1182,110 @@
     ASSESS = ast || [];
     renderStudents();
     loadInvites();
+  }
+
+  /* ---------- PROFISSIONAL: DESEMPENHO / RETENÇÃO ---------- */
+  let RET_DADOS = [], RET_FILTRO = "todos";
+  const RET_CLASSES = {
+    em_dia:    {label:"Em dia",    cor:"#15803d", bg:"#eafaf0"},
+    oscilando: {label:"Oscilando", cor:"#b45309", bg:"#fef3c7"},
+    risco:     {label:"Em risco",  cor:"#c2410c", bg:"#ffedd5"},
+    abandono:  {label:"Abandono",  cor:"#be123c", bg:"#ffe4e6"}
+  };
+  function classificaRet(dias){
+    if(dias===null) return "abandono";
+    if(dias<=3) return "em_dia";
+    if(dias<=7) return "oscilando";
+    if(dias<=14) return "risco";
+    return "abandono";
+  }
+
+  function viewDesempenho(){
+    return `<h2>Desempenho</h2>
+      <div class="card">
+        <h3>📈 Retenção dos alunos</h3>
+        <p class="meta-sm" style="margin-top:2px">Como está a frequência de cada aluno, pela data do último treino registrado. Clique numa faixa para filtrar.</p>
+        <div id="retResumo" style="margin:14px 0"><div class="empty">Carregando…</div></div>
+        <div id="retLista"></div>
+      </div>`;
+  }
+
+  async function carregarDesempenho(){
+    if(!STUDENTS.length){
+      const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
+      STUDENTS = studs || [];
+    }
+    const ativos = STUDENTS.filter(s => (s.status||"active") === "active");
+    const { data: sess } = await sb.from("sessoes").select("student_id,data")
+      .eq("professional_id", ME.id).eq("finalizada", true).order("data",{ascending:false});
+    const agora = Date.now();
+    const ultimo = {}, semana = {};
+    (sess||[]).forEach(s=>{
+      if(!s.student_id) return;
+      if(!(s.student_id in ultimo)) ultimo[s.student_id] = s.data;
+      const dd = (agora - new Date(s.data).getTime())/86400000;
+      if(dd <= 7) semana[s.student_id] = (semana[s.student_id]||0) + 1;
+    });
+    RET_DADOS = ativos.map(s=>{
+      const u = ultimo[s.id];
+      const dias = u ? Math.floor((agora - new Date(u).getTime())/86400000) : null;
+      return { s, dias, ultima:u, semana:semana[s.id]||0, classe:classificaRet(dias) };
+    }).sort((a,b)=> (b.dias==null?1e9:b.dias) - (a.dias==null?1e9:a.dias));
+    renderResumoRet();
+    renderListaRet();
+  }
+
+  function renderResumoRet(){
+    const box = document.getElementById("retResumo");
+    if(!box) return;
+    const cont = { em_dia:0, oscilando:0, risco:0, abandono:0 };
+    RET_DADOS.forEach(r=> cont[r.classe]++);
+    const cards = Object.keys(RET_CLASSES).map(k=>{
+      const c = RET_CLASSES[k];
+      const sel = RET_FILTRO===k ? " sel" : "";
+      return `<div class="ret-card${sel}" style="background:${c.bg};color:${c.cor}" onclick="filtrarRet('${k}')">
+        <div class="rc-num">${cont[k]}</div><div class="rc-lbl">${c.label}</div>
+      </div>`;
+    }).join("");
+    box.innerHTML = `<div class="ret-cards">${cards}</div>
+      ${RET_FILTRO!=="todos" ? `<button class="btn small ghost" style="margin-top:10px" onclick="filtrarRet('todos')">Ver todos</button>` : ""}`;
+  }
+
+  function filtrarRet(k){ RET_FILTRO = (RET_FILTRO===k ? "todos" : k); renderResumoRet(); renderListaRet(); }
+
+  function renderListaRet(){
+    const box = document.getElementById("retLista");
+    if(!box) return;
+    let lista = RET_DADOS;
+    if(RET_FILTRO!=="todos") lista = lista.filter(r=>r.classe===RET_FILTRO);
+    if(!RET_DADOS.length){ box.innerHTML = `<div class="empty">Nenhum aluno ativo com treino ainda.</div>`; return; }
+    if(!lista.length){ box.innerHTML = `<div class="empty">Nenhum aluno nesta faixa. 🎉</div>`; return; }
+    box.innerHTML = lista.map(r=>{
+      const c = RET_CLASSES[r.classe];
+      const nome = nomeAluno(r.s);
+      const quando = r.dias==null ? "Nunca treinou" :
+        (r.dias===0 ? "Treinou hoje" : r.dias===1 ? "Treinou ontem" : `Há ${r.dias} dias sem treinar`);
+      const cobrar = (r.classe!=="em_dia")
+        ? `<button class="btn small" onclick="cobrarAluno('${r.s.id}')">💬 Cobrar</button>` : "";
+      return `<div class="ret-row">
+        <div style="flex:1;min-width:150px">
+          <div class="rr-nome">${esc(nome)}</div>
+          <div class="rr-sub">${quando} · ${r.semana} treino${r.semana===1?"":"s"} na semana</div>
+        </div>
+        <span class="ret-badge" style="background:${c.bg};color:${c.cor}">${c.label}</span>
+        ${cobrar}
+      </div>`;
+    }).join("");
+  }
+
+  function cobrarAluno(id){
+    const r = RET_DADOS.find(x=>x.s.id===id);
+    if(!r) return;
+    const nome = (nomeAluno(r.s)||"").split(" ")[0];
+    const texto = r.dias==null
+      ? `Oi ${nome}! Bora começar seu treino? Tô aqui pra te ajudar. 💪`
+      : `Oi ${nome}! Vi que faz ${r.dias} dias que você não treina. Bora voltar hoje? 💪`;
+    window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
   }
 
   function linhaAluno(s, arquivado){
