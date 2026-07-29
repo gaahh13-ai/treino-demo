@@ -128,6 +128,41 @@
   .ser-in:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
   .ser-ok{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:10px 0;font-size:15px;cursor:pointer;color:var(--muted)}
   .ser-ok.done{background:#eafaf0;border-color:#bbeccb;color:#1a8a4a;font-weight:800}
+  .exec-crono{font-size:12px;font-weight:800;color:var(--pink-deep);background:#fff;border:1px solid var(--line);
+    border-radius:999px;padding:5px 11px;white-space:nowrap}
+  /* acesso destacado ao treino (dashboard do aluno) */
+  .treino-hero{background:linear-gradient(120deg,#e0e7ff,#e0e7ff);border:1px solid transparent;border-radius:16px;
+    padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .treino-hero .ico-big{font-size:38px;line-height:1}
+  .treino-hero h3{margin:0 0 4px;color:var(--pink-deep)}
+  .treino-hero p{margin:0;font-size:13px;color:var(--txt)}
+  .treino-hero .btn{margin-top:0}
+  /* resumo de treinos disponíveis x último treinado */
+  .treino-lista{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
+  .treino-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;width:100%;
+    border:1px solid var(--line);background:#ffffff;border-radius:12px;padding:11px 14px;cursor:pointer;transition:.15s}
+  .treino-linha:hover{border-color:var(--pink)}
+  .treino-linha.sel{background:linear-gradient(120deg,#e0e7ff,#e0e7ff);border-color:transparent}
+  .treino-linha .tl-nome{font-weight:800;font-size:14px;color:var(--txt)}
+  .treino-linha .tl-ult{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .treino-linha .tl-seta{color:var(--pink-deep);font-weight:800}
+  /* exercício na visão do aluno com imagem e descanso clicável */
+  .ex-thumb-al{width:56px;height:56px;border-radius:12px;flex:0 0 auto;background:linear-gradient(135deg,#e0e7ff,#e0e7ff);
+    display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden}
+  .ex-thumb-al img{width:100%;height:100%;object-fit:cover}
+  .tr-ex-row{display:flex;gap:12px;align-items:flex-start}
+  .tr-ex-body{flex:1;min-width:0}
+  .desc-btn{border:1px solid var(--pink);background:#fff;color:var(--pink-deep);border-radius:999px;
+    padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;display:inline-flex;align-items:center;gap:5px}
+  .desc-btn:hover{background:#f8fafc}
+  .tr-obs{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--txt);background:#eef2ff;
+    border-left:3px solid var(--pink);border-radius:0 10px 10px 0;padding:8px 11px}
+  /* cronômetro flutuante de descanso (qualquer tela) */
+  .desc-float{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;
+    background:linear-gradient(120deg,#6366f1,#818cf8);color:#fff;font-weight:800;font-size:16px;
+    padding:14px 22px;border-radius:16px;box-shadow:0 10px 30px rgba(30,41,59,.3);display:flex;align-items:center;gap:14px}
+  .desc-float button{background:rgba(255,255,255,.25);border:none;color:#fff;font-weight:800;
+    border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px}
   .empty{font-size:13px;color:var(--muted);padding:8px 0}
   .assess-item{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
   .assess-item:last-child{border-bottom:none}
@@ -207,8 +242,8 @@
   let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
   let EXERCICIOS = [], EX_FILTRO = "";
   let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false;
-  let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [];
-  let EXEC_SESSAO = null, EXEC_LOGS = {}, ULTIMAS = {};
+  let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [], ULTIMO_POR_DIA = {};
+  let EXEC_SESSAO = null, EXEC_LOGS = {}, ULTIMAS = {}, EXEC_INICIO = null, CRONO_INT = null;
 
   // campos das avaliações
   const DOBRAS = [
@@ -342,6 +377,8 @@
 
   function go(id){
     VIEW = id;
+    if(typeof pararDescanso==="function") pararDescanso();
+    if(typeof pararCronoTreino==="function") pararCronoTreino();
     document.querySelectorAll(".navitem").forEach(b=>b.classList.remove("active"));
     const nav = document.getElementById("nav_"+id); if(nav) nav.classList.add("active");
     const p = document.getElementById("panel"); if(!p) return;
@@ -361,7 +398,17 @@
 
   /* ================= TELAS: ALUNO ================= */
   function viewDash(){
+    const heroTreino = (ME.role === "student" && alunoTemTreino()) ? `
+      <div class="treino-hero">
+        <div class="ico-big">🏋️</div>
+        <div style="flex:1;min-width:180px">
+          <h3>Seu treino de hoje</h3>
+          <p>Veja o treino que seu personal montou, siga as orientações e registre suas cargas.</p>
+        </div>
+        <button class="btn" onclick="go('meutreino')">Acessar meu treino →</button>
+      </div>` : "";
     return `<h2>Meu dashboard</h2>
+      ${heroTreino}
       <div class="card">
         <h3>📊 Sua evolução</h3>
         <p>Acompanhe peso, composição, sono e adesão — e envie seus reports pelo Telegram.</p>
@@ -485,9 +532,19 @@
     return `<h2>Meu treino</h2>
       <div class="card">
         <h3>🏋️ Treino montado pelo seu personal</h3>
-        <div id="treinoDias" style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0"></div>
+        <div id="treinoResumo"></div>
         <div id="treinoBoxAluno"><div class="empty">Carregando…</div></div>
       </div>`;
+  }
+
+  // "há X dias" a partir de uma data
+  function haQuantoTempo(v){
+    if(!v) return null;
+    const d = new Date(v); if(isNaN(d)) return null;
+    const dias = Math.floor((Date.now() - d.getTime())/86400000);
+    if(dias <= 0) return "hoje";
+    if(dias === 1) return "ontem";
+    return "há " + dias + " dias";
   }
 
   async function carregarMeuTreino(){
@@ -502,33 +559,75 @@
     // carrega os exercícios de todos os dias de uma vez
     const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("ficha_id", ficha.id).order("ordem");
     ALUNO_EXS = exs || [];
-    renderAlunoDias();
-  }
-
-  function renderAlunoDias(){
-    const t = document.getElementById("treinoDias");
-    if(t) t.innerHTML = ALUNO_DIAS.map(d=>
-      `<button class="chip-f ${d.id===ALUNO_DIA?"sel":""}" onclick="selDiaAluno('${d.id}')">${esc(d.label)}</button>`).join("");
+    // último treino executado por dia (sessões finalizadas)
+    ULTIMO_POR_DIA = {};
+    const { data: sess } = await sb.from("sessoes").select("dia_id,data")
+      .eq("student_id", ME.id).eq("finalizada", true).order("data",{ascending:false});
+    (sess||[]).forEach(s=>{ if(s.dia_id && !(s.dia_id in ULTIMO_POR_DIA)) ULTIMO_POR_DIA[s.dia_id] = s.data; });
+    renderResumoTreinos();
     renderAlunoExs();
   }
-  function selDiaAluno(id){ ALUNO_DIA = id; renderAlunoDias(); }
+
+  // lista de treinos disponíveis x último dia treinado (estilo MFIT)
+  function renderResumoTreinos(){
+    const r = document.getElementById("treinoResumo");
+    if(!r) return;
+    r.innerHTML = `<div class="treino-lista">` + ALUNO_DIAS.map(d=>{
+      const qtd = ALUNO_EXS.filter(x=>x.dia_id===d.id).length;
+      const ult = haQuantoTempo(ULTIMO_POR_DIA[d.id]);
+      const ultTxt = ult ? `Último treino: ${ult}` : "Você ainda não fez este treino";
+      return `<button class="treino-linha ${d.id===ALUNO_DIA?"sel":""}" onclick="selDiaAluno('${d.id}')">
+        <span>
+          <span class="tl-nome">${esc(d.label)}</span>
+          <span class="tl-ult">${qtd} exercício${qtd===1?"":"s"} · ${ultTxt}</span>
+        </span>
+        <span class="tl-seta">›</span>
+      </button>`;
+    }).join("") + `</div>`;
+  }
+
+  function selDiaAluno(id){ ALUNO_DIA = id; renderResumoTreinos(); renderAlunoExs(); window.scrollTo({top:0,behavior:"smooth"}); }
+
+  // ícone/emoji por grupo muscular (placeholder até termos imagens/GIFs reais)
+  function iconeExercicio(x){
+    const t = ((x.grupo||"") + " " + (x.nome_cache||"")).toLowerCase();
+    if(/perna|quadr|leg|agach?|afundo|glúte|gluteo|panturr|coxa/.test(t)) return "🦵";
+    if(/peito|supino|crucifixo|peck/.test(t)) return "🫁";
+    if(/costa|remada|pux|puxada|barra|dorsal/.test(t)) return "🔙";
+    if(/ombro|desenvolv|elevação|elevacao|deltoid/.test(t)) return "🙆";
+    if(/bíceps|biceps|rosca/.test(t)) return "💪";
+    if(/tríceps|triceps|testa|corda|francês|frances/.test(t)) return "🦾";
+    if(/abd|core|prancha|obliqu/.test(t)) return "🧘";
+    if(/aeró|aero|corrida|esteira|bike|cardio/.test(t)) return "🏃";
+    return "🏋️";
+  }
 
   function renderAlunoExs(){
     const box = document.getElementById("treinoBoxAluno");
     if(!box) return;
     const lista = ALUNO_EXS.filter(x=>x.dia_id===ALUNO_DIA);
+    const dia = ALUNO_DIAS.find(d=>d.id===ALUNO_DIA);
     if(!lista.length){ box.innerHTML = `<div class="empty">Sem exercícios neste dia.</div>`; return; }
-    const btnIniciar = `<button class="btn" style="margin:0 0 14px" onclick="iniciarTreino('${ALUNO_DIA}')">▶ Iniciar este treino</button>`;
-    box.innerHTML = btnIniciar + lista.map(x=>{
+    const titulo = `<div style="font-weight:800;font-size:15px;margin:14px 0 4px">${esc(dia?dia.label:"Treino")}</div>`;
+    const btnIniciar = `<button class="btn" style="margin:6px 0 14px" onclick="iniciarTreino('${ALUNO_DIA}')">▶ Iniciar este treino</button>`;
+    box.innerHTML = titulo + btnIniciar + lista.map(x=>{
       const partes = [];
       if(x.series!=null && x.reps) partes.push(`<b>${x.series}x${esc(x.reps)}</b>`);
       else if(x.series!=null) partes.push(`<b>${x.series} séries</b>`);
       if(x.carga_alvo!=null) partes.push(`${x.carga_alvo} kg`);
-      if(x.descanso_seg!=null) partes.push(`descanso ${x.descanso_seg}s`);
+      const img = x.media_url ? `<img src="${esc(x.media_url)}" alt="">` : iconeExercicio(x);
+      const descBtn = (x.descanso_seg!=null) ?
+        `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descanso ${x.descanso_seg}s</button>` : "";
       return `<div class="tr-ex">
-        <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
-        <div class="tr-presc">${partes.join(" · ")}</div>
-        ${x.obs?`<div class="meta-sm">${esc(x.obs)}</div>`:""}
+        <div class="tr-ex-row">
+          <div class="ex-thumb-al">${img}</div>
+          <div class="tr-ex-body">
+            <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
+            <div class="tr-presc">${partes.join(" · ")||"—"}</div>
+            ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
+            ${descBtn}
+          </div>
+        </div>
       </div>`;
     }).join("");
   }
@@ -558,6 +657,7 @@
       (hist||[]).forEach(h=>{ if(h.exercicio_id && !(h.exercicio_id in ULTIMAS) && h.carga!=null) ULTIMAS[h.exercicio_id]=h.carga; });
     }
     renderExecucao(dia, exs);
+    iniciarCronoTreino();
   }
 
   function renderExecucao(dia, exs){
@@ -590,10 +690,12 @@
     p.innerHTML = `
       <div class="exec-top">
         <button class="btn small ghost" onclick="sairExecucao()">← Sair</button>
-        <div class="exec-titulo">${esc(dia.label)}</div>
+        <div style="flex:1;text-align:center">
+          <div class="exec-titulo">${esc(dia.label)}</div>
+          <span class="exec-crono" id="execCrono">⏲️ 00:00</span>
+        </div>
         <button class="btn small" id="descBtn" onclick="descanso(60)">⏱️ Descanso</button>
       </div>
-      <div id="execTimer" class="exec-timer" style="display:none"></div>
       ${cards}
       <button class="btn" style="width:100%;margin-top:8px" onclick="finalizarTreino()">✅ Finalizar treino</button>`;
     window.scrollTo({top:0});
@@ -620,31 +722,63 @@
   }
 
   let TIMER_INT = null;
+  // cronômetro de descanso flutuante — funciona tanto na visão do treino quanto na execução
   function descanso(seg){
     clearInterval(TIMER_INT);
-    const el = document.getElementById("execTimer");
-    if(!el) return;
+    let bar = document.getElementById("descFloat");
+    if(!bar){
+      bar = document.createElement("div");
+      bar.id = "descFloat"; bar.className = "desc-float";
+      document.body.appendChild(bar);
+    }
     let t = seg;
-    el.style.display = "block";
+    const render = (txt)=>{ bar.innerHTML = `<span id="descTxt">${txt}</span>
+      <button onclick="pararDescanso()">Parar</button>`; };
     const tick = ()=>{
-      if(t<=0){ clearInterval(TIMER_INT); el.textContent = "Descanso concluído! 💪"; setTimeout(()=>{el.style.display="none";},2500); return; }
-      el.textContent = "⏱️ Descanso: " + t + "s"; t--;
+      if(t<=0){ clearInterval(TIMER_INT);
+        render("Descanso concluído! 💪");
+        try{ navigator.vibrate && navigator.vibrate(200); }catch(e){}
+        setTimeout(pararDescanso, 2500); return; }
+      render("⏱️ Descanso: " + t + "s"); t--;
     };
     tick(); TIMER_INT = setInterval(tick, 1000);
   }
+  function pararDescanso(){
+    clearInterval(TIMER_INT);
+    const bar = document.getElementById("descFloat");
+    if(bar) bar.remove();
+  }
+
+  // cronômetro de DURAÇÃO do treino (conta pra cima desde o iniciar)
+  function iniciarCronoTreino(){
+    clearInterval(CRONO_INT);
+    EXEC_INICIO = Date.now();
+    const upd = ()=>{
+      const el = document.getElementById("execCrono");
+      if(!el) return;
+      const s = Math.floor((Date.now()-EXEC_INICIO)/1000);
+      const mm = String(Math.floor(s/60)).padStart(2,"0");
+      const ss = String(s%60).padStart(2,"0");
+      el.textContent = "⏲️ " + mm + ":" + ss;
+    };
+    upd(); CRONO_INT = setInterval(upd, 1000);
+  }
+  function pararCronoTreino(){ clearInterval(CRONO_INT); EXEC_INICIO = null; }
 
   async function finalizarTreino(){
     if(!confirm("Finalizar o treino de hoje?")) return;
-    clearInterval(TIMER_INT);
+    pararDescanso(); pararCronoTreino();
+    const dur = EXEC_INICIO ? Math.floor((Date.now()-EXEC_INICIO)/60000) : null;
     await sb.from("sessoes").update({ finalizada:true }).eq("id", EXEC_SESSAO.id);
     EXEC_SESSAO = null;
     go("meutreino");
-    setTimeout(()=>{ const b=document.getElementById("treinoBoxAluno"); if(b) b.insertAdjacentHTML("afterbegin", `<div class="msg ok" style="display:block">✅ Treino registrado! Bom trabalho. 💪</div>`); }, 400);
+    const msg = dur!=null ? `✅ Treino registrado em ${dur} min! Bom trabalho. 💪` : "✅ Treino registrado! Bom trabalho. 💪";
+    setTimeout(()=>{ const b=document.getElementById("treinoBoxAluno"); if(b) b.insertAdjacentHTML("afterbegin", `<div class="msg ok" style="display:block">${msg}</div>`); }, 400);
   }
 
   function sairExecucao(){
     if(!confirm("Sair do treino? O que você já registrou fica salvo.")) return;
-    clearInterval(TIMER_INT);
+    pararDescanso(); pararCronoTreino();
     EXEC_SESSAO = null;
     go("meutreino");
   }
