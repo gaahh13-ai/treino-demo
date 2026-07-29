@@ -93,6 +93,21 @@
   .ex-info{flex:1;min-width:0}
   .ex-nome{font-weight:700;font-size:14px}
   .ex-meta{font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* montador de ficha (profissional) */
+  .fx-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .fx-row:last-of-type{border-bottom:none}
+  .fx-nome{font-weight:700;font-size:13.5px;flex:1;min-width:120px}
+  .fx-campos{display:flex;gap:8px;flex-wrap:wrap}
+  .fx-campos label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
+  .fx-campos input{width:64px;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+  .fx-add{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  .fx-add select{flex:1;min-width:160px;padding:9px;border:1px solid var(--line);border-radius:10px;font-size:13px}
+  /* treino (aluno) */
+  .tr-ex{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#ffffff}
+  .tr-nome{font-weight:800;font-size:14.5px}
+  .tr-presc{font-size:13px;color:var(--txt);margin-top:3px}
+  .tr-presc b{color:var(--pink-deep)}
   .empty{font-size:13px;color:var(--muted);padding:8px 0}
   .assess-item{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
   .assess-item:last-child{border-bottom:none}
@@ -171,6 +186,8 @@
   let ME = null, STUDENTS = [], INVITES = [], ASSESS = [], VIEW = null, EDIT_ID = null, ASSESS_S = null, MANUAL_CALC = false;
   let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
   let EXERCICIOS = [], EX_FILTRO = "";
+  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null;
+  let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [];
 
   // campos das avaliações
   const DOBRAS = [
@@ -225,8 +242,15 @@
     let { data: profile } = await sb.from("profiles").select("*").eq("id", user.id).single();
     if(!profile) profile = { id:user.id, role:"student", full_name:null, professional_id:null, status:"active" };
     ME = { ...profile, email: user.email };
+    // aluno: só mostra "Meu treino" se o profissional já montou algum treino
+    if(ME.role === "student"){
+      const { count } = await sb.from("ficha_dias").select("id",{count:"exact",head:true}).eq("student_id", ME.id);
+      ALUNO_TREINO = (count||0) > 0;
+    }
     montar();
   }
+  let ALUNO_TREINO = false;
+  function alunoTemTreino(){ return ALUNO_TREINO; }
 
   /* profissionais com o módulo de treino habilitado (por enquanto por e-mail).
      Depois vira uma configuração por profissional no banco. */
@@ -235,12 +259,16 @@
 
   /* ================= MENU / LAYOUT ================= */
   function menuFor(role){
-    if(role === "student") return [
-      {id:"dash",       ico:"📊", label:"Meu dashboard"},
-      {id:"avaliacoes", ico:"📋", label:"Avaliações Físicas"},
-      {id:"consultas",  ico:"📅", label:"Consultas Nutri"},
-      {id:"perfil",     ico:"👤", label:"Perfil"}
-    ];
+    if(role === "student"){
+      const menu = [
+        {id:"dash",       ico:"📊", label:"Meu dashboard"},
+        {id:"avaliacoes", ico:"📋", label:"Avaliações Físicas"}
+      ];
+      if(alunoTemTreino()) menu.push({id:"meutreino", ico:"🏋️", label:"Meu treino"});
+      menu.push({id:"consultas", ico:"📅", label:"Consultas Nutri"});
+      menu.push({id:"perfil",    ico:"👤", label:"Perfil"});
+      return menu;
+    }
     const m = [
       {id:"alunos",     ico:"👥", label:"Meus alunos"},
       {id:"cadastrar",  ico:"➕", label:"Cadastrar aluno"}
@@ -299,6 +327,7 @@
 
     if(id === "dash")      p.innerHTML = viewDash();
     else if(id === "avaliacoes"){ p.innerHTML = viewAvaliacoes(); carregarMinhasAvaliacoes(); }
+    else if(id === "meutreino"){  p.innerHTML = viewMeuTreino();  carregarMeuTreino(); }
     else if(id === "consultas"){  p.innerHTML = viewConsultas();  carregarMinhasConsultas(); }
     else if(id === "perfil"){ p.innerHTML = viewPerfil(); if(ME.role === "student") carregarTelegram(); }
     else if(id === "admin")p.innerHTML = viewAdmin();
@@ -428,6 +457,58 @@
       return;
     }
     box.innerHTML = data.map((a,idx)=>avaliacaoDetalhe(a,idx)).join("");
+  }
+
+  /* ---------- ALUNO: MEU TREINO ---------- */
+  function viewMeuTreino(){
+    return `<h2>Meu treino</h2>
+      <div class="card">
+        <h3>🏋️ Treino montado pelo seu personal</h3>
+        <div id="treinoDias" style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0"></div>
+        <div id="treinoBoxAluno"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+
+  async function carregarMeuTreino(){
+    const { data: fichas } = await sb.from("fichas").select("*").eq("student_id", ME.id).eq("ativa", true).limit(1);
+    const box = document.getElementById("treinoBoxAluno");
+    if(!fichas || !fichas.length){ if(box) box.innerHTML = `<div class="empty">Seu personal ainda não montou um treino.</div>`; return; }
+    const ficha = fichas[0];
+    const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", ficha.id).order("ordem");
+    ALUNO_DIAS = dias || [];
+    if(!ALUNO_DIAS.length){ if(box) box.innerHTML = `<div class="empty">Seu personal ainda não adicionou os dias do treino.</div>`; return; }
+    ALUNO_DIA = ALUNO_DIAS[0].id;
+    // carrega os exercícios de todos os dias de uma vez
+    const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("ficha_id", ficha.id).order("ordem");
+    ALUNO_EXS = exs || [];
+    renderAlunoDias();
+  }
+
+  function renderAlunoDias(){
+    const t = document.getElementById("treinoDias");
+    if(t) t.innerHTML = ALUNO_DIAS.map(d=>
+      `<button class="chip-f ${d.id===ALUNO_DIA?"sel":""}" onclick="selDiaAluno('${d.id}')">${esc(d.label)}</button>`).join("");
+    renderAlunoExs();
+  }
+  function selDiaAluno(id){ ALUNO_DIA = id; renderAlunoDias(); }
+
+  function renderAlunoExs(){
+    const box = document.getElementById("treinoBoxAluno");
+    if(!box) return;
+    const lista = ALUNO_EXS.filter(x=>x.dia_id===ALUNO_DIA);
+    if(!lista.length){ box.innerHTML = `<div class="empty">Sem exercícios neste dia.</div>`; return; }
+    box.innerHTML = lista.map(x=>{
+      const partes = [];
+      if(x.series!=null && x.reps) partes.push(`<b>${x.series}x${esc(x.reps)}</b>`);
+      else if(x.series!=null) partes.push(`<b>${x.series} séries</b>`);
+      if(x.carga_alvo!=null) partes.push(`${x.carga_alvo} kg`);
+      if(x.descanso_seg!=null) partes.push(`descanso ${x.descanso_seg}s`);
+      return `<div class="tr-ex">
+        <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
+        <div class="tr-presc">${partes.join(" · ")}</div>
+        ${x.obs?`<div class="meta-sm">${esc(x.obs)}</div>`:""}
+      </div>`;
+    }).join("");
   }
 
   /* ---------- ALUNO: CONSULTAS NUTRI ---------- */
@@ -655,6 +736,15 @@
         <button class="btn small" id="consultSaveBtn" onclick="salvarConsulta()">Agendar consulta</button>
         <div class="msg" id="consultMsg"></div>
         <div id="consultList" style="margin-top:14px"></div>
+      </div>
+
+      <div class="card" id="fichaCard" style="display:none">
+        <span class="close-x" onclick="fecharTreino()">✕</span>
+        <h3>🏋️ Treino — <span id="fichaAluno"></span></h3>
+        <p>Monte o treino do aluno em dias (A, B, C…). Ele vê tudo no app, na aba "Meu treino".</p>
+        <input type="hidden" id="fichaStudentId">
+        <div id="fichaDias" style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0"></div>
+        <div id="fichaConteudo"></div>
       </div>`;
   }
 
@@ -896,6 +986,7 @@
       </div>
       <div class="det-acoes">
         <a class="btn small" href="dashboard.html?aluno=${id}">📊 Dashboard</a>
+        ${temTreino()?`<button class="btn small" onclick="abrirTreino('${id}')">🏋️ Treino</button>`:""}
         <button class="btn small" onclick="novaAvaliacao('${id}')">➕ Nova avaliação</button>
         <button class="btn small ghost" onclick="verAvaliacoes('${id}')">📋 Ver avaliações</button>
         <button class="btn small ghost" onclick="novaConsulta('${id}')">📅 Consultas</button>
@@ -1259,6 +1350,129 @@
     }
   }
   function fecharForm(){ const c=document.getElementById("assessCard"); if(c) c.style.display="none"; }
+
+  /* ---------- PROFISSIONAL: MONTADOR DE TREINO ---------- */
+  async function garantirExercicios(){
+    if(EXERCICIOS.length) return;
+    const { data } = await sb.from("exercicios").select("*").order("grupo").order("nome");
+    EXERCICIOS = data || [];
+  }
+
+  async function abrirTreino(studentId){
+    const s = STUDENTS.find(x=>x.id===studentId);
+    document.getElementById("fichaStudentId").value = studentId;
+    document.getElementById("fichaAluno").textContent = nomeAluno(s);
+    document.getElementById("fichaDias").innerHTML = "";
+    document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Carregando…</div>`;
+    const card = document.getElementById("fichaCard");
+    card.style.display = "block";
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+    await garantirExercicios();
+    await carregarFicha(studentId);
+  }
+  function fecharTreino(){ const c=document.getElementById("fichaCard"); if(c) c.style.display="none"; FICHA=null; FICHA_DIA=null; }
+
+  async function carregarFicha(studentId){
+    let { data: fichas } = await sb.from("fichas").select("*").eq("student_id", studentId).eq("ativa", true).limit(1);
+    if(!fichas || !fichas.length){
+      const { data: nova } = await sb.from("fichas")
+        .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true }).select().single();
+      FICHA = nova;
+    } else { FICHA = fichas[0]; }
+    const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", FICHA.id).order("ordem");
+    FICHA_DIAS = dias || [];
+    if(FICHA_DIAS.length && !FICHA_DIAS.some(d=>d.id===FICHA_DIA)) FICHA_DIA = FICHA_DIAS[0].id;
+    if(!FICHA_DIAS.length) FICHA_DIA = null;
+    renderDias();
+  }
+
+  function renderDias(){
+    const box = document.getElementById("fichaDias");
+    if(!box) return;
+    box.innerHTML = FICHA_DIAS.map(d=>
+      `<button class="chip-f ${d.id===FICHA_DIA?"sel":""}" onclick="selDia('${d.id}')">${esc(d.label)}</button>`
+    ).join("") + `<button class="chip-f" style="border-style:dashed" onclick="addDia()">＋ Dia</button>`;
+    renderConteudoDia();
+  }
+
+  function selDia(id){ FICHA_DIA = id; renderDias(); }
+
+  async function addDia(){
+    const letras = "ABCDEFGH";
+    const label = "Treino " + (letras[FICHA_DIAS.length] || (FICHA_DIAS.length+1));
+    const { data, error } = await sb.from("ficha_dias").insert({
+      ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id, label, ordem:FICHA_DIAS.length
+    }).select().single();
+    if(error){ alert("Erro: "+error.message); return; }
+    FICHA_DIAS.push(data); FICHA_DIA = data.id;
+    renderDias();
+  }
+
+  async function removerDia(){
+    if(!FICHA_DIA) return;
+    const d = FICHA_DIAS.find(x=>x.id===FICHA_DIA);
+    if(!confirm(`Remover ${d?d.label:"este dia"} e seus exercícios?`)) return;
+    await sb.from("ficha_dias").delete().eq("id", FICHA_DIA);
+    FICHA_DIAS = FICHA_DIAS.filter(x=>x.id!==FICHA_DIA);
+    FICHA_DIA = FICHA_DIAS.length ? FICHA_DIAS[0].id : null;
+    renderDias();
+  }
+
+  async function renderConteudoDia(){
+    const box = document.getElementById("fichaConteudo");
+    if(!box) return;
+    if(!FICHA_DIA){
+      box.innerHTML = `<div class="empty">Crie um dia de treino (A, B, C…) para começar a adicionar exercícios.</div>`;
+      return;
+    }
+    box.innerHTML = `<div class="empty">Carregando…</div>`;
+    const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("dia_id", FICHA_DIA).order("ordem");
+    const lista = exs || [];
+    const rows = lista.map(x=>`
+      <div class="fx-row">
+        <div class="fx-nome">${esc(x.nome_cache || "Exercício")}</div>
+        <div class="fx-campos">
+          <label>Séries<input type="number" value="${x.series??""}" onchange="updEx('${x.id}','series',this.value)"></label>
+          <label>Reps<input type="text" value="${esc(x.reps??"")}" onchange="updEx('${x.id}','reps',this.value)"></label>
+          <label>Carga<input type="number" step="0.5" value="${x.carga_alvo??""}" onchange="updEx('${x.id}','carga_alvo',this.value)"></label>
+          <label>Desc(s)<input type="number" value="${x.descanso_seg??""}" onchange="updEx('${x.id}','descanso_seg',this.value)"></label>
+        </div>
+        <button class="btn small ghost" title="Remover" onclick="removerEx('${x.id}')">🗑</button>
+      </div>`).join("");
+    const opcoes = EXERCICIOS.map(e=>`<option value="${e.id}">${esc(e.nome)}${e.grupo?" · "+esc(e.grupo):""}</option>`).join("");
+    box.innerHTML = `
+      ${lista.length ? rows : `<div class="empty">Nenhum exercício neste dia ainda.</div>`}
+      <div class="fx-add">
+        <select id="fxAdd"><option value="">+ escolher exercício…</option>${opcoes}</select>
+        <button class="btn small" onclick="addEx()">Adicionar</button>
+        <button class="btn small ghost" onclick="removerDia()" style="margin-left:auto">Remover dia</button>
+      </div>`;
+  }
+
+  async function addEx(){
+    const sel = document.getElementById("fxAdd");
+    const exId = sel.value;
+    if(!exId){ return; }
+    const ex = EXERCICIOS.find(e=>e.id===exId);
+    const { data: exs } = await sb.from("ficha_exercicios").select("id").eq("dia_id", FICHA_DIA);
+    const { error } = await sb.from("ficha_exercicios").insert({
+      dia_id:FICHA_DIA, ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id,
+      exercicio_id:exId, nome_cache: ex?ex.nome:null,
+      series:3, reps:"12", descanso_seg:60, ordem:(exs?exs.length:0)
+    });
+    if(error){ alert("Erro: "+error.message); return; }
+    renderConteudoDia();
+  }
+
+  async function updEx(id, campo, valor){
+    const v = (campo==="reps") ? (valor.trim()||null) : (valor===""?null:Number(valor));
+    await sb.from("ficha_exercicios").update({ [campo]: v }).eq("id", id);
+  }
+
+  async function removerEx(id){
+    await sb.from("ficha_exercicios").delete().eq("id", id);
+    renderConteudoDia();
+  }
 
   /* ---------- PROFISSIONAL: METAS ---------- */
   async function abrirMetas(id){
