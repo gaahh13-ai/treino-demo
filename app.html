@@ -185,6 +185,15 @@
   .modal-cx{background:#fff;border-radius:18px;padding:22px;max-width:340px;width:100%;
     box-shadow:0 20px 50px rgba(30,20,40,.3)}
   .modal-cx h3{font-size:17px;font-weight:800;color:var(--pink-deep)}
+  /* avaliação do treino */
+  .rate-stars{display:flex;justify-content:center;gap:6px;margin:4px 0 6px}
+  .rate-star{background:none;border:none;font-size:38px;line-height:1;cursor:pointer;color:#e5d3e0;transition:.12s;padding:0}
+  .rate-star.on{color:#f59e0b}
+  .rate-star:hover{transform:scale(1.08)}
+  .rate-lbl{text-align:center;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;min-height:18px}
+  .rate-txt{width:100%;min-height:88px;padding:11px;border:1px solid var(--line);border-radius:12px;font-size:14px;
+    font-family:inherit;resize:vertical;margin-bottom:6px}
+  .rate-txt:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
   .empty{font-size:13px;color:var(--muted);padding:8px 0}
   /* desempenho / retenção (profissional) */
   .ret-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -287,6 +296,7 @@
   let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false;
   let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [], ULTIMO_POR_DIA = {};
   let EXEC_SESSAO = null, EXEC_LOGS = {}, ULTIMAS = {}, EXEC_INICIO = null, CRONO_INT = null;
+  let EXEC_DIA = null, EXEC_EXS = [], EXEC_DUR = null, RATE_NOTA = 0;
 
   // campos das avaliações
   const DOBRAS = [
@@ -701,6 +711,7 @@
         .not("sessao_id","is",null).order("created_at",{ascending:false}).limit(300);
       (hist||[]).forEach(h=>{ if(h.exercicio_id && !(h.exercicio_id in ULTIMAS) && h.carga!=null) ULTIMAS[h.exercicio_id]=h.carga; });
     }
+    EXEC_DIA = dia; EXEC_EXS = exs;
     renderExecucao(dia, exs);
     iniciarCronoTreino();
   }
@@ -724,7 +735,7 @@
           ${x.obs?`<div class="tr-obs" style="margin-top:8px">📝 ${esc(x.obs)}</div>`:""}
           <div class="carga-linha">
             <label>Carga usada</label>
-            <input class="carga-in" type="number" step="0.5" placeholder="${ult!=null?ult:"kg"}" value="${ult??""}"
+            <input class="carga-in" type="number" step="0.5" placeholder="${ult!=null?ult:"kg"}" value="${(EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].carga!=null)?EXEC_LOGS[x.id].carga:(ult??"")}"
                    onchange="salvarCarga('${x.id}','${x.exercicio_id||""}',this.value)">
             <span class="carga-un">kg</span>
             ${descBtn}
@@ -814,26 +825,84 @@
   }
 
   // cronômetro de DURAÇÃO do treino (conta pra cima desde o iniciar)
-  function iniciarCronoTreino(){
-    clearInterval(CRONO_INT);
-    EXEC_INICIO = Date.now();
-    const upd = ()=>{
-      const el = document.getElementById("execCrono");
-      if(!el) return;
-      const s = Math.floor((Date.now()-EXEC_INICIO)/1000);
-      const mm = String(Math.floor(s/60)).padStart(2,"0");
-      const ss = String(s%60).padStart(2,"0");
-      el.textContent = "⏲️ " + mm + ":" + ss;
-    };
-    upd(); CRONO_INT = setInterval(upd, 1000);
+  function tickCrono(){
+    const el = document.getElementById("execCrono");
+    if(!el || !EXEC_INICIO) return;
+    const s = Math.floor((Date.now()-EXEC_INICIO)/1000);
+    el.textContent = "⏲️ " + String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
   }
+  function iniciarCronoTreino(){ clearInterval(CRONO_INT); EXEC_INICIO = Date.now(); tickCrono(); CRONO_INT = setInterval(tickCrono, 1000); }
+  function retomarCrono(){ clearInterval(CRONO_INT); if(!EXEC_INICIO) EXEC_INICIO = Date.now(); tickCrono(); CRONO_INT = setInterval(tickCrono, 1000); }
+  function pausarCrono(){ clearInterval(CRONO_INT); }                 // mantém EXEC_INICIO
   function pararCronoTreino(){ clearInterval(CRONO_INT); EXEC_INICIO = null; }
 
-  async function finalizarTreino(){
-    if(!confirm("Finalizar o treino de hoje?")) return;
-    pararDescanso(); pararCronoTreino();
-    const dur = EXEC_INICIO ? Math.floor((Date.now()-EXEC_INICIO)/60000) : null;
-    await sb.from("sessoes").update({ finalizada:true }).eq("id", EXEC_SESSAO.id);
+  function finalizarTreino(){
+    const total = document.querySelectorAll(".ex-card").length;
+    const feitos = document.querySelectorAll(".ex-card.done").length;
+    const faltam = total - feitos;
+    if(faltam > 0){
+      if(document.getElementById("faltaModal")) return;
+      const ov = document.createElement("div");
+      ov.id = "faltaModal"; ov.className = "modal-ov";
+      ov.innerHTML = `
+        <div class="modal-cx">
+          <h3 style="margin:0 0 6px">Exercícios não concluídos</h3>
+          <p class="meta-sm" style="margin:0 0 16px">Você marcou <b>${feitos} de ${total}</b> exercícios. ${faltam===1?"Falta 1 exercício":"Faltam "+faltam+" exercícios"} sem check. Deseja encerrar mesmo assim?</p>
+          <button class="btn" style="width:100%;margin-bottom:8px" onclick="fecharFaltaModal();irParaAvaliacao()">Encerrar mesmo assim</button>
+          <button class="btn ghost" style="width:100%" onclick="fecharFaltaModal()">↩️ Voltar ao treino</button>
+        </div>`;
+      document.body.appendChild(ov);
+      return;
+    }
+    irParaAvaliacao();
+  }
+  function fecharFaltaModal(){ const m=document.getElementById("faltaModal"); if(m) m.remove(); }
+
+  // vai para a tela de avaliação do treino
+  function irParaAvaliacao(){
+    pararDescanso();
+    EXEC_DUR = EXEC_INICIO ? Math.floor((Date.now()-EXEC_INICIO)/60000) : null;
+    pausarCrono();
+    RATE_NOTA = 0;
+    renderAvaliacaoTreino();
+  }
+
+  function renderAvaliacaoTreino(){
+    const p = document.getElementById("panel");
+    const estrelas = [1,2,3,4,5].map(n=>`<button class="rate-star" data-n="${n}" onclick="setNota(${n})">★</button>`).join("");
+    p.innerHTML = `
+      <div class="exec-top"><div class="exec-titulo" style="flex:1;text-align:center">Como foi o treino?</div></div>
+      <div class="ex-card">
+        <p class="meta-sm" style="margin:0 0 12px">${EXEC_DUR!=null?`Treino de ${EXEC_DUR} min. `:""}Dê uma nota e, se quiser, deixe um comentário para seu personal.</p>
+        <div class="rate-stars" id="rateStars">${estrelas}</div>
+        <div class="rate-lbl" id="rateLbl">Toque nas estrelas para avaliar</div>
+        <textarea id="rateComentario" class="rate-txt" placeholder="Como você se sentiu? Alguma dor, dificuldade ou recado para o personal? (opcional)"></textarea>
+        <button class="btn" style="width:100%;margin-top:4px" onclick="concluirComAvaliacao()">✅ Concluir treino</button>
+        <button class="btn ghost" style="width:100%;margin-top:8px" onclick="cancelarAvaliacao()">↩️ Voltar ao treino</button>
+      </div>`;
+    window.scrollTo({top:0});
+  }
+
+  function setNota(n){
+    RATE_NOTA = n;
+    document.querySelectorAll("#rateStars .rate-star").forEach(b=> b.classList.toggle("on", Number(b.dataset.n) <= n));
+    const labels = {1:"Muito puxado 😣",2:"Difícil 😅",3:"Ok 🙂",4:"Bom 💪",5:"Excelente 🔥"};
+    const l = document.getElementById("rateLbl"); if(l) l.textContent = labels[n] || "";
+  }
+
+  function cancelarAvaliacao(){
+    renderExecucao(EXEC_DIA, EXEC_EXS);
+    retomarCrono();
+  }
+
+  async function concluirComAvaliacao(){
+    const cEl = document.getElementById("rateComentario");
+    const coment = cEl && cEl.value.trim() ? cEl.value.trim() : null;
+    const dur = EXEC_DUR;
+    pararCronoTreino();
+    // tenta salvar nota+comentário; se as colunas ainda não existem, finaliza mesmo assim
+    const { error } = await sb.from("sessoes").update({ finalizada:true, nota: RATE_NOTA||null, comentario: coment }).eq("id", EXEC_SESSAO.id);
+    if(error){ await sb.from("sessoes").update({ finalizada:true }).eq("id", EXEC_SESSAO.id); }
     EXEC_SESSAO = null;
     go("meutreino");
     const msg = dur!=null ? `✅ Treino registrado em ${dur} min! Bom trabalho. 💪` : "✅ Treino registrado! Bom trabalho. 💪";
