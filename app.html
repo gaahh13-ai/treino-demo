@@ -185,6 +185,21 @@
   .modal-cx{background:#fff;border-radius:18px;padding:22px;max-width:340px;width:100%;
     box-shadow:0 20px 50px rgba(30,20,40,.3)}
   .modal-cx h3{font-size:17px;font-weight:800;color:var(--pink-deep)}
+  /* modo treino: esconde menu lateral e saudação, foca só no treino */
+  .modo-treino .sidebar,
+  .modo-treino .hello,
+  .modo-treino .role-chip{display:none !important}
+  .modo-treino .shell{grid-template-columns:1fr}
+  /* pílula "treino em andamento" (fora da tela de execução) */
+  .treino-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;
+    display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
+    border-radius:999px;padding:8px 10px 8px 16px;box-shadow:0 10px 30px rgba(30,41,59,.18)}
+  .treino-pill .tp-lbl{font-size:12.5px;font-weight:800;color:var(--pink-deep)}
+  .treino-pill .tp-crono{font-size:12.5px;font-weight:800;color:var(--txt)}
+  .treino-pill .tp-go{border:none;background:linear-gradient(120deg,#6366f1,#818cf8);color:#fff;
+    font-weight:800;border-radius:999px;padding:7px 14px;cursor:pointer;font-size:12.5px}
+  .treino-pill .tp-x{border:none;background:#eef2ff;color:var(--muted);border-radius:50%;
+    width:28px;height:28px;cursor:pointer;font-weight:800}
   /* alerta de fim de descanso (tela cheia) */
   .rest-done-ov{position:fixed;inset:0;z-index:90;padding:24px;
     background:linear-gradient(160deg,#6366f1,#818cf8);
@@ -310,6 +325,7 @@
   let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [], ULTIMO_POR_DIA = {};
   let EXEC_SESSAO = null, EXEC_LOGS = {}, ULTIMAS = {}, EXEC_INICIO = null, CRONO_INT = null;
   let EXEC_DIA = null, EXEC_EXS = [], EXEC_DUR = null, RATE_NOTA = 0;
+  let EXEC_FEITOS = new Set(), INATIV_INT = null;
 
   // campos das avaliações
   const DOBRAS = [
@@ -447,7 +463,9 @@
   function go(id){
     VIEW = id;
     if(typeof pararDescanso==="function") pararDescanso();
-    if(typeof pararCronoTreino==="function") pararCronoTreino();
+    const cont = document.getElementById("content"); if(cont) cont.classList.remove("modo-treino");
+    // mantém o cronômetro do treino rodando ao navegar; só encerra se não há treino ativo
+    if(!EXEC_SESSAO && typeof pararCronoTreino==="function") pararCronoTreino();
     document.querySelectorAll(".navitem").forEach(b=>b.classList.remove("active"));
     const nav = document.getElementById("nav_"+id); if(nav) nav.classList.add("active");
     const p = document.getElementById("panel"); if(!p) return;
@@ -463,7 +481,29 @@
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
     else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); carregarDesempenho(); }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
+    atualizarPill();
     window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  // pílula flutuante "treino em andamento" (aparece fora da tela de execução)
+  function atualizarPill(){
+    let pill = document.getElementById("treinoPill");
+    if(EXEC_SESSAO){
+      if(!pill){ pill = document.createElement("div"); pill.id="treinoPill"; pill.className="treino-pill"; document.body.appendChild(pill); }
+      pill.innerHTML = `<span class="tp-lbl">🏋️ Treino em andamento</span>
+        <span class="tp-crono js-crono">⏲️ 00:00</span>
+        <button class="tp-go" onclick="retomarTreino()">Retomar</button>
+        <button class="tp-x" title="Descartar treino" onclick="descartarDoPill()">✕</button>`;
+      tickCrono();
+    } else if(pill){ pill.remove(); }
+  }
+  function retomarTreino(){
+    if(!EXEC_SESSAO || !EXEC_DIA) return;
+    renderExecucao(EXEC_DIA, EXEC_EXS);
+  }
+  async function descartarDoPill(){
+    if(!confirm("Descartar este treino em andamento? Nada será registrado.")) return;
+    await descartarTreino();
   }
 
   /* ================= TELAS: ALUNO ================= */
@@ -636,6 +676,25 @@
     (sess||[]).forEach(s=>{ if(s.dia_id && !(s.dia_id in ULTIMO_POR_DIA)) ULTIMO_POR_DIA[s.dia_id] = s.data; });
     renderResumoTreinos();
     renderAlunoExs();
+    await retomarTreinoLS();
+  }
+
+  // retoma um treino em andamento após recarregar a página (via localStorage)
+  async function retomarTreinoLS(){
+    if(EXEC_SESSAO) { atualizarPill(); return; }
+    let t; try{ t = JSON.parse(localStorage.getItem("treino_ativo")||"null"); }catch(e){ t=null; }
+    if(!t || !t.id) return;
+    const { data: s } = await sb.from("sessoes").select("*").eq("id", t.id).single();
+    if(!s || s.finalizada){ limparTreinoLS(); return; }
+    const dia = ALUNO_DIAS.find(d=>d.id===t.diaId);
+    if(!dia){ limparTreinoLS(); return; }
+    EXEC_SESSAO = s; EXEC_INICIO = t.inicio || Date.now();
+    EXEC_DIA = dia; EXEC_EXS = ALUNO_EXS.filter(x=>x.dia_id===t.diaId);
+    EXEC_FEITOS = new Set(); EXEC_LOGS = {};
+    // recupera as cargas já registradas nesta sessão
+    const { data: sf } = await sb.from("series_feitas").select("id,ficha_exercicio_id,carga").eq("sessao_id", s.id);
+    (sf||[]).forEach(r=>{ if(r.ficha_exercicio_id) EXEC_LOGS[r.ficha_exercicio_id] = { id:r.id, carga:r.carga }; });
+    retomarCrono(); iniciarInatividade(); atualizarPill();
   }
 
   // lista de treinos disponíveis x último dia treinado (estilo MFIT)
@@ -725,9 +784,40 @@
       (hist||[]).forEach(h=>{ if(h.exercicio_id && !(h.exercicio_id in ULTIMAS) && h.carga!=null) ULTIMAS[h.exercicio_id]=h.carga; });
     }
     EXEC_DIA = dia; EXEC_EXS = exs;
+    EXEC_FEITOS = new Set();
     renderExecucao(dia, exs);
     iniciarCronoTreino();
+    iniciarInatividade();
+    salvarTreinoLS();
   }
+
+  /* estado do treino ativo salvo no aparelho — sobrevive a recarregar / navegar */
+  function salvarTreinoLS(){
+    if(!EXEC_SESSAO || !EXEC_DIA) return;
+    try{ localStorage.setItem("treino_ativo", JSON.stringify({ id:EXEC_SESSAO.id, inicio:EXEC_INICIO, diaId:EXEC_DIA.id })); }catch(e){}
+  }
+  function limparTreinoLS(){ try{ localStorage.removeItem("treino_ativo"); }catch(e){} }
+
+  /* aviso de inatividade: 15 min sem marcar nenhum exercício */
+  function iniciarInatividade(){
+    clearInterval(INATIV_INT);
+    INATIV_INT = setInterval(()=>{ if(EXEC_SESSAO && EXEC_FEITOS.size===0) mostrarNudgeInatividade(); }, 15*60*1000);
+  }
+  function pararInatividade(){ clearInterval(INATIV_INT); }
+  function mostrarNudgeInatividade(){
+    if(document.getElementById("nudgeModal")) return;
+    const ov = document.createElement("div");
+    ov.id = "nudgeModal"; ov.className = "modal-ov";
+    ov.innerHTML = `
+      <div class="modal-cx">
+        <h3 style="margin:0 0 6px">Ainda está treinando? 🏋️</h3>
+        <p class="meta-sm" style="margin:0 0 16px">Faz um tempo que você começou e ainda não marcou nenhum exercício. Se já terminou, não esqueça de <b>finalizar o treino</b> para ele ser registrado.</p>
+        <button class="btn" style="width:100%;margin-bottom:8px" onclick="fecharNudge()">Continuar treinando</button>
+        <button class="btn ghost" style="width:100%" onclick="fecharNudge();retomarTreino();finalizarTreino()">Encerrar treino</button>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function fecharNudge(){ const m=document.getElementById("nudgeModal"); if(m) m.remove(); }
 
   function renderExecucao(dia, exs){
     const p = document.getElementById("panel");
@@ -738,7 +828,7 @@
       if(x.carga_alvo!=null) alvo.push(`alvo ${x.carga_alvo} kg`);
       const descBtn = (x.descanso_seg!=null) ?
         `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
-      return `<div class="ex-card" id="exc_${x.id}">
+      return `<div class="ex-card${EXEC_FEITOS.has(x.id)?" done":""}" id="exc_${x.id}">
         <div class="ex-card-top">
           <div class="ex-card-nome">${esc(x.nome_cache||"Exercício")}</div>
           <button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>
@@ -759,21 +849,28 @@
 
     p.innerHTML = `
       <div class="exec-top">
-        <button class="btn small ghost" onclick="sairExecucao()">← Sair</button>
+        <button class="btn small ghost" title="Voltar (o treino continua contando)" onclick="minimizarTreino()">←</button>
         <div style="flex:1;text-align:center">
           <div class="exec-titulo">${esc(dia.label)}</div>
-          <span class="exec-crono" id="execCrono">⏲️ 00:00</span>
+          <span class="exec-crono js-crono" id="execCrono">⏲️ 00:00</span>
         </div>
+        <span style="width:40px"></span>
       </div>
       ${cards}
       <button class="btn" style="width:100%;margin-top:8px" onclick="finalizarTreino()">✅ Finalizar treino</button>`;
+    const cont = document.getElementById("content"); if(cont) cont.classList.add("modo-treino");
+    const pill = document.getElementById("treinoPill"); if(pill) pill.remove();
+    tickCrono();
     window.scrollTo({top:0});
   }
 
   function toggleExDone(id){
     const card = document.getElementById("exc_"+id);
-    if(card) card.classList.toggle("done");
+    if(!card) return;
+    const done = card.classList.toggle("done");
+    if(done) EXEC_FEITOS.add(id); else EXEC_FEITOS.delete(id);
   }
+  function minimizarTreino(){ go("meutreino"); }   // volta ao app; o treino continua ativo (pílula + cronômetro)
 
   async function salvarCarga(fichaExId, exId, carga){
     let atual = EXEC_LOGS[fichaExId] || {};
@@ -858,10 +955,10 @@
 
   // cronômetro de DURAÇÃO do treino (conta pra cima desde o iniciar)
   function tickCrono(){
-    const el = document.getElementById("execCrono");
-    if(!el || !EXEC_INICIO) return;
+    if(!EXEC_INICIO) return;
     const s = Math.floor((Date.now()-EXEC_INICIO)/1000);
-    el.textContent = "⏲️ " + String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
+    const txt = "⏲️ " + String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
+    document.querySelectorAll(".js-crono").forEach(el=> el.textContent = txt);
   }
   function iniciarCronoTreino(){ clearInterval(CRONO_INT); EXEC_INICIO = Date.now(); tickCrono(); CRONO_INT = setInterval(tickCrono, 1000); }
   function retomarCrono(){ clearInterval(CRONO_INT); if(!EXEC_INICIO) EXEC_INICIO = Date.now(); tickCrono(); CRONO_INT = setInterval(tickCrono, 1000); }
@@ -869,8 +966,8 @@
   function pararCronoTreino(){ clearInterval(CRONO_INT); EXEC_INICIO = null; }
 
   function finalizarTreino(){
-    const total = document.querySelectorAll(".ex-card").length;
-    const feitos = document.querySelectorAll(".ex-card.done").length;
+    const total = EXEC_EXS.length;
+    const feitos = EXEC_FEITOS.size;
     const faltam = total - feitos;
     if(faltam > 0){
       if(document.getElementById("faltaModal")) return;
@@ -931,7 +1028,7 @@
     const cEl = document.getElementById("rateComentario");
     const coment = cEl && cEl.value.trim() ? cEl.value.trim() : null;
     const dur = EXEC_DUR;
-    pararCronoTreino();
+    pararCronoTreino(); pararInatividade(); limparTreinoLS();
     // tenta salvar nota+comentário; se as colunas ainda não existem, finaliza mesmo assim
     const { error } = await sb.from("sessoes").update({ finalizada:true, nota: RATE_NOTA||null, comentario: coment }).eq("id", EXEC_SESSAO.id);
     if(error){ await sb.from("sessoes").update({ finalizada:true }).eq("id", EXEC_SESSAO.id); }
@@ -968,7 +1065,7 @@
 
   async function descartarTreino(){
     fecharModalSair();
-    pararDescanso(); pararCronoTreino();
+    pararDescanso(); pararCronoTreino(); pararInatividade(); limparTreinoLS();
     if(EXEC_SESSAO){
       await sb.from("series_feitas").delete().eq("sessao_id", EXEC_SESSAO.id);
       await sb.from("sessoes").delete().eq("id", EXEC_SESSAO.id);
