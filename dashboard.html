@@ -9,20 +9,20 @@
 <style>
   :root{
     color-scheme:light;
-    --txt:#4b3b58; --muted:#9a8aa6; --line:#f2e2ec;
-    --pink:#ec4899; --pink-deep:#db2777; --pink-soft:#f9a8d4;
+    --txt:#334155; --muted:#64748b; --line:#e5e7eb;
+    --pink:#4f46e5; --pink-deep:#4338ca; --pink-soft:#a5b4fc;
     --blue:#60a5fa; --blue-deep:#3b82f6;
     --lilac:#818cf8; --green:#16a34a; --amber:#f59e0b;
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-  body{min-height:100vh;background:linear-gradient(180deg,#fdf2f8,#f6f1fe 45%,#eef5ff);color:var(--txt)}
+  body{min-height:100vh;background:linear-gradient(180deg,#f8fafc,#f1f5f9 45%,#eef2ff);color:var(--txt)}
 
-  nav.top{background:rgba(253,244,248,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  nav.top{background:rgba(248,250,252,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
   nav.top .in{max-width:1120px;margin:0 auto;padding:0 20px;height:66px;display:flex;align-items:center;justify-content:space-between;gap:12px}
   .logo{height:32px}
   .navbtns{display:flex;gap:8px}
   .nbtn{border:1.5px solid var(--line);background:#fff;color:var(--pink-deep);border-radius:12px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;white-space:nowrap}
-  .nbtn.solid{border:none;color:#fff;background:linear-gradient(120deg,#f472b6,#818cf8)}
+  .nbtn.solid{border:none;color:#fff;background:linear-gradient(120deg,#6366f1,#818cf8)}
 
   .wrap{max-width:1120px;margin:0 auto;padding:26px 20px 70px}
   .hello{font-size:22px;font-weight:800}
@@ -32,7 +32,7 @@
   .section-title{font-size:16px;font-weight:800;margin:28px 0 12px;display:flex;align-items:center;gap:8px}
   .section-title::before{content:"";width:5px;height:18px;border-radius:3px;background:linear-gradient(180deg,var(--pink),var(--lilac))}
 
-  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 22px rgba(180,90,140,.06)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 22px rgba(30,41,59,.06)}
   .card h3{font-size:14px;font-weight:800;color:var(--pink-deep);margin-bottom:12px}
 
   .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:18px}
@@ -49,8 +49,8 @@
   .empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;
          border:2px dashed var(--line);border-radius:14px;color:var(--muted);font-size:13px;text-align:center;padding:16px;line-height:1.5}
 
-  .bar-track{height:14px;border-radius:99px;background:#f6eef4;overflow:hidden;margin:10px 0 6px}
-  .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#f472b6,#818cf8);width:0%}
+  .bar-track{height:14px;border-radius:99px;background:#eef2ff;overflow:hidden;margin:10px 0 6px}
+  .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#6366f1,#818cf8);width:0%}
   .bar-legend{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 
   .metas div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px}
@@ -68,18 +68,18 @@
   .aluno-op:last-child{border-bottom:none}
   .aluno-op:hover{color:var(--pink-deep)}
   .aluno-op .seta{color:var(--pink)}
-  .quem{display:inline-block;background:#fce7f3;color:#be185d;font-size:12px;font-weight:800;
+  .quem{display:inline-block;background:#e0e7ff;color:#4338ca;font-size:12px;font-weight:800;
     padding:4px 12px;border-radius:999px;margin-top:8px}
   .rep{padding:11px 0;border-bottom:1px dashed var(--line)}
   .rep:last-child{border-bottom:none}
   .rep-top{font-size:11.5px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px}
   .rep-txt{font-size:13.5px;line-height:1.5;color:var(--txt)}
   .ver-mais{display:block;width:100%;margin-top:10px;padding:9px;border:1px dashed var(--line);
-    background:#fffdfe;border-radius:11px;color:var(--pink-deep);font-weight:700;font-size:12.5px;cursor:pointer}
-  .ver-mais:hover{background:#faf3f8}
+    background:#ffffff;border-radius:11px;color:var(--pink-deep);font-weight:700;font-size:12.5px;cursor:pointer}
+  .ver-mais:hover{background:#f1f5f9}
   .treino-linha{display:flex;align-items:center;gap:18px}
   .treino-num{font-size:44px;font-weight:800;line-height:1;
-    background:linear-gradient(120deg,#f472b6,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
+    background:linear-gradient(120deg,#6366f1,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
   .treino-rot{font-size:15px;font-weight:700}
   .treino-alvo{font-size:22px;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:700}
   .meta-sm{font-size:12px;color:var(--muted);margin-top:4px}
@@ -174,7 +174,7 @@
     auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
   });
 
-  const CORES = { pink:"#ec4899", lilac:"#818cf8", blue:"#60a5fa", green:"#16a34a", grid:"#f2e2ec", txt:"#9a8aa6" };
+  const CORES = { pink:"#4f46e5", lilac:"#818cf8", blue:"#60a5fa", green:"#16a34a", grid:"#e5e7eb", txt:"#64748b" };
 
   // as 7 dobras cutâneas (somadas em um único valor por avaliação)
   const DOBRAS = ["tricipital","subescapular","peitoral","axilar_media","suprailiaca","abdominal","coxa"];
@@ -187,7 +187,7 @@
     ["cintura",         "Cintura",         "#f59e0b"],
     ["abdominal",       "Abdominal",       "#f97316"],
     ["quadril",         "Quadril",         "#a855f7"],
-    ["coxa",            "Coxa",            "#ec4899"],
+    ["coxa",            "Coxa",            "#4f46e5"],
     ["panturrilha",     "Panturrilha",     "#0d9488"]
   ];
   let ALVO = null;          // perfil do aluno exibido
