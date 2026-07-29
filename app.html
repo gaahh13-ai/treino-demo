@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha área — TreinoApp</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{color-scheme:light;--txt:#4b3b58;--muted:#9a8aa6;--line:#f2e2ec;--pink:#ec4899;--pink-deep:#db2777}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  body{min-height:100vh;background:linear-gradient(180deg,#fdf2f8,#f6f1fe 45%,#eef5ff);color:var(--txt)}
+  nav.top{background:rgba(253,244,248,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  nav.top .in{max-width:1040px;margin:0 auto;padding:0 20px;height:66px;display:flex;align-items:center;justify-content:space-between}
+  .logo{height:32px}
+  .logout{border:1.5px solid var(--pink);color:var(--pink-deep);background:#fff;border-radius:12px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer}
+  .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 60px}
+  .hello{font-size:21px;font-weight:800;margin-bottom:4px}
+  .role-chip{display:inline-block;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;margin-bottom:18px}
+  .chip-creator{background:#ede9fe;color:#6d28d9}
+  .chip-professional{background:#dbeafe;color:#1d4ed8}
+  .chip-student{background:#fce7f3;color:#be185d}
+
+  .shell{display:grid;grid-template-columns:212px 1fr;gap:20px;align-items:start}
+  .sidebar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:10px;
+           box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px}
+  .navitem{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
+           padding:11px 12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--txt);cursor:pointer;text-align:left}
+  .navitem:hover{background:#faf3f8}
+  .navitem.active{background:linear-gradient(120deg,#fce7f3,#e0e7ff);color:var(--pink-deep);font-weight:800}
+  .navitem .ico{font-size:15px;line-height:1}
+
+  .panel h2{font-size:18px;font-weight:800;margin-bottom:14px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;
+        box-shadow:0 8px 22px rgba(180,90,140,.06);margin-bottom:16px}
+  .card h3{font-size:15px;font-weight:800;color:var(--pink-deep);margin-bottom:8px}
+  .card p{font-size:14px;color:var(--muted);line-height:1.55}
+  .btn{display:inline-block;border:none;border-radius:12px;padding:11px 20px;font-weight:700;font-size:14px;color:#fff;cursor:pointer;text-decoration:none;
+       background:linear-gradient(120deg,#f472b6,#818cf8);box-shadow:0 6px 16px rgba(236,72,153,.2);margin-top:8px}
+  .btn.small{padding:8px 14px;font-size:13px;box-shadow:none}
+  .btn.ghost{background:#fff;color:var(--pink-deep);border:1.5px solid var(--line)}
+  .tag{display:inline-block;background:#fff7ed;color:#b45309;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;border:1px solid #fed7aa}
+  #loading{text-align:center;padding:80px 20px;color:var(--muted)}
+  .student-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .student-row:last-child{border-bottom:none}
+  .student-row .name{font-weight:700;font-size:14px}
+  .student-row .meta{font-size:12px;color:var(--muted)}
+  .row-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+  .field input,.field textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit}
+  .field input:focus,.field textarea:focus{outline:2px solid #f9a8d4;border-color:#f9a8d4}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .msg{margin-top:10px;font-size:13px;padding:9px 11px;border-radius:9px;display:none;line-height:1.45}
+  .msg.err{display:block;background:#fdecec;color:#c0392b}
+  .msg.ok{display:block;background:#eafaf0;color:#1a8a4a}
+  .msg.warn{display:block;background:#fff7ed;color:#b45309}
+  .field input[readonly]{background:#faf3f8;color:var(--pink-deep);font-weight:800;cursor:not-allowed}
+  .meta-cliente{margin-top:2px}
+
+  /* tela "Meus alunos": detalhe + coluna de alunos */
+  .alunos-layout{display:grid;grid-template-columns:1fr 258px;gap:16px;align-items:start;margin-bottom:16px}
+  .alunos-col{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;
+    box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px}
+  .alunos-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .alunos-head h3{font-size:14px;font-weight:800;color:var(--pink-deep)}
+  .aluno-search{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font-size:13px;margin-bottom:10px;font-family:inherit}
+  .aluno-search:focus{outline:2px solid #f9a8d4;border-color:#f9a8d4}
+  #alunosLista{max-height:60vh;overflow-y:auto}
+  .aluno-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;
+    border:none;background:none;padding:10px 10px;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--txt);cursor:pointer}
+  .aluno-item:hover{background:#faf3f8}
+  .aluno-item.sel{background:linear-gradient(120deg,#fce7f3,#e0e7ff);color:var(--pink-deep);font-weight:800}
+  .aluno-item .ai-n{font-size:11px;font-weight:800;color:var(--muted);background:#f6eef4;border-radius:999px;padding:1px 8px;min-width:22px;text-align:center}
+  .aluno-detalhe{min-height:130px}
+  .det-nome{font-size:18px;font-weight:800}
+  .det-sub{font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:16px}
+  .det-acoes{display:flex;flex-wrap:wrap;gap:8px}
+  .det-acoes .btn{margin-top:0}
+  @media(max-width:760px){
+    .alunos-layout{grid-template-columns:1fr}
+    .alunos-col{position:static;order:-1}
+    #alunosLista{max-height:230px}
+  }
+
+  /* biblioteca de exercícios */
+  .chip-f{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;
+    padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
+  .chip-f.sel{background:linear-gradient(120deg,#fce7f3,#e0e7ff);color:var(--pink-deep);border-color:transparent}
+  .ex-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .ex-row:last-child{border-bottom:none}
+  .ex-thumb{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--line)}
+  .ex-thumb.ph{display:flex;align-items:center;justify-content:center;background:#faf3f8;font-size:20px}
+  .ex-info{flex:1;min-width:0}
+  .ex-nome{font-weight:700;font-size:14px}
+  .ex-meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .empty{font-size:13px;color:var(--muted);padding:8px 0}
+  .assess-item{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .assess-item:last-child{border-bottom:none}
+  .assess-item b{color:var(--pink-deep)}
+  .close-x{float:right;cursor:pointer;color:var(--muted);font-weight:800;font-size:18px;line-height:1}
+
+  /* avaliações e consultas do aluno */
+  .aval{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:#fffdfe}
+  .aval-head{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:10px}
+  .meds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .med{background:#faf3f8;border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:12.5px;
+       display:flex;gap:7px;align-items:center;justify-content:space-between}
+  @media(max-width:520px){ .meds{grid-template-columns:1fr} }
+  .aval-body{display:none;margin-top:12px}
+  .aval.open .aval-body{display:block}
+  .chev{border:none;background:none;cursor:pointer;color:var(--pink-deep);font-size:13px;line-height:1;
+        padding:4px 6px;border-radius:8px;transition:transform .18s ease}
+  .chev:hover{background:#faf3f8}
+  .aval.open .chev{transform:rotate(90deg)}
+  .med span{color:var(--muted);font-weight:600}
+  .med b{color:var(--pink-deep);font-weight:800}
+  .dif{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;margin-left:-4px}
+  .dif.up{background:#fff1f2;color:#be123c}
+  .dif.down{background:#eafaf0;color:#1a8a4a}
+  .obs{margin-top:11px;font-size:13px;line-height:1.55;color:var(--txt);background:#f8f6ff;border-left:3px solid var(--pink);border-radius:0 10px 10px 0;padding:10px 12px}
+  .meta-sm{font-size:12px;color:var(--muted);margin-top:8px}
+  .proxima{background:linear-gradient(120deg,#fce7f3,#e0e7ff);border-radius:14px;padding:18px}
+  .proxima .quando{font-size:19px;font-weight:800;color:var(--pink-deep)}
+
+  /* menu de 3 pontinhos */
+  .menu-wrap{position:relative;display:inline-block}
+  .menu-drop{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:30;background:#fff;
+    border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(120,60,100,.16);
+    min-width:160px;overflow:hidden;padding:4px}
+  .menu-drop.open{display:block}
+  .menu-drop button{display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;
+    padding:10px 12px;font-size:13.5px;font-weight:600;color:var(--txt);border-radius:9px}
+  .menu-drop button:hover{background:#faf3f8;color:var(--pink-deep)}
+  .dots{font-size:16px;line-height:1;letter-spacing:1px}
+  .card.cta{background:linear-gradient(135deg,#fce7f3,#e0e7ff);border:1px solid #f9a8d4}
+  .card.cta p{color:#5b4a68}
+
+  /* formulário de avaliação */
+  .form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grupo{margin-top:16px}
+  .grupo-tit{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;
+    padding-bottom:6px;border-bottom:1px solid var(--line);margin-bottom:12px}
+  @media(max-width:520px){ .form-grid2{grid-template-columns:1fr} }
+
+  @media(max-width:760px){
+    .shell{grid-template-columns:1fr}
+    .sidebar{position:static;display:flex;gap:6px;overflow-x:auto;padding:8px;-webkit-overflow-scrolling:touch}
+    .navitem{white-space:nowrap;padding:9px 12px;font-size:13px;width:auto}
+    .form-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<nav class="top"><div class="in">
+  <a href="index.html"><span style="font-weight:800;font-size:20px;color:var(--pink-deep)">TreinoApp</span></a>
+  <button class="logout" onclick="sair()">Sair</button>
+</div></nav>
+
+<div class="wrap">
+  <div id="loading">Carregando…</div>
+  <div id="content" style="display:none"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://qubjknesswejsddcapom.supabase.co";
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1YmprbmVzc3dlanNkZGNhcG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTYzNTYsImV4cCI6MjA5OTkzMjM1Nn0._nDLQ_Q5wN-4eNS0jf-lnyhGHixoZ5_SdXvTvBV_d3E";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+  });
+
+  let ME = null, STUDENTS = [], INVITES = [], ASSESS = [], VIEW = null, EDIT_ID = null, ASSESS_S = null, MANUAL_CALC = false;
+  let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
+  let EXERCICIOS = [], EX_FILTRO = "";
+
+  // campos das avaliações
+  const DOBRAS = [
+    ["tricipital","Tricipital"], ["subescapular","Subescapular"], ["peitoral","Peitoral"],
+    ["axilar_media","Axilar média"], ["suprailiaca","Suprailíaca"], ["abdominal","Abdominal"], ["coxa","Coxa"]
+  ];
+  const PERIMETROS = [
+    ["ombro","Ombro"], ["braco_relaxado","Braço relaxado"], ["braco_contraido","Braço contraído"],
+    ["cintura","Cintura"], ["abdominal","Abdominal"], ["quadril","Quadril"],
+    ["coxa","Coxa"], ["panturrilha","Panturrilha"]
+  ];
+  const GERAIS = [
+    ["weight","Peso"," kg"], ["height","Altura"," cm"], ["body_fat","% Gordura","%"],
+    ["lean_mass","Massa magra"," kg"], ["fat_mass","Massa gorda"," kg"]
+  ];
+
+  /* sessão expira em 1 hora */
+  const DURACAO_MS = 60*60*1000;
+  function marcarInicio(){ if(!localStorage.getItem("sessao_inicio")) localStorage.setItem("sessao_inicio", String(Date.now())); }
+  async function expirouSessao(){
+    const ini = Number(localStorage.getItem("sessao_inicio")||0);
+    if(ini && Date.now()-ini > DURACAO_MS){
+      localStorage.removeItem("sessao_inicio");
+      await sb.auth.signOut();
+      location.href = "login.html?expirou=1";
+      return true;
+    }
+    return false;
+  }
+  setInterval(expirouSessao, 60*1000);
+
+  async function sair(){ localStorage.removeItem("sessao_inicio"); await sb.auth.signOut(); location.href = "login.html"; }
+  function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
+  function fmtDate(d){ if(!d) return "—"; const p=String(d).slice(0,10).split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; }
+  function shortId(id){ return String(id||"").slice(0,8); }
+  function primeiroNome(){ const n=(ME.full_name||"").trim(); return n?n.split(/\s+/)[0]:""; }
+  function nomeAluno(s){ return s ? (s.full_name || s.email || ("Aluno "+shortId(s.id))) : "Aluno"; }
+
+  /* ================= INÍCIO ================= */
+  async function init(){
+    let { data:{ session } } = await sb.auth.getSession();
+    if(!session){
+      session = await new Promise(res=>{
+        const t=setTimeout(()=>res(null), 2500);
+        sb.auth.onAuthStateChange((_e,s)=>{ if(s){ clearTimeout(t); res(s); } });
+      });
+    }
+    if(!session){ location.href = "login.html"; return; }
+    marcarInicio();
+    if(await expirouSessao()) return;
+    const user = session.user;
+    let { data: profile } = await sb.from("profiles").select("*").eq("id", user.id).single();
+    if(!profile) profile = { id:user.id, role:"student", full_name:null, professional_id:null, status:"active" };
+    ME = { ...profile, email: user.email };
+    montar();
+  }
+
+  /* profissionais com o módulo de treino habilitado (por enquanto por e-mail).
+     Depois vira uma configuração por profissional no banco. */
+  const TREINO_ATIVO = ["teste@profissional.com.br"];
+  function temTreino(){ return TREINO_ATIVO.includes((ME.email||"").toLowerCase()); }
+
+  /* ================= MENU / LAYOUT ================= */
+  function menuFor(role){
+    if(role === "student") return [
+      {id:"dash",       ico:"📊", label:"Meu dashboard"},
+      {id:"avaliacoes", ico:"📋", label:"Avaliações Físicas"},
+      {id:"consultas",  ico:"📅", label:"Consultas Nutri"},
+      {id:"perfil",     ico:"👤", label:"Perfil"}
+    ];
+    const m = [
+      {id:"alunos",     ico:"👥", label:"Meus alunos"},
+      {id:"cadastrar",  ico:"➕", label:"Cadastrar aluno"}
+    ];
+    // módulo de treino só para profissionais habilitados (personal). Nutri (TreinoApp) não vê.
+    if(temTreino()) m.push({id:"exercicios", ico:"🏋️", label:"Exercícios"});
+    m.push({id:"inativos", ico:"📁", label:"Alunos inativos"});
+    m.push({id:"perfil",   ico:"👤", label:"Meu perfil"});
+    if(role === "creator") m.push({id:"admin", ico:"🛠️", label:"Painel do criador"});
+    return m;
+  }
+
+  function montar(){
+    const role = ME.role || "student";
+    const rotulo = {creator:"Criador", professional:"Profissional", student:"Aluno"}[role] || role;
+    const first = primeiroNome();
+
+    // aluno arquivado: sem menu, só o aviso
+    if(role === "student" && ME.status === "archived"){
+      document.getElementById("content").innerHTML = `
+        <div class="hello">${first ? "Olá, "+esc(first) : "Olá!"}</div>
+        <div class="card"><h3>⏸️ Acompanhamento inativo</h3>
+        <p>Seu acompanhamento está pausado no momento, então o painel fica indisponível.
+           Seu histórico continua guardado. Fale com sua nutricionista para reativar.</p></div>`;
+      mostrar();
+      return;
+    }
+
+    const itens = menuFor(role).map(i=>
+      `<button class="navitem" id="nav_${i.id}" onclick="go('${i.id}')">
+         <span class="ico">${i.ico}</span><span class="lbl">${i.label}</span></button>`).join("");
+
+    document.getElementById("content").innerHTML = `
+      <div class="hello">${first ? "Olá, "+esc(first)+" 👋" : "Olá! 👋"}</div>
+      <div class="role-chip chip-${role}">${rotulo}</div>
+      <div class="shell">
+        <aside class="sidebar">${itens}</aside>
+        <section class="panel" id="panel"></section>
+      </div>`;
+    mostrar();
+
+    const inicial = !first ? "perfil" : (role === "student" ? "dash" : "alunos");
+    go(inicial);
+  }
+
+  function mostrar(){
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("content").style.display = "block";
+  }
+
+  function go(id){
+    VIEW = id;
+    document.querySelectorAll(".navitem").forEach(b=>b.classList.remove("active"));
+    const nav = document.getElementById("nav_"+id); if(nav) nav.classList.add("active");
+    const p = document.getElementById("panel"); if(!p) return;
+
+    if(id === "dash")      p.innerHTML = viewDash();
+    else if(id === "avaliacoes"){ p.innerHTML = viewAvaliacoes(); carregarMinhasAvaliacoes(); }
+    else if(id === "consultas"){  p.innerHTML = viewConsultas();  carregarMinhasConsultas(); }
+    else if(id === "perfil"){ p.innerHTML = viewPerfil(); if(ME.role === "student") carregarTelegram(); }
+    else if(id === "admin")p.innerHTML = viewAdmin();
+    else if(id === "alunos"){    p.innerHTML = viewAlunos();    loadStudents(); }
+    else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
+    else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
+    else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  /* ================= TELAS: ALUNO ================= */
+  function viewDash(){
+    return `<h2>Meu dashboard</h2>
+      <div class="card">
+        <h3>📊 Sua evolução</h3>
+        <p>Acompanhe peso, composição, sono e adesão — e envie seus reports pelo Telegram.</p>
+        <a class="btn" href="dashboard.html">Abrir meu dashboard →</a>
+      </div>
+      ${(ME.role === "student" && !ME.telegram_chat_id) ? `
+      <div class="card cta">
+        <h3>💬 Ative seus reports pelo Telegram</h3>
+        <p>Conte como foi o seu dia por mensagem — treino, alimentação, sono — do jeito que
+           preferir escrever. Tudo entra no seu acompanhamento automaticamente.
+           Leva menos de um minuto para conectar.</p>
+        <button class="btn" id="ctaBtn" onclick="conectarPeloDash()">Conectar meu Telegram</button>
+        <div class="msg" id="ctaMsg"></div>
+      </div>` : ""}`;
+  }
+
+  async function conectarPeloDash(){
+    const msg = document.getElementById("ctaMsg");
+    const { data: bot, error } = await sb.rpc("meu_bot_telegram");
+    if(error || !bot){
+      msg.className="msg err";
+      msg.textContent="Sua nutricionista ainda não ativou os reports por Telegram.";
+      return;
+    }
+    gerarLinkTelegram(bot, "ctaMsg");
+  }
+
+  function cardTelegram(){
+    return `
+      <div class="card">
+        <h3>💬 Reports pelo Telegram</h3>
+        <div id="tgBox"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+
+  async function carregarTelegram(){
+    const box = document.getElementById("tgBox");
+    if(!box) return;
+    const { data: bot, error } = await sb.rpc("meu_bot_telegram");
+    if(error || !bot){
+      box.innerHTML = `<div class="empty">Sua nutricionista ainda não ativou os reports por Telegram.</div>`;
+      return;
+    }
+    if(ME.telegram_chat_id){
+      box.innerHTML = `
+        <p>✅ <b>Conectado.</b> É só mandar mensagem para <b>@${esc(bot)}</b> contando como foi o seu dia —
+           treino, alimentação, sono — com as suas palavras. Eu registro tudo automaticamente.</p>
+        <a class="btn small" href="https://t.me/${encodeURIComponent(bot)}" target="_blank">Abrir conversa</a>
+        <button class="btn small ghost" onclick="gerarLinkTelegram('${esc(bot)}')">Reconectar</button>`;
+      return;
+    }
+    box.innerHTML = `
+      <p>Envie seus reports por mensagem, do jeito que preferir escrever. Conecte uma vez e pronto.</p>
+      <button class="btn small" onclick="gerarLinkTelegram('${esc(bot)}')">Conectar meu Telegram</button>
+      <div class="msg" id="tgMsg"></div>`;
+  }
+
+  async function gerarLinkTelegram(bot, idMsg){
+    const msg = document.getElementById(idMsg || "tgMsg");
+    const { data: token, error } = await sb.rpc("meu_token_telegram");
+    if(error || !token){
+      if(msg){ msg.className="msg err"; msg.textContent="Não consegui gerar seu link agora. Tente de novo."; }
+      return;
+    }
+    if(msg){
+      msg.className="msg ok";
+      msg.textContent="Abrindo o Telegram… toque em INICIAR para concluir e depois recarregue esta página.";
+    }
+    window.open(`https://t.me/${bot}?start=${token}`, "_blank");
+  }
+
+  async function definirSenha(){
+    const p1=document.getElementById("np1").value, p2=document.getElementById("np2").value;
+    const msg=document.getElementById("pwMsg"), btn=document.getElementById("pwBtn");
+    if(p1.length<6){ msg.className="msg err"; msg.textContent="A senha precisa ter ao menos 6 caracteres."; return; }
+    if(p1!==p2){ msg.className="msg err"; msg.textContent="As senhas não coincidem."; return; }
+    btn.disabled=true; msg.className="msg"; msg.textContent="";
+    const { error } = await sb.auth.updateUser({ password:p1 });
+    btn.disabled=false;
+    if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
+    msg.className="msg ok"; msg.textContent="Senha salva! Já pode entrar com e-mail e senha.";
+    document.getElementById("np1").value=""; document.getElementById("np2").value="";
+  }
+
+  /* ---------- ALUNO: AVALIAÇÕES FÍSICAS ---------- */
+  function viewAvaliacoes(){
+    return `<h2>Avaliações Físicas</h2>
+      <div class="card">
+        <h3>📋 Minhas avaliações</h3>
+        <p>Todos os dados levantados pela sua nutricionista, da mais recente para a mais antiga.</p>
+        <div id="avalBox" style="margin-top:12px"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+
+  function fmtDataHora(v){
+    if(!v) return "—";
+    const d = new Date(v);
+    if(isNaN(d)) return fmtDate(v);
+    return d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  }
+  function med(rot, val, un){
+    if(val==null || val==="") return "";
+    return `<div class="med"><span>${rot}</span><b>${Number(val).toLocaleString("pt-BR",{maximumFractionDigits:1})}${un}</b></div>`;
+  }
+
+  async function carregarMinhasAvaliacoes(){
+    const box = document.getElementById("avalBox");
+    const { data, error } = await sb.from("assessments").select("*")
+      .eq("student_id", ME.id).order("date",{ascending:false});
+    if(!box) return;
+    if(error){ box.innerHTML = `<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
+    if(!data || !data.length){
+      box.innerHTML = `<div class="empty">Você ainda não tem avaliações registradas.<br>Elas aparecerão aqui assim que sua nutricionista lançar a primeira.</div>`;
+      return;
+    }
+    box.innerHTML = data.map((a,idx)=>avaliacaoDetalhe(a,idx)).join("");
+  }
+
+  /* ---------- ALUNO: CONSULTAS NUTRI ---------- */
+  function viewConsultas(){
+    return `<h2>Consultas Nutri</h2>
+      <div class="card">
+        <h3>📅 Próxima consulta</h3>
+        <div id="proximaBox"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="card">
+        <h3>🕐 Histórico</h3>
+        <div id="histBox"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+
+  async function carregarMinhasConsultas(){
+    const prox = document.getElementById("proximaBox"), hist = document.getElementById("histBox");
+    const { data, error } = await sb.from("consultations").select("*")
+      .eq("student_id", ME.id).order("scheduled_at",{ascending:false});
+    if(error){
+      if(prox) prox.innerHTML = `<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`;
+      if(hist) hist.innerHTML = "";
+      return;
+    }
+    const agora = new Date();
+    const futuras = (data||[]).filter(c=>new Date(c.scheduled_at) >= agora).sort((a,b)=>new Date(a.scheduled_at)-new Date(b.scheduled_at));
+    const passadas= (data||[]).filter(c=>new Date(c.scheduled_at) <  agora);
+
+    if(prox) prox.innerHTML = futuras.length
+      ? `<div class="proxima">
+           <div class="quando">${fmtDataHora(futuras[0].scheduled_at)}</div>
+           ${futuras[0].notes ? `<div class="obs">${esc(futuras[0].notes)}</div>` : ""}
+         </div>
+         ${futuras.length>1 ? `<div class="meta-sm">+ ${futuras.length-1} outra(s) agendada(s)</div>` : ""}`
+      : `<div class="empty">Nenhuma consulta agendada no momento.<br>Sua nutricionista agendará por aqui.</div>`;
+
+    if(hist) hist.innerHTML = passadas.length
+      ? passadas.map(c=>`<div class="aval">
+          <div class="aval-head"><b>${fmtDataHora(c.scheduled_at)}</b></div>
+          ${c.notes ? `<div class="obs">${esc(c.notes)}</div>` : `<div class="meta-sm">sem observações</div>`}
+        </div>`).join("")
+      : `<div class="empty">Nenhuma consulta realizada ainda.</div>`;
+  }
+
+  /* ================= TELA: PERFIL ================= */
+  function viewPerfil(){
+    const falta = !primeiroNome();
+    return `<h2>Meu perfil</h2>
+      <div class="card">
+        <h3>👤 Meus dados</h3>
+        <p>${falta ? "Informe seu nome para personalizar a saudação." : "Altere seu nome se precisar."}</p>
+        <div class="field" style="margin-top:12px">
+          <label>Nome completo</label>
+          <input id="myName" type="text" value="${esc(ME.full_name||"")}" placeholder="ex: TreinoApp">
+        </div>
+        <div class="form-grid2">
+          <div class="field"><label>Sexo</label>
+            <select id="mySex">
+              <option value="">—</option>
+              <option value="M" ${ME.sex==="M"?"selected":""}>Masculino</option>
+              <option value="F" ${ME.sex==="F"?"selected":""}>Feminino</option>
+            </select>
+          </div>
+          <div class="field"><label>Data de nascimento</label>
+            <input id="myBirth" type="date" value="${ME.birth_date ? String(ME.birth_date).slice(0,10) : ""}">
+          </div>
+        </div>
+        <div class="field"><label>E-mail</label><input type="text" value="${esc(ME.email||"")}" disabled></div>
+        <button class="btn small" id="nameBtn" onclick="salvarNome()">Salvar dados</button>
+        <div class="msg" id="nameMsg"></div>
+      </div>
+
+      <div class="card">
+        <h3>🔐 Senha de acesso</h3>
+        <p>Crie uma nova senha para entrar com e-mail e senha na próxima vez.</p>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="field"><label>Nova senha</label><input id="np1" type="password" placeholder="mín. 6 caracteres"></div>
+          <div class="field"><label>Confirmar nova senha</label><input id="np2" type="password" placeholder="repita a senha"></div>
+        </div>
+        <button class="btn small" id="pwBtn" onclick="definirSenha()">Salvar nova senha</button>
+        <div class="msg" id="pwMsg"></div>
+      </div>
+      ${ME.role === "student" ? cardTelegram() : ""}`;
+  }
+
+  async function salvarNome(){
+    const v=document.getElementById("myName").value.trim();
+    const sex=document.getElementById("mySex").value || null;
+    const birth=document.getElementById("myBirth").value || null;
+    const msg=document.getElementById("nameMsg"), btn=document.getElementById("nameBtn");
+    if(!v){ msg.className="msg err"; msg.textContent="Digite seu nome."; return; }
+    btn.disabled=true; msg.className="msg"; msg.textContent="";
+    const { error } = await sb.from("profiles").update({ full_name:v, sex, birth_date:birth }).eq("id", ME.id);
+    btn.disabled=false;
+    if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
+    ME.full_name = v; ME.sex = sex; ME.birth_date = birth;
+    msg.className="msg ok"; msg.textContent="✅ Dados salvos com sucesso!";
+    const h = document.querySelector(".hello");
+    const pn = primeiroNome();
+    if(h) h.innerHTML = pn ? "Olá, "+esc(pn)+" 👋" : "Olá! 👋";
+  }
+
+  function viewAdmin(){
+    return `<h2>Painel do criador</h2>
+      <div class="card"><h3>🛠️ Acesso total</h3>
+      <p>Você tem acesso completo à estrutura: profissionais, alunos, dados e configurações.
+         As telas de gestão de profissionais entram numa próxima etapa.</p></div>`;
+  }
+
+  /* ================= TELAS: PROFISSIONAL ================= */
+  function viewAlunos(){
+    return `<h2>Meus alunos</h2>
+      <div class="alunos-layout">
+        <section class="card aluno-detalhe" id="alunoDetalhe">
+          <div class="empty">👉 Selecione um aluno na lista ao lado para ver as opções.</div>
+        </section>
+        <aside class="alunos-col">
+          <div class="alunos-head">
+            <h3>Alunos</h3>
+            <button class="btn small ghost" title="Buscar aluno" onclick="toggleBuscaAluno()">🔍</button>
+          </div>
+          <input id="alunoSearch" class="aluno-search" style="display:none" placeholder="Buscar aluno…" oninput="filtrarAlunos()">
+          <div id="alunosLista"><div class="empty">Carregando…</div></div>
+        </aside>
+      </div>
+
+      <div class="card" id="assessCard" style="display:none">
+        <span class="close-x" onclick="fecharForm()">✕</span>
+        <h3><span id="assessTitulo">➕ Nova avaliação —</span> <span id="assessStudentName"></span></h3>
+        <input type="hidden" id="assessStudentId">
+        <div class="grupo">
+          <div class="grupo-tit">Dados gerais</div>
+          <div class="form-grid2">
+            <div class="field"><label>Data</label><input id="a_date" type="date"></div>
+            <div class="field"><label>Peso (kg)</label><input id="a_weight" type="number" step="0.1" placeholder="ex: 68,5"></div>
+            <div class="field"><label>Altura (cm)</label><input id="a_height" type="number" step="0.1" placeholder="ex: 175"></div>
+          </div>
+          <div class="meta-cliente" id="assessCliente"></div>
+        </div>
+
+        <div class="grupo">
+          <div class="grupo-tit">Dobras cutâneas (mm)</div>
+          <div class="form-grid2" id="gridDobras"></div>
+        </div>
+
+        <div class="grupo">
+          <div class="grupo-tit" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Composição corporal — calculada automaticamente</span>
+            <span class="menu-wrap">
+              <button type="button" class="btn small ghost dots" title="Opções" onclick="abrirMenu(event,'menuCalc')">⋮</button>
+              <span class="menu-drop" id="menuCalc" style="text-transform:none">
+                <button type="button" onclick="modoManual(true)">✏️ Editar manualmente</button>
+                <button type="button" onclick="modoManual(false)">↺ Voltar ao cálculo automático</button>
+              </span>
+            </span>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);margin-bottom:10px">
+            Calculada a partir das 7 dobras, do peso, do sexo e da idade (Jackson &amp; Pollock).
+            Preencha as 7 dobras e os dados gerais para os valores aparecerem.</p>
+          <div class="form-grid2">
+            <div class="field"><label>% Gordura</label><input id="a_bf" type="number" step="0.1" readonly placeholder="—"></div>
+            <div class="field"><label>Massa gorda (kg)</label><input id="a_fat" type="number" step="0.1" readonly placeholder="—"></div>
+            <div class="field"><label>Massa magra (kg)</label><input id="a_lean" type="number" step="0.1" readonly placeholder="—"></div>
+          </div>
+          <div class="msg" id="calcMsg"></div>
+        </div>
+
+        <div class="grupo">
+          <div class="grupo-tit">Circunferências (cm)</div>
+          <div class="form-grid2" id="gridPerimetros"></div>
+        </div>
+
+        <div class="field" style="margin-top:16px"><label>Observação</label><textarea id="a_notes" rows="3" placeholder="opcional"></textarea></div>
+        <button class="btn small" id="assessSaveBtn" onclick="salvarAvaliacao()">Salvar avaliação</button>
+        <div class="msg" id="assessMsg"></div>
+      </div>
+
+      <div class="card" id="clienteCard" style="display:none">
+        <span class="close-x" onclick="fecharDados()">✕</span>
+        <h3>👤 Dados do cliente</h3>
+        <p>Nome, sexo e data de nascimento. Servem para o cálculo da composição corporal
+           e ficam visíveis para o cliente também.</p>
+        <input type="hidden" id="cliId">
+        <div class="field" style="margin-top:12px"><label>Nome completo</label><input id="cli_nome" type="text"></div>
+        <div class="form-grid2">
+          <div class="field"><label>Sexo</label>
+            <select id="cli_sex">
+              <option value="">—</option>
+              <option value="M">Masculino</option>
+              <option value="F">Feminino</option>
+            </select>
+          </div>
+          <div class="field"><label>Data de nascimento</label><input id="cli_birth" type="date"></div>
+        </div>
+        <button class="btn small" id="cliBtn" onclick="salvarDados()">Salvar dados</button>
+        <div class="msg" id="cliMsg"></div>
+      </div>
+
+      <div class="card" id="goalsCard" style="display:none">
+        <span class="close-x" onclick="fecharMetas()">✕</span>
+        <h3>🎯 Metas — <span id="goalsStudentName"></span></h3>
+        <p>A meta vale para todo o acompanhamento e só muda quando você quiser — não precisa
+           preencher a cada avaliação. Ela alimenta a barra de progresso no painel do aluno.</p>
+        <input type="hidden" id="goalsStudentId">
+        <input type="hidden" id="goalsId">
+        <div class="form-grid2" style="margin-top:14px">
+          <div class="field"><label>Peso ideal (kg)</label><input id="g_peso" type="number" step="0.1" placeholder="ex: 65"></div>
+          <div class="field"><label>% de gordura alvo</label><input id="g_bf" type="number" step="0.1" placeholder="ex: 20"></div>
+          <div class="field"><label>Data alvo</label><input id="g_data" type="date"></div>
+          <div class="field"><label>Treinos por mês</label><input id="g_treinos" type="number" step="1" min="0" placeholder="ex: 20"></div>
+        </div>
+        <button class="btn small" id="goalsSaveBtn" onclick="salvarMetas()">Salvar metas</button>
+        <div class="msg" id="goalsMsg"></div>
+      </div>
+
+      <div class="card" id="consultCard" style="display:none">
+        <span class="close-x" onclick="fecharConsulta()">✕</span>
+        <h3>📅 Consultas — <span id="consultStudentName"></span></h3>
+        <input type="hidden" id="consultStudentId">
+        <div class="form-grid">
+          <div class="field"><label>Data</label><input id="c_date" type="date"></div>
+          <div class="field"><label>Horário</label><input id="c_time" type="time" value="09:00"></div>
+        </div>
+        <div class="field"><label>Observações (opcional)</label><textarea id="c_notes" rows="2" placeholder="ex: retorno para ajuste do plano"></textarea></div>
+        <button class="btn small" id="consultSaveBtn" onclick="salvarConsulta()">Agendar consulta</button>
+        <div class="msg" id="consultMsg"></div>
+        <div id="consultList" style="margin-top:14px"></div>
+      </div>`;
+  }
+
+  function viewCadastrar(){
+    return `<h2>Cadastrar aluno</h2>
+      <div class="card">
+        <h3>➕ Novo aluno</h3>
+        <p>Informe nome e e-mail. Só depois disso o aluno consegue fazer o "primeiro acesso" na página de login — e já entra com o nome preenchido.</p>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="field"><label>Nome e sobrenome</label><input id="inviteName" type="text" placeholder="ex: Maria Silva"></div>
+          <div class="field"><label>E-mail</label><input id="inviteEmail" type="email" placeholder="email@exemplo.com"></div>
+        </div>
+        <button class="btn small" id="inviteBtn" onclick="cadastrarAluno()">Cadastrar aluno</button>
+        <div class="msg" id="inviteMsg"></div>
+      </div>
+      <div class="card">
+        <h3>📋 Cadastrados</h3>
+        <div id="invitesBox"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+
+  /* ================= BIBLIOTECA DE EXERCÍCIOS ================= */
+  const GRUPOS = ["Peito","Costas","Ombro","Bíceps","Tríceps","Perna","Glúteo","Panturrilha","Abdômen","Outro"];
+
+  function viewExercicios(){
+    return `<h2>Exercícios</h2>
+      <div class="card">
+        <h3>➕ Adicionar exercício</h3>
+        <p>A biblioteca já vem com exercícios prontos. Aqui você adiciona os seus — e pode
+           colar um link de GIF ou vídeo (YouTube) para demonstração.</p>
+        <div class="form-grid2" style="margin-top:12px">
+          <div class="field"><label>Nome</label><input id="ex_nome" type="text" placeholder="ex: Supino declinado"></div>
+          <div class="field"><label>Grupo muscular</label>
+            <select id="ex_grupo">${GRUPOS.map(g=>`<option value="${g}">${g}</option>`).join("")}</select>
+          </div>
+          <div class="field"><label>Equipamento</label><input id="ex_equip" type="text" placeholder="ex: Barra, Halter, Máquina…"></div>
+          <div class="field"><label>Link de GIF/vídeo (opcional)</label><input id="ex_media" type="text" placeholder="cole aqui"></div>
+        </div>
+        <div class="field"><label>Instrução (opcional)</label><textarea id="ex_instr" rows="2" placeholder="dica de execução"></textarea></div>
+        <button class="btn small" id="exBtn" onclick="salvarExercicio()">Adicionar</button>
+        <div class="msg" id="exMsg"></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <h3 style="margin:0">📚 Biblioteca</h3>
+          <input id="exBusca" class="aluno-search" style="max-width:220px;margin:0" placeholder="Buscar exercício…" oninput="renderExercicios()">
+        </div>
+        <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div id="exLista"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+
+  async function loadExercicios(){
+    const { data, error } = await sb.from("exercicios").select("*").order("grupo").order("nome");
+    if(error){ const b=document.getElementById("exLista"); if(b) b.innerHTML=`<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+    EXERCICIOS = data || [];
+    EX_FILTRO = "";
+    const f = document.getElementById("exFiltros");
+    if(f){
+      const grupos = [...new Set(EXERCICIOS.map(e=>e.grupo).filter(Boolean))].sort();
+      f.innerHTML = [`<button class="chip-f sel" data-g="" onclick="filtrarGrupo('')">Todos</button>`]
+        .concat(grupos.map(g=>`<button class="chip-f" data-g="${esc(g)}" onclick="filtrarGrupo('${esc(g)}')">${esc(g)}</button>`)).join("");
+    }
+    renderExercicios();
+  }
+
+  function filtrarGrupo(g){
+    EX_FILTRO = g;
+    document.querySelectorAll("#exFiltros .chip-f").forEach(b=>b.classList.toggle("sel", (b.dataset.g||"")===g));
+    renderExercicios();
+  }
+
+  function renderExercicios(){
+    const box = document.getElementById("exLista");
+    if(!box) return;
+    const q = (document.getElementById("exBusca")||{}).value?.toLowerCase().trim() || "";
+    let lista = EXERCICIOS;
+    if(EX_FILTRO) lista = lista.filter(e=>e.grupo===EX_FILTRO);
+    if(q) lista = lista.filter(e=>(e.nome||"").toLowerCase().includes(q));
+    if(!lista.length){ box.innerHTML = `<div class="empty">Nenhum exercício encontrado.</div>`; return; }
+    box.innerHTML = lista.map(e=>{
+      const meu = e.professional_id === ME.id;
+      const thumb = e.media_url
+        ? `<img class="ex-thumb" src="${esc(e.media_url)}" alt="" onerror="this.style.display='none'">`
+        : `<div class="ex-thumb ph">🏋️</div>`;
+      return `<div class="ex-row">
+        ${thumb}
+        <div class="ex-info">
+          <div class="ex-nome">${esc(e.nome)}</div>
+          <div class="ex-meta">${esc(e.grupo||"")}${e.equipamento?" · "+esc(e.equipamento):""}${meu?' · <span class="tag">meu</span>':""}</div>
+        </div>
+        ${meu?`<button class="btn small ghost" onclick="excluirExercicio('${e.id}')" title="Excluir">🗑</button>`:""}
+      </div>`;
+    }).join("");
+  }
+
+  async function salvarExercicio(){
+    const nome = document.getElementById("ex_nome").value.trim();
+    const msg = document.getElementById("exMsg"), btn = document.getElementById("exBtn");
+    if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do exercício."; return; }
+    btn.disabled=true; msg.className="msg"; msg.textContent="";
+    const { error } = await sb.from("exercicios").insert({
+      professional_id: ME.id,
+      nome,
+      grupo: document.getElementById("ex_grupo").value,
+      equipamento: document.getElementById("ex_equip").value.trim() || null,
+      media_url: document.getElementById("ex_media").value.trim() || null,
+      instrucao: document.getElementById("ex_instr").value.trim() || null
+    });
+    btn.disabled=false;
+    if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
+    msg.className="msg ok"; msg.textContent="✅ Exercício adicionado!";
+    ["ex_nome","ex_equip","ex_media","ex_instr"].forEach(id=>document.getElementById(id).value="");
+    loadExercicios();
+  }
+
+  async function excluirExercicio(id){
+    if(!confirm("Excluir este exercício da sua biblioteca?")) return;
+    const { error } = await sb.from("exercicios").delete().eq("id", id);
+    if(error){ alert("Erro: "+error.message); return; }
+    loadExercicios();
+  }
+
+  function viewInativos(){
+    return `<h2>Alunos inativos</h2>
+      <div class="card">
+        <h3>📁 Arquivados</h3>
+        <p>Perderam o acesso ao painel, mas o histórico fica guardado. Reative quando voltarem.</p>
+        <div id="archivedBox" style="margin-top:8px"></div>
+      </div>`;
+  }
+
+  /* ================= DADOS ================= */
+  async function loadStudents(){
+    const { data: studs, error } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
+    if(error){
+      const b=document.getElementById("alunosLista");
+      if(b) b.innerHTML = `<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`;
+      return;
+    }
+    STUDENTS = studs || [];
+    const { data: ast } = await sb.from("assessments")
+      .select("id,student_id,date,weight,body_fat").order("date",{ascending:false});
+    ASSESS = ast || [];
+    renderStudents();
+    loadInvites();
+  }
+
+  function linhaAluno(s, arquivado){
+    const nome = nomeAluno(s);
+    const n = ASSESS.filter(a=>a.student_id===s.id).length;
+    const sub = (s.email && s.email!==nome) ? `${esc(s.email)} · ${n} avaliação(ões)` : `${n} avaliação(ões)`;
+    const acoes = arquivado
+      ? `<button class="btn small ghost" onclick="verAvaliacoes('${s.id}')">Ver histórico</button>
+         <button class="btn small" onclick="reativarAluno('${s.id}')">Reativar</button>`
+      : `<a class="btn small ghost" title="Ver dashboard" href="dashboard.html?aluno=${s.id}">📊</a>
+         <button class="btn small ghost" onclick="verAvaliacoes('${s.id}')">Ver</button>
+         <button class="btn small ghost" title="Agendar consulta" onclick="novaConsulta('${s.id}')">📅</button>
+         <button class="btn small" onclick="novaAvaliacao('${s.id}')">Nova avaliação</button>
+         <span class="menu-wrap">
+           <button class="btn small ghost dots" title="Mais opções" onclick="abrirMenu(event,'menu_${s.id}')">⋮</button>
+           <span class="menu-drop" id="menu_${s.id}">
+             <button onclick="dadosCliente('${s.id}')">Dados do cliente</button>
+             <button onclick="abrirMetas('${s.id}')">Definir metas</button>
+             <button onclick="arquivarAluno('${s.id}')">Arquivar</button>
+           </span>
+         </span>`;
+    return `<div class="student-row">
+      <div><div class="name">${esc(nome)}</div><div class="meta">${sub}</div></div>
+      <div class="row-actions">${acoes}</div>
+      <div id="assessList_${s.id}" style="width:100%"></div>
+    </div>`;
+  }
+
+  function renderStudents(){
+    const ativos = STUDENTS.filter(s => (s.status||"active") === "active")
+                           .sort((a,b)=> nomeAluno(a).localeCompare(nomeAluno(b),"pt-BR"));
+    const arqs   = STUDENTS.filter(s => s.status === "archived");
+    ATIVOS_CACHE = ativos;
+
+    const busca = (document.getElementById("alunoSearch")||{}).value || "";
+    desenharListaAlunos(filtrar(ativos, busca));
+
+    // se o aluno selecionado ainda existe e está ativo, mantém o detalhe
+    if(SELECTED_STUDENT && ativos.some(s=>s.id===SELECTED_STUDENT)) selecionarAluno(SELECTED_STUDENT);
+    else if(SELECTED_STUDENT){ SELECTED_STUDENT=null; const d=document.getElementById("alunoDetalhe");
+      if(d) d.innerHTML = `<div class="empty">👉 Selecione um aluno na lista ao lado para ver as opções.</div>`; }
+
+    const arq = document.getElementById("archivedBox");
+    if(arq) arq.innerHTML = arqs.length
+      ? arqs.map(s=>linhaAluno(s,true)).join("")
+      : `<div class="empty">Nenhum aluno arquivado.</div>`;
+  }
+
+  function filtrar(lista, q){
+    q = (q||"").toLowerCase().trim();
+    if(!q) return lista;
+    return lista.filter(s => nomeAluno(s).toLowerCase().includes(q) || (s.email||"").toLowerCase().includes(q));
+  }
+
+  function desenharListaAlunos(lista){
+    const box = document.getElementById("alunosLista");
+    if(!box) return;
+    if(!lista.length){ box.innerHTML = `<div class="empty">Nenhum aluno encontrado.</div>`; return; }
+    box.innerHTML = lista.map(s=>{
+      const sel = SELECTED_STUDENT===s.id ? " sel" : "";
+      const n = ASSESS.filter(a=>a.student_id===s.id).length;
+      return `<button class="aluno-item${sel}" onclick="selecionarAluno('${s.id}')">
+        <span class="ai-nome">${esc(nomeAluno(s))}</span>
+        <span class="ai-n">${n}</span>
+      </button>`;
+    }).join("");
+  }
+
+  function filtrarAlunos(){
+    desenharListaAlunos(filtrar(ATIVOS_CACHE, (document.getElementById("alunoSearch")||{}).value));
+  }
+
+  function toggleBuscaAluno(){
+    const e = document.getElementById("alunoSearch");
+    if(!e) return;
+    const mostrar = e.style.display === "none";
+    e.style.display = mostrar ? "block" : "none";
+    if(mostrar){ e.focus(); } else { e.value=""; filtrarAlunos(); }
+  }
+
+  function selecionarAluno(id){
+    SELECTED_STUDENT = id;
+    const s = STUDENTS.find(x=>x.id===id);
+    desenharListaAlunos(filtrar(ATIVOS_CACHE, (document.getElementById("alunoSearch")||{}).value));
+    const det = document.getElementById("alunoDetalhe");
+    if(!det || !s) return;
+    const n = ASSESS.filter(a=>a.student_id===id).length;
+    det.innerHTML = `
+      <div class="det-head">
+        <div class="det-nome">${esc(nomeAluno(s))}</div>
+        <div class="det-sub">${s.email?esc(s.email)+" · ":""}${n} avaliação(ões)</div>
+      </div>
+      <div class="det-acoes">
+        <a class="btn small" href="dashboard.html?aluno=${id}">📊 Dashboard</a>
+        <button class="btn small" onclick="novaAvaliacao('${id}')">➕ Nova avaliação</button>
+        <button class="btn small ghost" onclick="verAvaliacoes('${id}')">📋 Ver avaliações</button>
+        <button class="btn small ghost" onclick="novaConsulta('${id}')">📅 Consultas</button>
+        <button class="btn small ghost" onclick="abrirMetas('${id}')">🎯 Metas</button>
+        <button class="btn small ghost" onclick="dadosCliente('${id}')">👤 Dados do cliente</button>
+        <button class="btn small ghost" onclick="arquivarAluno('${id}')">📁 Arquivar</button>
+      </div>
+      <div id="assessList_${id}" style="margin-top:6px"></div>`;
+  }
+
+  async function loadInvites(){
+    const { data } = await sb.from("invites").select("*")
+      .eq("professional_id", ME.id).order("created_at",{ascending:false});
+    INVITES = data || [];
+    renderInvites();
+  }
+
+  function renderInvites(){
+    const box = document.getElementById("invitesBox");
+    if(!box) return;
+    if(!INVITES.length){ box.innerHTML = `<div class="empty">Nenhum aluno cadastrado ainda.</div>`; return; }
+    const entraram = new Set(STUDENTS.map(s=>(s.email||"").toLowerCase()));
+    box.innerHTML = INVITES.map(iv=>{
+      const ativo = entraram.has(iv.email.toLowerCase());
+      const status = ativo
+        ? `<span class="tag" style="background:#eafaf0;color:#1a8a4a;border-color:#bbeccb">já entrou</span>`
+        : `<span class="tag">aguardando 1º acesso</span>`;
+      return `<div class="student-row">
+        <div><div class="name">${esc(iv.full_name || iv.email)}</div>
+             <div class="meta">${iv.full_name ? esc(iv.email)+" · " : ""}${status}</div></div>
+        <div class="row-actions"><button class="btn small ghost" onclick="removerConvite('${esc(iv.email)}')">Remover</button></div>
+      </div>`;
+    }).join("");
+  }
+
+  async function cadastrarAluno(){
+    const nome  = document.getElementById("inviteName").value.trim();
+    const email = document.getElementById("inviteEmail").value.trim().toLowerCase();
+    const msg = document.getElementById("inviteMsg"), btn = document.getElementById("inviteBtn");
+    if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do aluno."; return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
+    btn.disabled=true; msg.className="msg"; msg.textContent="";
+    const { error } = await sb.from("invites").insert({ email, full_name:nome, professional_id:ME.id });
+    btn.disabled=false;
+    if(error){
+      msg.className="msg err";
+      msg.textContent = /duplicate|unique/i.test(error.message) ? "Esse e-mail já está cadastrado." : "Erro: "+error.message;
+      return;
+    }
+    msg.className="msg ok"; msg.textContent = nome+" cadastrado! Agora ele pode fazer o primeiro acesso.";
+    document.getElementById("inviteName").value=""; document.getElementById("inviteEmail").value="";
+    loadInvites();
+  }
+
+  async function removerConvite(email){
+    if(!confirm("Remover o cadastro de "+email+"?\n\n(não apaga a conta já criada, apenas o cadastro do e-mail)")) return;
+    const { error } = await sb.from("invites").delete().eq("email", email).eq("professional_id", ME.id);
+    if(error){ alert("Erro ao remover: "+error.message); return; }
+    loadInvites();
+  }
+
+  function abrirMenu(ev, id){
+    ev.stopPropagation();
+    const alvo = document.getElementById(id);
+    const aberto = alvo && alvo.classList.contains("open");
+    document.querySelectorAll(".menu-drop.open").forEach(m=>m.classList.remove("open"));
+    if(alvo && !aberto) alvo.classList.add("open");
+  }
+  document.addEventListener("click", ()=>{
+    document.querySelectorAll(".menu-drop.open").forEach(m=>m.classList.remove("open"));
+  });
+
+  function dadosCliente(id){
+    const s = STUDENTS.find(x=>x.id===id);
+    document.getElementById("cliId").value = id;
+    document.getElementById("cli_nome").value = s?.full_name || "";
+    document.getElementById("cli_sex").value = s?.sex || "";
+    document.getElementById("cli_birth").value = s?.birth_date ? String(s.birth_date).slice(0,10) : "";
+    const m = document.getElementById("cliMsg"); m.className="msg"; m.textContent="";
+    const card = document.getElementById("clienteCard");
+    card.style.display = "block";
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  function fecharDados(){ const c=document.getElementById("clienteCard"); if(c) c.style.display="none"; }
+
+  async function salvarDados(){
+    const id = document.getElementById("cliId").value;
+    const msg = document.getElementById("cliMsg"), btn = document.getElementById("cliBtn");
+    const nome  = document.getElementById("cli_nome").value.trim() || null;
+    const sex   = document.getElementById("cli_sex").value || null;
+    const birth = document.getElementById("cli_birth").value || null;
+    btn.disabled=true; msg.className="msg"; msg.textContent="";
+    const { error } = await sb.from("profiles").update({ full_name:nome, sex, birth_date:birth }).eq("id", id);
+    btn.disabled=false;
+    if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
+    const s = STUDENTS.find(x=>x.id===id);
+    if(s){ s.full_name=nome; s.sex=sex; s.birth_date=birth; }
+    msg.className="msg ok"; msg.textContent="✅ Dados salvos!";
+    renderStudents();
+  }
+
+  async function arquivarAluno(id){
+    const s = STUDENTS.find(x=>x.id===id);
+    if(!confirm(`Arquivar ${nomeAluno(s)}?\n\nEle perde o acesso ao painel, mas todo o histórico fica guardado e você pode reativar depois.`)) return;
+    const { error } = await sb.from("profiles")
+      .update({ status:"archived", archived_at:new Date().toISOString() }).eq("id", id);
+    if(error){ alert("Erro ao arquivar: "+error.message); return; }
+    loadStudents();
+  }
+
+  async function reativarAluno(id){
+    const { error } = await sb.from("profiles").update({ status:"active", archived_at:null }).eq("id", id);
+    if(error){ alert("Erro ao reativar: "+error.message); return; }
+    loadStudents();
+  }
+
+  function chips(obj, lista, un){
+    if(!obj) return "";
+    const itens = lista.filter(([k])=>obj[k]!=null)
+      .map(([k,r])=>`<div class="med"><span>${r}</span><b>${Number(obj[k]).toLocaleString("pt-BR",{maximumFractionDigits:1})}${un}</b></div>`);
+    return itens.length ? itens.join("") : "";
+  }
+
+  function avaliacaoDetalhe(a, idx, podeEditar){
+    const umaCasa = ["body_fat","fat_mass","lean_mass"];
+    const gerais = GERAIS.filter(([k])=>a[k]!=null)
+      .map(([k,r,un])=>{
+        const min = umaCasa.includes(k) ? 1 : 0;
+        return `<div class="med"><span>${r}</span><b>${Number(a[k]).toLocaleString("pt-BR",{minimumFractionDigits:min,maximumFractionDigits:1})}${un}</b></div>`;
+      }).join("");
+    const dob = chips(a.skinfolds, DOBRAS, " mm");
+    const per = chips(a.circumferences, PERIMETROS, " cm");
+    const menu = podeEditar ? `<span class="menu-wrap">
+        <button class="btn small ghost dots" title="Mais opções" onclick="abrirMenu(event,'am_${a.id}')">⋮</button>
+        <span class="menu-drop" id="am_${a.id}">
+          <button onclick="editarAvaliacao('${a.id}','${a.student_id}')">Editar</button>
+          <button onclick="excluirAvaliacao('${a.id}','${a.student_id}')">Excluir avaliação</button>
+        </span></span>` : "";
+    return `<div class="aval" id="av_${a.id}">
+      <div class="aval-head">
+        <button class="chev" title="Mostrar medidas" onclick="toggleAval('av_${a.id}')">▶</button>
+        <b>${fmtDate(a.date)}</b>
+        ${idx===0?'<span class="tag" style="background:#eafaf0;color:#1a8a4a;border-color:#bbeccb">mais recente</span>':''}
+        <span style="margin-left:auto">${menu}</span>
+      </div>
+      <div class="aval-body">
+        ${gerais ? `<div class="meds">${gerais}</div>` : ""}
+        ${dob ? `<div class="grupo-tit" style="margin-top:14px">Dobras cutâneas</div><div class="meds">${dob}</div>` : ""}
+        ${per ? `<div class="grupo-tit" style="margin-top:14px">Circunferências</div><div class="meds">${per}</div>` : ""}
+        ${a.notes ? `<div class="obs"><b>Observação:</b> ${esc(a.notes)}</div>` : ""}
+        ${!gerais && !dob && !per && !a.notes ? `<div class="empty">Sem medidas registradas nesta avaliação.</div>` : ""}
+      </div>
+    </div>`;
+  }
+
+  async function verAvaliacoes(id){
+    const el = document.getElementById("assessList_"+id);
+    if(!el) return;
+    if(el.innerHTML){ el.innerHTML=""; return; }
+    el.innerHTML = `<div class="empty">Carregando…</div>`;
+    const { data, error } = await sb.from("assessments").select("*")
+      .eq("student_id", id).order("date",{ascending:false});
+    if(error){ el.innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+    el.innerHTML = (data && data.length)
+      ? `<div style="margin-top:12px">${data.map((a,i)=>avaliacaoDetalhe(a,i,true)).join("")}</div>`
+      : `<div class="empty">Sem avaliações ainda.</div>`;
+  }
+
+  function montarCamposMedidas(){
+    const g1 = document.getElementById("gridDobras"), g2 = document.getElementById("gridPerimetros");
+    if(g1 && !g1.innerHTML) g1.innerHTML = DOBRAS.map(([k,r])=>
+      `<div class="field"><label>${r}</label><input id="dob_${k}" type="number" step="0.1"></div>`).join("");
+    if(g2 && !g2.innerHTML) g2.innerHTML = PERIMETROS.map(([k,r])=>
+      `<div class="field"><label>${r}</label><input id="per_${k}" type="number" step="0.1"></div>`).join("");
+  }
+
+  /* ---------- CÁLCULO DE COMPOSIÇÃO CORPORAL ----------
+     Jackson & Pollock (7 dobras) → densidade → Siri → % gordura */
+  function idadeAnos(dataNasc){
+    if(!dataNasc) return null;
+    const n = new Date(String(dataNasc).slice(0,10)+"T00:00:00");
+    if(isNaN(n)) return null;
+    const h = new Date();
+    let a = h.getFullYear() - n.getFullYear();
+    const m = h.getMonth() - n.getMonth();
+    if(m < 0 || (m === 0 && h.getDate() < n.getDate())) a--;
+    return a;
+  }
+
+  function somaSeteDobras(){
+    let soma = 0;
+    for(const [k] of DOBRAS){
+      const e = document.getElementById("dob_"+k);
+      if(!e || e.value === "") return null;   // exige as 7 dobras
+      const v = Number(e.value);
+      if(isNaN(v)) return null;
+      soma += v;
+    }
+    return soma;
+  }
+
+  function calcComposicao(sexo, idade, sigma7, peso){
+    if(!sexo || idade == null || !sigma7 || !peso) return null;
+    let BD;
+    if(sexo === "M")
+      BD = 1.112 - 0.00043499*sigma7 + 0.00000055*sigma7*sigma7 - 0.00028826*idade;
+    else
+      BD = 1.097 - 0.00046971*sigma7 + 0.00000056*sigma7*sigma7 - 0.00012828*idade;
+    const pctFat = (495/BD) - 450;           // Siri
+    if(!isFinite(pctFat) || pctFat <= 0 || pctFat >= 70) return null;
+    const massaGorda = peso * pctFat/100;
+    const massaMagra = peso - massaGorda;
+    return { pctFat, massaGorda, massaMagra };
+  }
+
+  function modoManual(manual){
+    MANUAL_CALC = manual;
+    ["a_bf","a_fat","a_lean"].forEach(id=>{
+      const e=document.getElementById(id); if(!e) return;
+      if(manual) e.removeAttribute("readonly"); else e.setAttribute("readonly","");
+    });
+    document.querySelectorAll(".menu-drop.open").forEach(m=>m.classList.remove("open"));
+    const msg = document.getElementById("calcMsg");
+    if(manual){
+      if(msg){ msg.className="msg warn"; msg.textContent="✏️ Edição manual ativada — você pode alterar os três valores. Eles não serão recalculados automaticamente."; }
+      const bf = document.getElementById("a_bf"); if(bf) bf.focus();
+    } else {
+      recalcularComposicao();
+    }
+  }
+
+  function recalcularComposicao(){
+    if(MANUAL_CALC) return;   // não sobrescreve durante edição manual
+    const msg = document.getElementById("calcMsg");
+    const bf = document.getElementById("a_bf"), fat = document.getElementById("a_fat"), lean = document.getElementById("a_lean");
+    if(!bf) return;
+    const s = ASSESS_S || {};
+    const sexo  = s.sex || "";
+    const idade = idadeAnos(s.birth_date);
+    const peso  = Number((document.getElementById("a_weight")||{}).value) || null;
+    const sigma = somaSeteDobras();
+
+    const r = calcComposicao(sexo, idade, sigma, peso);
+    if(r){
+      bf.value  = r.pctFat.toFixed(1);
+      fat.value = r.massaGorda.toFixed(1);
+      lean.value= r.massaMagra.toFixed(1);
+      if(msg){ msg.className="msg ok"; msg.textContent = `Calculado · Σ7 = ${sigma.toFixed(1)} mm · idade ${idade} anos · ${sexo==="M"?"masculino":"feminino"}`; }
+    } else {
+      bf.value=""; fat.value=""; lean.value="";
+      if(msg){
+        const faltam = [];
+        if(!sexo || idade == null) faltam.push("sexo e data de nascimento do cliente (edite em ⋮ → Dados do cliente)");
+        if(!peso)          faltam.push("peso");
+        if(sigma == null)  faltam.push("as 7 dobras");
+        msg.className = faltam.length ? "msg warn" : "msg";
+        msg.textContent = faltam.length ? "Faltam: " + faltam.join("; ") + "." : "";
+      }
+    }
+  }
+
+  function prepararCalculo(s){
+    ASSESS_S = s || null;
+    MANUAL_CALC = false;
+    ["a_bf","a_fat","a_lean"].forEach(id=>{ const e=document.getElementById(id); if(e) e.setAttribute("readonly",""); });
+    const info = document.getElementById("assessCliente");
+    if(info){
+      const idade = idadeAnos(s && s.birth_date);
+      const partes = [];
+      if(s && s.sex) partes.push(s.sex==="M" ? "Masculino" : "Feminino");
+      if(idade != null) partes.push(idade + " anos");
+      info.innerHTML = partes.length
+        ? `<span class="tag" style="background:#eef4ff;color:#1d4ed8;border-color:#c7dbff">${partes.join(" · ")}</span>`
+        : `<span class="tag">defina sexo e nascimento em ⋮ → Dados do cliente</span>`;
+    }
+    const card = document.getElementById("assessCard");
+    if(card && !card.dataset.calcOn){
+      card.dataset.calcOn = "1";
+      card.addEventListener("input", recalcularComposicao);
+      card.addEventListener("change", recalcularComposicao);
+    }
+    recalcularComposicao();
+  }
+
+  function toggleAval(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.toggle("open");
+    const c = el.querySelector(".chev");
+    if(c) c.title = el.classList.contains("open") ? "Ocultar medidas" : "Mostrar medidas";
+  }
+
+  async function excluirAvaliacao(avalId, studentId){
+    if(!confirm("Excluir esta avaliação?\n\nTodos os dados dela serão apagados. Não dá para desfazer.")) return;
+    const { error } = await sb.from("assessments").delete().eq("id", avalId);
+    if(error){ alert("Erro ao excluir: "+error.message); return; }
+    await loadStudents();
+    const lista = document.getElementById("assessList_"+studentId);
+    if(lista){ lista.innerHTML=""; verAvaliacoes(studentId); }
+  }
+
+  async function editarAvaliacao(avalId, studentId){
+    const { data: a, error } = await sb.from("assessments").select("*").eq("id", avalId).single();
+    if(error || !a){ alert("Não consegui carregar esta avaliação."+(error?" "+error.message:"")); return; }
+    montarCamposMedidas();
+    EDIT_ID = avalId;
+    const s = STUDENTS.find(x=>x.id===studentId);
+    document.getElementById("assessStudentId").value = studentId;
+    document.getElementById("assessStudentName").textContent = nomeAluno(s);
+    document.getElementById("assessTitulo").textContent = "✏️ Editar avaliação —";
+    document.getElementById("assessSaveBtn").textContent = "Salvar alterações";
+
+    const põe = (id, v) => { const e=document.getElementById(id); if(e) e.value = (v==null?"":v); };
+    põe("a_date", a.date ? String(a.date).slice(0,10) : "");
+    põe("a_weight", a.weight); põe("a_height", a.height); põe("a_bf", a.body_fat);
+    põe("a_lean", a.lean_mass); põe("a_fat", a.fat_mass);
+    DOBRAS.forEach(([k])=>põe("dob_"+k, a.skinfolds ? a.skinfolds[k] : null));
+    PERIMETROS.forEach(([k])=>põe("per_"+k, a.circumferences ? a.circumferences[k] : null));
+    põe("a_notes", a.notes);
+    prepararCalculo(s);
+
+    const card = document.getElementById("assessCard");
+    card.style.display = "block";
+    const m = document.getElementById("assessMsg"); m.className="msg"; m.textContent="";
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+
+  async function novaAvaliacao(id){
+    const s = STUDENTS.find(x=>x.id===id);
+    // barra se faltar sexo ou data de nascimento (usados no cálculo)
+    if(!s || !s.sex || !s.birth_date){
+      dadosCliente(id);
+      const m = document.getElementById("cliMsg");
+      if(m){ m.className="msg warn"; m.textContent="Preencha o sexo e a data de nascimento deste cliente antes de criar a avaliação — eles são usados no cálculo da composição corporal."; }
+      return;
+    }
+    montarCamposMedidas();
+    EDIT_ID = null;
+    document.getElementById("assessTitulo").textContent = "➕ Nova avaliação —";
+    document.getElementById("assessSaveBtn").textContent = "Salvar avaliação";
+    document.getElementById("assessStudentId").value = id;
+    document.getElementById("assessStudentName").textContent = nomeAluno(s);
+    document.getElementById("a_date").value = new Date().toISOString().slice(0,10);
+    ["a_weight","a_height","a_bf","a_lean","a_fat","a_notes"].forEach(f=>{const e=document.getElementById(f); if(e) e.value="";});
+    DOBRAS.forEach(([k])=>{const e=document.getElementById("dob_"+k); if(e) e.value="";});
+    PERIMETROS.forEach(([k])=>{const e=document.getElementById("per_"+k); if(e) e.value="";});
+    prepararCalculo(s);
+    const card = document.getElementById("assessCard");
+    card.style.display="block";
+    const m=document.getElementById("assessMsg"); m.className="msg"; m.textContent="";
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+
+    // pré-preenche peso e altura com a última avaliação (a nutri pode alterar)
+    const { data } = await sb.from("assessments").select("weight,height")
+      .eq("student_id", id).order("date",{ascending:false}).limit(1);
+    if(data && data[0]){
+      const w=document.getElementById("a_weight"), h=document.getElementById("a_height");
+      if(w && data[0].weight != null && w.value==="") w.value = data[0].weight;
+      if(h && data[0].height != null && h.value==="") h.value = data[0].height;
+      recalcularComposicao();
+    }
+  }
+  function fecharForm(){ const c=document.getElementById("assessCard"); if(c) c.style.display="none"; }
+
+  /* ---------- PROFISSIONAL: METAS ---------- */
+  async function abrirMetas(id){
+    const s = STUDENTS.find(x=>x.id===id);
+    document.getElementById("goalsStudentId").value = id;
+    document.getElementById("goalsStudentName").textContent = nomeAluno(s);
+    const msg = document.getElementById("goalsMsg"); msg.className="msg"; msg.textContent="";
+    ["g_peso","g_bf","g_data","g_treinos"].forEach(f=>{const e=document.getElementById(f); if(e) e.value="";});
+    document.getElementById("goalsId").value = "";
+
+    const { data, error } = await sb.from("goals").select("*").eq("student_id", id).limit(1);
+    if(!error && data && data.length){
+      const g = data[0];
+      document.getElementById("goalsId").value = g.id;
+      if(g.ideal_weight   != null) document.getElementById("g_peso").value = g.ideal_weight;
+      if(g.target_bodyfat != null) document.getElementById("g_bf").value   = g.target_bodyfat;
+      if(g.target_date)            document.getElementById("g_data").value = String(g.target_date).slice(0,10);
+      if(g.monthly_workouts != null) document.getElementById("g_treinos").value = g.monthly_workouts;
+    }
+    const card = document.getElementById("goalsCard");
+    card.style.display = "block";
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  function fecharMetas(){ const c=document.getElementById("goalsCard"); if(c) c.style.display="none"; }
+
+  async function salvarMetas(){
+    const msg=document.getElementById("goalsMsg"), btn=document.getElementById("goalsSaveBtn");
+    const student_id=document.getElementById("goalsStudentId").value;
+    const gid=document.getElementById("goalsId").value;
+    const num = id => { const e=document.getElementById(id); return (!e || e.value==="") ? null : Number(e.value); };
+    const data = document.getElementById("g_data").value || null;
+    const campos = {
+      ideal_weight:     num("g_peso"),
+      target_bodyfat:   num("g_bf"),
+      target_date:      data,
+      monthly_workouts: num("g_treinos"),
+      updated_at:       new Date().toISOString()
+    };
+    if(campos.ideal_weight==null && campos.target_bodyfat==null && !data && campos.monthly_workouts==null){
+      msg.className="msg err"; msg.textContent="Preencha ao menos uma meta."; return;
+    }
+    btn.disabled=true; msg.className="msg"; msg.textContent="";
+    let error;
+    if(gid){ ({ error } = await sb.from("goals").update(campos).eq("id", gid)); }
+    else   { ({ error } = await sb.from("goals").insert({ student_id, ...campos })); }
+    btn.disabled=false;
+    if(error){ msg.className="msg err"; msg.textContent="Erro ao salvar: "+error.message; return; }
+    msg.className="msg ok"; msg.textContent="Metas salvas! Já aparecem no painel do aluno.";
+    if(!gid) abrirMetas(student_id);
+  }
+
+  /* ---------- PROFISSIONAL: CONSULTAS ---------- */
+  function novaConsulta(id){
+    const s = STUDENTS.find(x=>x.id===id);
+    document.getElementById("consultStudentId").value = id;
+    document.getElementById("consultStudentName").textContent = nomeAluno(s);
+    document.getElementById("c_date").value = "";
+    document.getElementById("c_time").value = "09:00";
+    document.getElementById("c_notes").value = "";
+    const card = document.getElementById("consultCard");
+    card.style.display = "block";
+    const m = document.getElementById("consultMsg"); m.className="msg"; m.textContent="";
+    listarConsultas(id);
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  function fecharConsulta(){ const c=document.getElementById("consultCard"); if(c) c.style.display="none"; }
+
+  async function listarConsultas(id){
+    const box = document.getElementById("consultList");
+    const { data, error } = await sb.from("consultations").select("*")
+      .eq("student_id", id).order("scheduled_at",{ascending:false});
+    if(!box) return;
+    if(error){ box.innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+    if(!data || !data.length){ box.innerHTML = `<div class="empty">Nenhuma consulta agendada para este aluno.</div>`; return; }
+    const agora = new Date();
+    box.innerHTML = data.map(c=>{
+      const futura = new Date(c.scheduled_at) >= agora;
+      const et = futura
+        ? `<span class="tag" style="background:#eef4ff;color:#1d4ed8;border-color:#c7dbff">agendada</span>`
+        : `<span class="tag">realizada</span>`;
+      return `<div class="student-row">
+        <div><div class="name">${fmtDataHora(c.scheduled_at)} ${et}</div>
+             ${c.notes?`<div class="meta">${esc(c.notes)}</div>`:""}</div>
+        <div class="row-actions"><button class="btn small ghost" onclick="excluirConsulta('${c.id}','${id}')">Remover</button></div>
+      </div>`;
+    }).join("");
+  }
+
+  async function salvarConsulta(){
+    const msg=document.getElementById("consultMsg"), btn=document.getElementById("consultSaveBtn");
+    const student_id=document.getElementById("consultStudentId").value;
+    const d=document.getElementById("c_date").value, h=document.getElementById("c_time").value || "09:00";
+    if(!student_id || !d){ msg.className="msg err"; msg.textContent="Escolha a data da consulta."; return; }
+    btn.disabled=true; msg.className="msg"; msg.textContent="";
+    const { error } = await sb.from("consultations").insert({
+      student_id, scheduled_at: new Date(`${d}T${h}`).toISOString(),
+      notes: document.getElementById("c_notes").value.trim() || null,
+      created_by: ME.id
+    });
+    btn.disabled=false;
+    if(error){ msg.className="msg err"; msg.textContent="Erro ao agendar: "+error.message; return; }
+    msg.className="msg ok"; msg.textContent="Consulta agendada!";
+    document.getElementById("c_notes").value="";
+    listarConsultas(student_id);
+  }
+
+  async function excluirConsulta(id, studentId){
+    if(!confirm("Remover esta consulta?")) return;
+    const { error } = await sb.from("consultations").delete().eq("id", id);
+    if(error){ alert("Erro ao remover: "+error.message); return; }
+    listarConsultas(studentId);
+  }
+
+  async function salvarAvaliacao(){
+    const msg=document.getElementById("assessMsg"), btn=document.getElementById("assessSaveBtn");
+    const student_id=document.getElementById("assessStudentId").value;
+    const date=document.getElementById("a_date").value;
+    if(!student_id || !date){ msg.className="msg err"; msg.textContent="Escolha aluno e data."; return; }
+    const val = id => { const e=document.getElementById(id); return (!e || e.value==="") ? null : Number(e.value); };
+    const juntar = (pref, lista) => {
+      const o = {};
+      lista.forEach(([k])=>{ const v = val(pref+k); if(v!=null) o[k]=v; });
+      return Object.keys(o).length ? o : null;
+    };
+    const row = { student_id, date,
+      weight:   val("a_weight"),
+      height:   val("a_height"),
+      body_fat: val("a_bf"),
+      lean_mass:val("a_lean"),
+      fat_mass: val("a_fat"),
+      skinfolds:      juntar("dob_", DOBRAS),
+      circumferences: juntar("per_", PERIMETROS),
+      notes:    document.getElementById("a_notes").value.trim() || null,
+      created_by: ME.id };
+    btn.disabled=true; msg.className="msg"; msg.textContent="";
+
+    let error;
+    if(EDIT_ID){
+      const { created_by, ...campos } = row;
+      ({ error } = await sb.from("assessments").update(campos).eq("id", EDIT_ID));
+    } else {
+      ({ error } = await sb.from("assessments").insert(row));
+    }
+    btn.disabled=false;
+    if(error){ msg.className="msg err"; msg.textContent="Erro ao salvar: "+error.message; return; }
+    msg.className="msg ok"; msg.textContent = EDIT_ID ? "Alterações salvas!" : "Avaliação salva!";
+    const alvo = student_id;
+    EDIT_ID = null;
+    await loadStudents();
+    const lista = document.getElementById("assessList_"+alvo);
+    if(lista && lista.innerHTML){ lista.innerHTML=""; verAvaliacoes(alvo); }
+    setTimeout(fecharForm, 800);
+  }
+
+  init();
+</script>
+</body>
+</html>

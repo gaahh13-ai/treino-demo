@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu dashboard — TreinoApp</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    color-scheme:light;
+    --txt:#4b3b58; --muted:#9a8aa6; --line:#f2e2ec;
+    --pink:#ec4899; --pink-deep:#db2777; --pink-soft:#f9a8d4;
+    --blue:#60a5fa; --blue-deep:#3b82f6;
+    --lilac:#818cf8; --green:#16a34a; --amber:#f59e0b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  body{min-height:100vh;background:linear-gradient(180deg,#fdf2f8,#f6f1fe 45%,#eef5ff);color:var(--txt)}
+
+  nav.top{background:rgba(253,244,248,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  nav.top .in{max-width:1120px;margin:0 auto;padding:0 20px;height:66px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .logo{height:32px}
+  .navbtns{display:flex;gap:8px}
+  .nbtn{border:1.5px solid var(--line);background:#fff;color:var(--pink-deep);border-radius:12px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;white-space:nowrap}
+  .nbtn.solid{border:none;color:#fff;background:linear-gradient(120deg,#f472b6,#818cf8)}
+
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 20px 70px}
+  .hello{font-size:22px;font-weight:800}
+  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .updated{font-size:12px;color:var(--muted);margin-top:6px}
+
+  .section-title{font-size:16px;font-weight:800;margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+  .section-title::before{content:"";width:5px;height:18px;border-radius:3px;background:linear-gradient(180deg,var(--pink),var(--lilac))}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 8px 22px rgba(180,90,140,.06)}
+  .card h3{font-size:14px;font-weight:800;color:var(--pink-deep);margin-bottom:12px}
+
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:18px}
+  .kpi{padding:16px;border-top:3px solid var(--pink)}
+  .kpi .label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .kpi .val{font-size:23px;font-weight:800;margin:6px 0 2px}
+  .kpi .delta{font-size:11px;color:var(--muted)}
+  .kpi.b{border-top-color:var(--blue)} .kpi.l{border-top-color:var(--lilac)}
+  .kpi.g{border-top-color:var(--green)} .kpi.a{border-top-color:var(--amber)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .chart-box{position:relative;height:230px}
+  .empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;
+         border:2px dashed var(--line);border-radius:14px;color:var(--muted);font-size:13px;text-align:center;padding:16px;line-height:1.5}
+
+  .bar-track{height:14px;border-radius:99px;background:#f6eef4;overflow:hidden;margin:10px 0 6px}
+  .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#f472b6,#818cf8);width:0%}
+  .bar-legend{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+
+  .metas div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .metas div:last-child{border-bottom:none}
+  .metas b{color:var(--pink-deep)}
+  .cd{font-weight:600;color:var(--muted);font-size:12px;margin-left:2px}
+  .cd.hoje{color:var(--pink-deep)}
+  .cd.venceu{color:#c0392b}
+
+  .note{font-size:13.5px;line-height:1.6;color:var(--txt)}
+  .tag{display:inline-block;background:#fff7ed;color:#b45309;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;border:1px solid #fed7aa}
+  #loading{text-align:center;padding:90px 20px;color:var(--muted)}
+  .aluno-op{display:flex;align-items:center;justify-content:space-between;padding:14px 4px;
+    border-bottom:1px solid var(--line);text-decoration:none;color:var(--txt);font-weight:700;font-size:14.5px}
+  .aluno-op:last-child{border-bottom:none}
+  .aluno-op:hover{color:var(--pink-deep)}
+  .aluno-op .seta{color:var(--pink)}
+  .quem{display:inline-block;background:#fce7f3;color:#be185d;font-size:12px;font-weight:800;
+    padding:4px 12px;border-radius:999px;margin-top:8px}
+  .rep{padding:11px 0;border-bottom:1px dashed var(--line)}
+  .rep:last-child{border-bottom:none}
+  .rep-top{font-size:11.5px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px}
+  .rep-txt{font-size:13.5px;line-height:1.5;color:var(--txt)}
+  .ver-mais{display:block;width:100%;margin-top:10px;padding:9px;border:1px dashed var(--line);
+    background:#fffdfe;border-radius:11px;color:var(--pink-deep);font-weight:700;font-size:12.5px;cursor:pointer}
+  .ver-mais:hover{background:#faf3f8}
+  .treino-linha{display:flex;align-items:center;gap:18px}
+  .treino-num{font-size:44px;font-weight:800;line-height:1;
+    background:linear-gradient(120deg,#f472b6,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .treino-rot{font-size:15px;font-weight:700}
+  .treino-alvo{font-size:22px;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:700}
+  .meta-sm{font-size:12px;color:var(--muted);margin-top:4px}
+
+  @media(max-width:980px){ .kpis{grid-template-columns:repeat(3,1fr)} .grid3{grid-template-columns:1fr} }
+  @media(max-width:680px){ .kpis{grid-template-columns:repeat(2,1fr)} .grid2{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<nav class="top"><div class="in">
+  <a href="index.html"><span style="font-weight:800;font-size:20px;color:var(--pink-deep)">TreinoApp</span></a>
+  <div class="navbtns">
+    <a class="nbtn" href="app.html">← Painel</a>
+    <button class="nbtn solid" onclick="sair()">Sair</button>
+  </div>
+</div></nav>
+
+<div class="wrap">
+  <div id="loading">Carregando seu dashboard…</div>
+  <div id="content" style="display:none">
+
+    <div class="hello" id="hello">Olá!</div>
+    <div class="sub">Acompanhe sua evolução ao longo do acompanhamento.</div>
+    <div class="updated" id="updated">Nenhuma avaliação registrada ainda.</div>
+
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="card kpi">   <div class="label">Peso atual</div>   <div class="val" id="k_peso">—</div>   <div class="delta" id="d_peso">sem dados</div></div>
+      <div class="card kpi l"> <div class="label">% Gordura</div>    <div class="val" id="k_bf">—</div>     <div class="delta" id="d_bf">sem dados</div></div>
+      <div class="card kpi b"> <div class="label">Massa magra</div>  <div class="val" id="k_lean">—</div>   <div class="delta" id="d_lean">sem dados</div></div>
+      <div class="card kpi b"> <div class="label">Sono</div>         <div class="val" id="k_sono">—</div>   <div class="delta">em breve</div></div>
+      <div class="card kpi g"> <div class="label">Dieta</div>        <div class="val" id="k_dieta">—</div>  <div class="delta">em breve</div></div>
+      <div class="card kpi a"> <div class="label">Falta p/ meta</div><div class="val" id="k_meta">—</div>   <div class="delta" id="d_meta">defina uma meta</div></div>
+    </div>
+
+    <!-- Progresso e treino, lado a lado -->
+    <div class="section-title">🎯 Progresso &amp; 🏋️ Treino</div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Rumo à meta</h3>
+        <div class="bar-track"><div class="bar-fill" id="progressFill"></div></div>
+        <div class="bar-legend"><span id="progIni">Início —</span><span id="progAtual">Atual —</span><span id="progMeta">Meta —</span></div>
+        <div class="empty" id="progEmpty" style="margin-top:14px">Sua meta aparecerá aqui assim que a TreinoApp definir seu objetivo.</div>
+      </div>
+      <div class="card">
+        <h3>Treinos do mês — realizado × meta</h3>
+        <div id="treinoBox">
+          <div class="empty">Sem reports ainda. Envie mensagens pelo Telegram para este bloco ganhar vida.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acompanhamento -->
+    <div class="section-title">💬 Acompanhamento</div>
+    <div class="grid2">
+      <div class="card"><h3>Meus reports</h3><div id="reportsBox"><div class="empty">Nenhum report enviado ainda.</div></div></div>
+      <div class="card"><h3>🧑‍⚕️ Observações da nutricionista</h3><div id="obsBox"><div class="empty">Nenhuma observação registrada ainda.</div></div></div>
+    </div>
+
+    <!-- Sono e dieta -->
+    <div class="section-title">😴 Sono &amp; 🍽️ Dieta</div>
+    <div class="grid2">
+      <div class="card"><h3>Qualidade do sono</h3><div class="empty">Em breve.</div></div>
+      <div class="card"><h3>Dieta — nota &amp; comentário</h3><div class="empty">Em breve.</div></div>
+    </div>
+
+    <!-- Evolução -->
+    <div class="section-title">📈 Evolução — composição corporal</div>
+    <div class="grid3">
+      <div class="card"><h3>% de Gordura</h3><div class="chart-box" id="box_bf"><canvas id="c_bf"></canvas></div></div>
+      <div class="card"><h3>Peso corporal (kg)</h3><div class="chart-box" id="box_peso"><canvas id="c_peso"></canvas></div></div>
+      <div class="card"><h3>Massa magra × Massa gorda (kg)</h3><div class="chart-box" id="box_mass"><canvas id="c_mass"></canvas></div></div>
+      <div class="card"><h3>Soma de dobras (mm) — menor é melhor</h3><div class="chart-box" id="box_folds"><canvas id="c_folds"></canvas></div></div>
+      <div class="card" style="grid-column:span 2"><h3>Perímetros-chave (cm)</h3><div class="chart-box" id="box_perim" style="height:300px"><canvas id="c_perim"></canvas></div></div>
+      <div class="card"><h3>🎯 Metas</h3>
+        <div class="metas" id="metasBox">
+          <div><span>Peso ideal</span><b id="m_peso">—</b></div>
+          <div><span>% de gordura alvo</span><b id="m_bf">—</b></div>
+          <div><span>Data alvo</span><b id="m_data">—</b></div>
+          <div><span>Próxima consulta</span><b id="m_consulta">—</b></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://qubjknesswejsddcapom.supabase.co";
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1YmprbmVzc3dlanNkZGNhcG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTYzNTYsImV4cCI6MjA5OTkzMjM1Nn0._nDLQ_Q5wN-4eNS0jf-lnyhGHixoZ5_SdXvTvBV_d3E";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+  });
+
+  const CORES = { pink:"#ec4899", lilac:"#818cf8", blue:"#60a5fa", green:"#16a34a", grid:"#f2e2ec", txt:"#9a8aa6" };
+
+  // as 7 dobras cutâneas (somadas em um único valor por avaliação)
+  const DOBRAS = ["tricipital","subescapular","peitoral","axilar_media","suprailiaca","abdominal","coxa"];
+
+  // as 8 circunferências, cada uma vira uma linha no gráfico
+  const PERIMETROS = [
+    ["ombro",           "Ombro",           "#38bdf8"],
+    ["braco_relaxado",  "Braço relaxado",  "#16a34a"],
+    ["braco_contraido", "Braço contraído", "#65a30d"],
+    ["cintura",         "Cintura",         "#f59e0b"],
+    ["abdominal",       "Abdominal",       "#f97316"],
+    ["quadril",         "Quadril",         "#a855f7"],
+    ["coxa",            "Coxa",            "#ec4899"],
+    ["panturrilha",     "Panturrilha",     "#0d9488"]
+  ];
+  let ALVO = null;          // perfil do aluno exibido
+  let VENDO_OUTRO = false;  // true quando profissional vê o dashboard de um aluno
+  let REPORTS = [];         // mensagens recebidas pelo Telegram
+  let META = null;          // metas do aluno
+  const FUSO = "America/Sao_Paulo";
+
+  /* sessão expira em 1 hora */
+  const DURACAO_MS = 60*60*1000;
+  function marcarInicio(){ if(!localStorage.getItem("sessao_inicio")) localStorage.setItem("sessao_inicio", String(Date.now())); }
+  async function expirouSessao(){
+    const ini = Number(localStorage.getItem("sessao_inicio")||0);
+    if(ini && Date.now()-ini > DURACAO_MS){
+      localStorage.removeItem("sessao_inicio");
+      await sb.auth.signOut();
+      location.href = "login.html?expirou=1";
+      return true;
+    }
+    return false;
+  }
+  setInterval(expirouSessao, 60*1000);
+
+  async function sair(){ localStorage.removeItem("sessao_inicio"); await sb.auth.signOut(); location.href = "login.html"; }
+  function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
+  function fmtDate(d){ if(!d) return "—"; const p=String(d).slice(0,10).split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; }
+  function n1(v){ return (v==null||v==="") ? null : Number(v); }
+  function kg(v){ return v==null ? "—" : Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+" kg"; }
+  function pct(v){ return v==null ? "—" : Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"; }
+
+  async function init(){
+    let { data:{ session } } = await sb.auth.getSession();
+    if(!session){
+      session = await new Promise(res=>{ const t=setTimeout(()=>res(null),2500);
+        sb.auth.onAuthStateChange((_e,s)=>{ if(s){ clearTimeout(t); res(s); } }); });
+    }
+    if(!session){ location.href = "login.html"; return; }
+    marcarInicio();
+    if(await expirouSessao()) return;
+
+    const user = session.user;
+    let { data: me } = await sb.from("profiles").select("*").eq("id", user.id).single();
+    if(!me) me = { id:user.id, role:"student", full_name:null };
+
+    // profissional/criador pode abrir o dashboard de um aluno via ?aluno=<id>
+    const alunoId = new URLSearchParams(location.search).get("aluno");
+    if(me.role !== "student"){
+      if(alunoId){
+        const { data: al } = await sb.from("profiles").select("*").eq("id", alunoId).single();
+        ALVO = al || me;
+        VENDO_OUTRO = !!al && al.id !== me.id;
+      } else {
+        // sem aluno escolhido: mostra a lista em vez de um dashboard vazio
+        await escolherAluno(me);
+        return;
+      }
+    } else {
+      ALVO = me;
+    }
+
+    const [{ data: avals }, { data: metas }, { data: consultas }, { data: reports }] = await Promise.all([
+      sb.from("assessments").select("*").eq("student_id", ALVO.id).order("date",{ascending:true}),
+      sb.from("goals").select("*").eq("student_id", ALVO.id).limit(1),
+      sb.from("consultations").select("scheduled_at").eq("student_id", ALVO.id).order("scheduled_at",{ascending:true}),
+      sb.from("reports").select("*").eq("student_id", ALVO.id).order("date",{ascending:false}).limit(60)
+    ]);
+
+    REPORTS = reports || [];
+
+    const agora = new Date();
+    const prox = (consultas||[]).find(c=>new Date(c.scheduled_at) >= agora);
+    render(avals || [], (metas && metas[0]) || null, prox ? prox.scheduled_at : null);
+  }
+
+  async function escolherAluno(me){
+    const { data: alunos } = await sb.from("profiles").select("*")
+      .eq("professional_id", me.id).order("full_name");
+    const ativos = (alunos||[]).filter(a => (a.status||"active")==="active");
+    const lista = ativos.length
+      ? ativos.map(a=>{
+          const nome = a.full_name || a.email || "Aluno";
+          return `<a class="aluno-op" href="dashboard.html?aluno=${a.id}">
+                    <span>${esc(nome)}</span><span class="seta">→</span></a>`;
+        }).join("")
+      : `<div class="empty">Você ainda não tem alunos ativos.</div>`;
+
+    document.getElementById("content").innerHTML = `
+      <div class="hello">Dashboard dos alunos</div>
+      <div class="sub">Escolha de quem você quer ver a evolução.</div>
+      <div class="card" style="margin-top:20px">${lista}</div>`;
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("content").style.display = "block";
+  }
+
+  function render(avals, meta, proximaConsulta){
+    const ehOutro = VENDO_OUTRO;
+    const nomeCompleto = (ALVO.full_name || ALVO.email || "Aluno").trim();
+    const nome = nomeCompleto.split(/\s+/)[0];
+    const hello = document.getElementById("hello");
+    if(ehOutro){
+      hello.innerHTML = `${esc(nomeCompleto)}<br><span class="quem">você está vendo como profissional</span>`;
+      document.querySelector(".sub").textContent = "Evolução do aluno ao longo do acompanhamento.";
+    } else {
+      hello.textContent = nome ? `Olá, ${nome} 👋` : "Olá! 👋";
+    }
+
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("content").style.display = "block";
+
+    META = meta;
+    renderReports();
+    renderObs(avals);
+
+    if(avals.length){
+      const ult = avals[avals.length-1];
+      const ant = avals.length > 1 ? avals[avals.length-2] : null;
+      document.getElementById("updated").textContent = "Última avaliação: " + fmtDate(ult.date);
+
+      setKpi("k_peso","d_peso", kg(n1(ult.weight)),  delta(n1(ult.weight),  ant && n1(ant.weight),  "kg"));
+      setKpi("k_bf","d_bf",     pct(n1(ult.body_fat)),delta(n1(ult.body_fat),ant && n1(ant.body_fat),"pp"));
+      setKpi("k_lean","d_lean", kg(n1(ult.lean_mass)),delta(n1(ult.lean_mass),ant && n1(ant.lean_mass),"kg"));
+
+      desenharGraficos(avals);
+    }
+
+    if(proximaConsulta){
+      const d = new Date(proximaConsulta);
+      document.getElementById("m_consulta").textContent =
+        d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    }
+
+    if(meta){
+      document.getElementById("m_peso").textContent = meta.ideal_weight   != null ? kg(meta.ideal_weight)  : "—";
+      document.getElementById("m_bf").textContent   = meta.target_bodyfat != null ? pct(meta.target_bodyfat): "—";
+      document.getElementById("m_data").innerHTML = fmtDate(meta.target_date) + contagem(meta.target_date);
+      if(avals.length && meta.target_bodyfat != null){
+        montarProgresso(avals, meta);
+      } else if(avals.length && meta.ideal_weight != null){
+        montarProgressoPeso(avals, meta);
+      }
+    }
+  }
+
+  // "(faltam 3 meses)" ou, abaixo de um mês, "(faltam 12 dias)"
+  function contagem(dataAlvo){
+    if(!dataAlvo) return "";
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const alvo = new Date(String(dataAlvo).slice(0,10) + "T00:00:00");
+    if(isNaN(alvo)) return "";
+    const dias = Math.round((alvo - hoje) / 86400000);
+
+    if(dias < 0)   return ` <span class="cd venceu">(prazo encerrado)</span>`;
+    if(dias === 0) return ` <span class="cd hoje">(é hoje!)</span>`;
+    if(dias === 1) return ` <span class="cd">(falta 1 dia)</span>`;
+    if(dias < 30)  return ` <span class="cd">(faltam ${dias} dias)</span>`;
+
+    const meses = Math.round(dias / 30.44);
+    return meses === 1
+      ? ` <span class="cd">(falta 1 mês)</span>`
+      : ` <span class="cd">(faltam ${meses} meses)</span>`;
+  }
+
+  function fmtQuando(v){
+    const d = new Date(v);
+    return d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  }
+
+  /* Conta os treinos do mês entendendo dois tipos de mensagem:
+     - "treinei hoje"            → soma 1 (ou a quantidade informada)
+     - "esse mês treinei 15x"    → define o total do mês naquele momento
+     Quando há um total declarado, ele vira a base e só somamos os
+     treinos relatados DEPOIS dele. */
+  // dia a que o report se refere (o citado pela pessoa, ou o dia do envio)
+  function diaDoReport(r){
+    const p = r.parsed || {};
+    if(p.data_referencia) return String(p.data_referencia).slice(0,10);
+    return new Date(r.date).toLocaleDateString("en-CA", { timeZone: FUSO });
+  }
+
+  function contarTreinos(reportsDoMes){
+    const asc = [...reportsDoMes].sort((a,b)=> new Date(a.date) - new Date(b.date));
+
+    // último total declarado vira a base
+    let base = 0, apartirDe = -1;
+    for(let i = asc.length - 1; i >= 0; i--){
+      const t = asc[i].parsed && asc[i].parsed.total_treinos_mes;
+      if(t != null && !isNaN(Number(t))){ base = Number(t); apartirDe = i; break; }
+    }
+
+    // dias já cobertos — evita contar duas vezes o mesmo dia
+    const diasContados = new Set();
+    if(apartirDe >= 0) diasContados.add(diaDoReport(asc[apartirDe]));
+
+    let extras = 0;
+    for(let i = apartirDe + 1; i < asc.length; i++){
+      const p = asc[i].parsed || {};
+      if(p.total_treinos_mes != null) continue;
+      if(p.treinou !== true) continue;
+
+      const dia = diaDoReport(asc[i]);
+      const q = Number(p.quantidade_treinos);
+
+      // relato de vários treinos de uma vez ("treinei sábado e domingo")
+      if(!isNaN(q) && q > 1){ extras += q; diasContados.add(dia); continue; }
+
+      // um treino por dia: se o dia já foi contado, ignora
+      if(diasContados.has(dia)) continue;
+      extras += 1;
+      diasContados.add(dia);
+    }
+    return base + extras;
+  }
+
+  /* Mostra os 3 primeiros e esconde o resto atrás de um botão */
+  function listaComVerMais(itens, base, rotulo){
+    if(!itens.length) return "";
+    if(itens.length <= 3) return itens.join("");
+    const restantes = itens.length - 3;
+    const label = `▾ Ver mais ${restantes} ${rotulo}`;
+    return `${itens.slice(0,3).join("")}
+      <div id="${base}_mais" style="display:none">${itens.slice(3).join("")}</div>
+      <button class="ver-mais" id="${base}_btn" data-fechado="${label}" onclick="alternarLista('${base}')">${label}</button>`;
+  }
+
+  function alternarLista(base){
+    const box = document.getElementById(base + "_mais");
+    const btn = document.getElementById(base + "_btn");
+    if(!box || !btn) return;
+    const aberto = box.style.display !== "none";
+    box.style.display = aberto ? "none" : "block";
+    btn.textContent = aberto ? btn.dataset.fechado : "▴ Ver menos";
+  }
+
+  function renderObs(avals){
+    const box = document.getElementById("obsBox");
+    if(!box) return;
+    const comNotas = [...avals]
+      .filter(a => a.notes && String(a.notes).trim())
+      .sort((a,b)=> new Date(b.date) - new Date(a.date));
+    if(!comNotas.length){
+      box.innerHTML = `<div class="empty">Nenhuma observação registrada ainda.</div>`;
+      return;
+    }
+    const itens = comNotas.map(a=>`
+      <div class="rep">
+        <div class="rep-top">avaliação de ${fmtDate(a.date)}</div>
+        <div class="rep-txt">${esc(a.notes)}</div>
+      </div>`);
+    box.innerHTML = listaComVerMais(itens, "obs", comNotas.length-3 === 1 ? "observação" : "observações");
+  }
+
+  function renderReports(){
+    // ---- lista de reports ----
+    const box = document.getElementById("reportsBox");
+    if(box){
+      box.innerHTML = REPORTS.length
+        ? listaComVerMais(REPORTS.map(r=>{
+            const p = r.parsed || {};
+            const tags = [];
+            if(p.total_treinos_mes != null) tags.push(`<span class="tag" style="background:#eafaf0;color:#1a8a4a;border-color:#bbeccb">🏋️ total do mês: ${p.total_treinos_mes}</span>`);
+            else if(p.treinou === true) tags.push(`<span class="tag" style="background:#eafaf0;color:#1a8a4a;border-color:#bbeccb">🏋️ ${(p.quantidade_treinos && p.quantidade_treinos > 1) ? p.quantidade_treinos + " treinos" : "treino"}</span>`);
+            if(p.saiu_da_dieta === true)tags.push(`<span class="tag">🍽️ desvio</span>`);
+            if(p.peso_kg)               tags.push(`<span class="tag" style="background:#eef4ff;color:#1d4ed8;border-color:#c7dbff">⚖️ ${p.peso_kg} kg</span>`);
+            return `<div class="rep">
+              <div class="rep-top">${fmtQuando(r.date)} ${tags.join(" ")}</div>
+              <div class="rep-txt">${esc(r.message || "")}</div>
+            </div>`;
+          }), "reps", REPORTS.length-3 === 1 ? "report" : "reports")
+        : `<div class="empty">Nenhum report enviado ainda.<br>Conecte o Telegram no seu painel e mande a primeira mensagem.</div>`;
+    }
+
+    // ---- treinos do mês ----
+    const alvoBox = document.getElementById("treinoBox");
+    if(!alvoBox) return;
+    const agora = new Date();
+    const mesAtual = REPORTS.filter(r=>{
+      const d = new Date(r.date);
+      return d.getMonth()===agora.getMonth() && d.getFullYear()===agora.getFullYear();
+    });
+    const treinos = contarTreinos(mesAtual);
+    const desvios = mesAtual.filter(r=>r.parsed && r.parsed.saiu_da_dieta === true).length;
+
+    if(!REPORTS.length){
+      alvoBox.innerHTML = `<div class="empty">Sem reports ainda. Envie mensagens pelo Telegram para este bloco ganhar vida.</div>`;
+      return;
+    }
+    const mes = agora.toLocaleDateString("pt-BR",{month:"long"});
+    const alvo = (META && META.monthly_workouts != null) ? Number(META.monthly_workouts) : null;
+
+    if(alvo && alvo > 0){
+      const pct = Math.max(0, Math.min(100, (treinos/alvo)*100));
+      const faltam = Math.max(0, alvo - treinos);
+      alvoBox.innerHTML = `
+        <div class="treino-linha">
+          <div class="treino-num">${treinos}<span class="treino-alvo">/${alvo}</span></div>
+          <div>
+            <div class="treino-rot">treinos em ${mes}</div>
+            <div class="meta-sm">${faltam > 0 ? `faltam ${faltam} para a meta do mês` : "meta do mês batida 🎉"}${desvios ? ` · ${desvios} desvio(s) de dieta` : ""}</div>
+          </div>
+        </div>
+        <div class="bar-track" style="margin-top:14px"><div class="bar-fill" style="width:${pct.toFixed(0)}%"></div></div>
+        <div class="bar-legend"><span>0</span><span>${pct.toFixed(0)}% da meta</span><span>${alvo}</span></div>`;
+    } else {
+      alvoBox.innerHTML = `
+        <div class="treino-linha">
+          <div class="treino-num">${treinos}</div>
+          <div>
+            <div class="treino-rot">treino(s) registrado(s) em ${mes}</div>
+            <div class="meta-sm">${mesAtual.length} report(s) no mês${desvios ? ` · ${desvios} desvio(s) de dieta` : ""}</div>
+          </div>
+        </div>`;
+    }
+
+    // KPI de dieta: média das notas, quando houver
+    const notas = REPORTS.map(r=>r.parsed && r.parsed.nota_dieta).filter(v=>v!=null).map(Number);
+    if(notas.length){
+      const media = notas.reduce((a,b)=>a+b,0)/notas.length;
+      const el = document.getElementById("k_dieta");
+      if(el) el.textContent = media.toLocaleString("pt-BR",{maximumFractionDigits:1});
+    }
+  }
+
+  function setKpi(idVal, idDelta, valor, txtDelta){
+    document.getElementById(idVal).textContent = valor;
+    if(txtDelta) document.getElementById(idDelta).textContent = txtDelta;
+  }
+
+  function delta(atual, anterior, unidade){
+    if(atual==null || anterior==null) return "primeira medição";
+    const d = atual - anterior;
+    const s = d>0 ? "+" : "";
+    return `${s}${d.toLocaleString("pt-BR",{maximumFractionDigits:1})} ${unidade} desde a anterior`;
+  }
+
+  function montarProgresso(avals, meta){
+    const ini = n1(avals[0].body_fat), atual = n1(avals[avals.length-1].body_fat), alvo = n1(meta.target_bodyfat);
+    if(ini==null || atual==null || alvo==null) return;
+    const total = ini - alvo, feito = ini - atual;
+    const p = total>0 ? Math.max(0, Math.min(100, (feito/total)*100)) : 0;
+    document.getElementById("progressFill").style.width = p.toFixed(0)+"%";
+    document.getElementById("progIni").textContent   = "Início "+pct(ini);
+    document.getElementById("progAtual").textContent = "Atual "+pct(atual);
+    document.getElementById("progMeta").textContent  = "Meta "+pct(alvo);
+    document.getElementById("progEmpty").style.display = "none";
+    const falta = atual - alvo;
+    document.getElementById("k_meta").textContent = falta>0 ? pct(falta) : "atingida 🎉";
+    document.getElementById("d_meta").textContent = falta>0 ? "de gordura para a meta" : "parabéns!";
+  }
+
+  function montarProgressoPeso(avals, meta){
+    const ini = n1(avals[0].weight), atual = n1(avals[avals.length-1].weight), alvo = n1(meta.ideal_weight);
+    if(ini==null || atual==null || alvo==null) return;
+    const total = Math.abs(ini - alvo), feito = Math.abs(ini - atual);
+    const p = total>0 ? Math.max(0, Math.min(100, (feito/total)*100)) : 0;
+    document.getElementById("progressFill").style.width = p.toFixed(0)+"%";
+    document.getElementById("progIni").textContent   = "Início "+kg(ini);
+    document.getElementById("progAtual").textContent = "Atual "+kg(atual);
+    document.getElementById("progMeta").textContent  = "Meta "+kg(alvo);
+    document.getElementById("progEmpty").style.display = "none";
+    const falta = Math.abs(atual - alvo);
+    document.getElementById("k_meta").textContent = falta>0.05 ? kg(falta) : "atingida 🎉";
+    document.getElementById("d_meta").textContent = falta>0.05 ? "para o peso ideal" : "parabéns!";
+  }
+
+  const opcoes = (titulo) => ({
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:titulo, labels:{ color:CORES.txt, font:{size:11} } } },
+    scales:{
+      x:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} } },
+      y:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} } }
+    }
+  });
+
+  function desenharGraficos(avals){
+    const labels = avals.map(a=>fmtDate(a.date).slice(0,5));
+    const linha = (cor) => ({ borderColor:cor, backgroundColor:cor+"22", borderWidth:2.5,
+      pointBackgroundColor:cor, pointRadius:3, tension:.35, fill:true });
+
+    const bf = avals.map(a=>n1(a.body_fat));
+    if(bf.some(v=>v!=null)) new Chart(document.getElementById("c_bf"),
+      { type:"line", data:{ labels, datasets:[{ label:"% gordura", data:bf, ...linha(CORES.pink) }] }, options:opcoes(false) });
+    else vazio("box_bf");
+
+    const peso = avals.map(a=>n1(a.weight));
+    if(peso.some(v=>v!=null)) new Chart(document.getElementById("c_peso"),
+      { type:"line", data:{ labels, datasets:[{ label:"peso", data:peso, ...linha(CORES.lilac) }] }, options:opcoes(false) });
+    else vazio("box_peso");
+
+    const magra = avals.map(a=>n1(a.lean_mass)), gorda = avals.map(a=>n1(a.fat_mass));
+    if(magra.some(v=>v!=null) || gorda.some(v=>v!=null)) new Chart(document.getElementById("c_mass"),
+      { type:"line", data:{ labels, datasets:[
+        { label:"massa magra", data:magra, ...linha(CORES.blue) },
+        { label:"massa gorda", data:gorda, ...linha(CORES.pink) }] }, options:opcoes(true) });
+    else vazio("box_mass");
+
+    // soma das 7 dobras cutâneas — um ponto por avaliação
+    const somas = avals.map(a=>{
+      const d = a.skinfolds;
+      if(!d) return null;
+      const vals = DOBRAS.map(k=>n1(d[k])).filter(v=>v!=null);
+      return vals.length ? vals.reduce((x,y)=>x+y, 0) : null;
+    });
+    if(somas.some(v=>v!=null)) new Chart(document.getElementById("c_folds"),
+      { type:"line", data:{ labels, datasets:[{ label:"soma das dobras", data:somas, ...linha(CORES.green) }] },
+        options:opcoes(false) });
+    else vazio("box_folds");
+
+    // perímetros — uma linha por circunferência
+    const series = PERIMETROS.map(([k,rot,cor])=>{
+      const dados = avals.map(a=> a.circumferences ? n1(a.circumferences[k]) : null);
+      return dados.some(v=>v!=null) ? {
+        label:rot, data:dados, borderColor:cor, backgroundColor:"transparent",
+        borderWidth:2.5, pointBackgroundColor:cor, pointBorderColor:cor,
+        pointRadius:4, pointHoverRadius:6, tension:.3, fill:false, spanGaps:true
+      } : null;
+    }).filter(Boolean);
+
+    if(series.length) new Chart(document.getElementById("c_perim"),
+      { type:"line", data:{ labels, datasets:series },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          interaction:{ mode:"index", intersect:false },
+          plugins:{ legend:{ position:"top", labels:{ color:CORES.txt, usePointStyle:true, pointStyle:"rectRounded", boxWidth:10, font:{size:11} } } },
+          scales:{
+            x:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} } },
+            y:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} },
+                title:{ display:true, text:"cm", color:CORES.txt, font:{size:11} } }
+          }
+        } });
+    else vazio("box_perim");
+  }
+
+  function vazio(idBox){
+    const b = document.getElementById(idBox);
+    if(b) b.innerHTML = `<div class="empty">Sem dados ainda.</div>`;
+  }
+
+  init();
+</script>
+</body>
+</html>

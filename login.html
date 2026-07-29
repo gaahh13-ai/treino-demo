@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar — TreinoApp</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{color-scheme:light;--txt:#4b3b58;--muted:#9a8aa6;--line:#f2e2ec;--pink:#ec4899;--pink-deep:#db2777}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:linear-gradient(140deg,#fdf2f8,#f6f1fe 55%,#eef5ff);color:var(--txt)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(180,90,140,.14);width:100%;max-width:400px;padding:34px}
+  .logo{height:34px;display:block;margin:0 auto 18px}
+  h1{font-size:20px;font-weight:800;text-align:center;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:20px;line-height:1.45}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+  .field input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:14px}
+  .field input:focus{outline:2px solid #f9a8d4;border-color:#f9a8d4}
+  .btn{width:100%;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:15px;color:#fff;cursor:pointer;
+    background:linear-gradient(120deg,#f472b6,#818cf8);box-shadow:0 8px 20px rgba(236,72,153,.22);margin-top:6px}
+  .btn:disabled{opacity:.6;cursor:default}
+  .links{display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .link{font-size:13px;color:var(--pink-deep);font-weight:600;text-decoration:none;cursor:pointer}
+  .link.muted{color:var(--muted);font-weight:500}
+  .msg{margin-top:14px;font-size:13px;text-align:center;padding:10px;border-radius:10px;display:none;line-height:1.45}
+  .msg.err{display:block;background:#fdecec;color:#c0392b}
+  .msg.ok{display:block;background:#eafaf0;color:#1a8a4a}
+  .msg.warn{display:block;background:#fff7ed;color:#b45309}
+  .back{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <a href="index.html" style="display:block"><span style="font-weight:800;font-size:20px;color:var(--pink-deep)">TreinoApp</span></a>
+
+  <!-- ENTRAR -->
+  <div id="viewLogin">
+    <h1>Área do aluno</h1>
+    <div class="sub">Acompanhe sua evolução com a TreinoApp.</div>
+    <div class="field"><label>E-mail</label><input id="email" type="email" placeholder="voce@email.com" autocomplete="email"></div>
+    <div class="field"><label>Senha</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn" id="loginBtn" onclick="entrar()">Entrar</button>
+    <div class="links">
+      <a class="link" onclick="showView('first')">Primeiro acesso</a>
+      <a class="link muted" onclick="irParaEsqueci()">Esqueci minha senha</a>
+    </div>
+  </div>
+
+  <!-- PRIMEIRO ACESSO -->
+  <div id="viewFirst" style="display:none">
+    <h1>Primeiro acesso</h1>
+    <div class="sub">Digite o e-mail que seu profissional cadastrou. Enviaremos um link de acesso para você entrar e criar sua senha.</div>
+    <div class="field"><label>E-mail</label><input id="emailFirst" type="email" placeholder="voce@email.com" autocomplete="email"></div>
+    <button class="btn" id="firstBtn" onclick="primeiroAcesso()">Enviar link de acesso</button>
+    <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
+  </div>
+
+  <!-- ESQUECI MINHA SENHA -->
+  <div id="viewForgot" style="display:none">
+    <h1>Redefinir senha</h1>
+    <div class="sub" id="forgotSub">Enviaremos um link para o seu e-mail para você criar uma senha nova.</div>
+    <div class="field"><label>E-mail</label><input id="emailForgot" type="email" placeholder="voce@email.com" autocomplete="email"></div>
+    <button class="btn" id="forgotBtn" onclick="enviarReset()">Enviar link de redefinição</button>
+    <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
+  </div>
+
+  <div class="msg" id="msg"></div>
+  <a class="back" href="index.html">← Voltar ao site</a>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://qubjknesswejsddcapom.supabase.co";
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1YmprbmVzc3dlanNkZGNhcG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTYzNTYsImV4cCI6MjA5OTkzMjM1Nn0._nDLQ_Q5wN-4eNS0jf-lnyhGHixoZ5_SdXvTvBV_d3E";
+  const APP_URL   = "https://gaahh13-ai.github.io/treino-demo/app.html";
+  const RESET_URL = "https://gaahh13-ai.github.io/treino-demo/reset.html";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+  });
+
+  const MAX_TENTATIVAS = 5;
+  const JANELA_MIN = 15;   // o bloqueio expira depois de 15 minutos
+
+  sb.auth.getSession().then(({data})=>{ if(data.session) location.href = "app.html"; });
+
+  if(new URLSearchParams(location.search).get("expirou")){
+    localStorage.removeItem("sessao_inicio");
+    setTimeout(()=>showMsg("Sua sessão expirou por segurança. Entre novamente para continuar.","warn"), 200);
+  }
+
+  /* ---------- contador de tentativas ---------- */
+  function chave(email){ return "tent_" + email.trim().toLowerCase(); }
+  function lerTentativas(email){
+    try{
+      const raw = localStorage.getItem(chave(email));
+      if(!raw) return 0;
+      const o = JSON.parse(raw);
+      if(Date.now() - o.ts > JANELA_MIN*60*1000){ localStorage.removeItem(chave(email)); return 0; }
+      return o.n || 0;
+    }catch(e){ return 0; }
+  }
+  function somarTentativa(email){
+    const n = lerTentativas(email) + 1;
+    try{ localStorage.setItem(chave(email), JSON.stringify({n, ts:Date.now()})); }catch(e){}
+    return n;
+  }
+  function zerarTentativas(email){ try{ localStorage.removeItem(chave(email)); }catch(e){} }
+
+  /* ---------- telas ---------- */
+  function showMsg(text, tipo){
+    const el = document.getElementById("msg");
+    el.className = "msg" + (text ? " " + (tipo||"err") : "");
+    el.textContent = text;
+  }
+  function showView(v){
+    document.getElementById("viewLogin").style.display  = v==="login"  ? "block" : "none";
+    document.getElementById("viewFirst").style.display  = v==="first"  ? "block" : "none";
+    document.getElementById("viewForgot").style.display = v==="forgot" ? "block" : "none";
+    showMsg("");
+  }
+  function irParaEsqueci(){
+    document.getElementById("emailForgot").value = document.getElementById("email").value.trim();
+    showView("forgot");
+  }
+  function bloquear(email, aviso){
+    document.getElementById("emailForgot").value = email;
+    document.getElementById("forgotSub").textContent =
+      "Por segurança, o acesso com senha foi bloqueado após 5 tentativas. Envie um link para criar uma senha nova.";
+    showView("forgot");
+    showMsg(aviso, "warn");
+  }
+
+  /* ---------- entrar ---------- */
+  async function entrar(){
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const btn = document.getElementById("loginBtn");
+    if(!email || !password){ showMsg("Preencha e-mail e senha."); return; }
+
+    if(lerTentativas(email) >= MAX_TENTATIVAS){
+      bloquear(email, "Você atingiu o limite de 5 tentativas. Redefina sua senha para continuar.");
+      return;
+    }
+
+    btn.disabled = true; showMsg("");
+    try{
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      zerarTentativas(email);
+      location.href = "app.html";
+    } catch(e){
+      const senhaErrada = /Invalid login/i.test(e.message || "");
+      if(senhaErrada){
+        const usadas = somarTentativa(email);
+        const restam = MAX_TENTATIVAS - usadas;
+        if(restam <= 0){
+          bloquear(email, "Senha incorreta 5 vezes. Enviamos você para a redefinição de senha.");
+        } else {
+          document.getElementById("password").value = "";
+          showMsg(`E-mail ou senha incorretos. ${restam} tentativa${restam>1?"s":""} restante${restam>1?"s":""}.`);
+        }
+      } else {
+        showMsg(traduz(e.message));
+      }
+    } finally { btn.disabled = false; }
+  }
+
+  /* ---------- primeiro acesso ---------- */
+  async function primeiroAcesso(){
+    const email = document.getElementById("emailFirst").value.trim();
+    const btn = document.getElementById("firstBtn");
+    if(!email){ showMsg("Digite seu e-mail."); return; }
+    btn.disabled = true; showMsg("Verificando…", "warn");
+    try{
+      const { data: invited, error: e1 } = await sb.rpc("is_invited", { p_email: email });
+      if(e1) throw e1;
+      if(!invited){
+        showMsg("Este e-mail ainda não foi liberado. Peça para seu profissional cadastrá-lo no painel dele.");
+        btn.disabled = false; return;
+      }
+      const { error: e2 } = await sb.auth.signInWithOtp({
+        email, options: { shouldCreateUser: true, emailRedirectTo: APP_URL }
+      });
+      if(e2) throw e2;
+      showMsg("Pronto! Enviamos um link de acesso para " + email + ". Abra seu e-mail (confira o spam) e clique para entrar.", "ok");
+    } catch(e){ showMsg(traduz(e.message)); btn.disabled = false; }
+  }
+
+  /* ---------- redefinir senha ---------- */
+  async function enviarReset(){
+    const email = document.getElementById("emailForgot").value.trim();
+    const btn = document.getElementById("forgotBtn");
+    if(!email){ showMsg("Digite seu e-mail."); return; }
+    btn.disabled = true; showMsg("Enviando…", "warn");
+    try{
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: RESET_URL });
+      if(error) throw error;
+      zerarTentativas(email);
+      showMsg("Enviamos um link para " + email + ". Confira sua caixa de entrada (e o spam) e crie uma senha nova.", "ok");
+    } catch(e){ showMsg(traduz(e.message)); btn.disabled = false; }
+  }
+
+  function traduz(m){
+    if(/Invalid login/i.test(m)) return "E-mail ou senha incorretos.";
+    if(/Email not confirmed/i.test(m)) return "Confirme seu e-mail antes de entrar.";
+    if(/rate limit|too many|after/i.test(m)) return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
+    return m || "Ocorreu um erro. Tente de novo.";
+  }
+  document.getElementById("password").addEventListener("keydown", e=>{ if(e.key==="Enter") entrar(); });
+</script>
+</body>
+</html>

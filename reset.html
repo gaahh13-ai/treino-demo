@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redefinir senha — TreinoApp</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{color-scheme:light;--txt:#4b3b58;--muted:#9a8aa6;--line:#f2e2ec;--pink-deep:#db2777}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:linear-gradient(140deg,#fdf2f8,#f6f1fe 55%,#eef5ff);color:var(--txt)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(180,90,140,.14);width:100%;max-width:400px;padding:34px}
+  .logo{height:34px;display:block;margin:0 auto 18px}
+  h1{font-size:20px;font-weight:800;text-align:center;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:20px;line-height:1.4}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+  .field input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:14px}
+  .field input:focus{outline:2px solid #f9a8d4;border-color:#f9a8d4}
+  .btn{width:100%;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:15px;color:#fff;cursor:pointer;
+    background:linear-gradient(120deg,#f472b6,#818cf8);box-shadow:0 8px 20px rgba(236,72,153,.22);margin-top:6px}
+  .btn:disabled{opacity:.6;cursor:default}
+  .msg{margin-top:14px;font-size:13px;text-align:center;padding:10px;border-radius:10px;display:none;line-height:1.4}
+  .msg.err{display:block;background:#fdecec;color:#c0392b}
+  .msg.ok{display:block;background:#eafaf0;color:#1a8a4a}
+  .back{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <a href="index.html" style="display:block"><span style="font-weight:800;font-size:20px;color:var(--pink-deep)">TreinoApp</span></a>
+  <h1>Criar nova senha</h1>
+  <div class="sub" id="sub">Digite sua nova senha abaixo.</div>
+
+  <div id="form">
+    <div class="field"><label>Nova senha</label><input id="pw1" type="password" placeholder="••••••••"></div>
+    <div class="field"><label>Confirmar nova senha</label><input id="pw2" type="password" placeholder="••••••••"></div>
+    <button class="btn" id="btn" onclick="salvar()">Salvar nova senha</button>
+  </div>
+  <div class="msg" id="msg"></div>
+  <a class="back" href="login.html">← Voltar ao login</a>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://qubjknesswejsddcapom.supabase.co";
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1YmprbmVzc3dlanNkZGNhcG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTYzNTYsImV4cCI6MjA5OTkzMjM1Nn0._nDLQ_Q5wN-4eNS0jf-lnyhGHixoZ5_SdXvTvBV_d3E";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+  });
+  let ready = false;
+
+  function showMsg(t, ok){ const el=document.getElementById("msg"); el.className="msg"+(t?(ok?" ok":" err"):""); el.textContent=t; }
+
+  // O SDK detecta o token de recuperação na URL e dispara este evento
+  sb.auth.onAuthStateChange((event, session)=>{ if(event==="PASSWORD_RECOVERY" && session){ ready=true; } });
+
+  // fallback: se já há sessão de recuperação
+  sb.auth.getSession().then(({data})=>{ if(data.session) ready=true; });
+
+  async function salvar(){
+    const p1=document.getElementById("pw1").value, p2=document.getElementById("pw2").value;
+    if(p1.length<6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
+    if(p1!==p2){ showMsg("As senhas não coincidem."); return; }
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session && !ready){ showMsg("Link inválido ou expirado. Volte ao login e use \"Esqueci minha senha\" de novo."); return; }
+    document.getElementById("btn").disabled=true; showMsg("");
+    try{
+      const { error } = await sb.auth.updateUser({ password:p1 });
+      if(error) throw error;
+      showMsg("Senha alterada com sucesso! Redirecionando para o login…", true);
+      await sb.auth.signOut();
+      setTimeout(()=>location.href="login.html", 1800);
+    }catch(e){ showMsg(e.message || "Erro ao salvar."); document.getElementById("btn").disabled=false; }
+  }
+</script>
+</body>
+</html>
