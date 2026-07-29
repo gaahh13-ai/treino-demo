@@ -95,12 +95,15 @@
   .ex-meta{font-size:12px;color:var(--muted);margin-top:2px}
 
   /* montador de ficha (profissional) */
-  .fx-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .fx-row{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--line)}
   .fx-row:last-of-type{border-bottom:none}
-  .fx-nome{font-weight:700;font-size:13.5px;flex:1;min-width:120px}
+  .fx-topo{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .fx-nome{font-weight:700;font-size:13.5px}
   .fx-campos{display:flex;gap:8px;flex-wrap:wrap}
   .fx-campos label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
   .fx-campos input{width:64px;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+  .fx-obs{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px}
+  .fx-obs:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
   .fx-add{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
   .fx-add select{flex:1;min-width:160px;padding:9px;border:1px solid var(--line);border-radius:10px;font-size:13px}
   /* treino (aluno) */
@@ -128,6 +131,11 @@
   .ser-in:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
   .ser-ok{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:10px 0;font-size:15px;cursor:pointer;color:var(--muted)}
   .ser-ok.done{background:#eafaf0;border-color:#bbeccb;color:#1a8a4a;font-weight:800}
+  .carga-linha{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .carga-linha label{font-size:12px;font-weight:700;color:var(--muted)}
+  .carga-in{width:110px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:17px;text-align:center;font-weight:700}
+  .carga-in:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
+  .carga-un{font-size:13px;color:var(--muted);font-weight:700}
   .exec-crono{font-size:12px;font-weight:800;color:var(--pink-deep);background:#fff;border:1px solid var(--line);
     border-radius:999px;padding:5px 11px;white-space:nowrap}
   /* acesso destacado ao treino (dashboard do aluno) */
@@ -686,30 +694,25 @@
   function renderExecucao(dia, exs){
     const p = document.getElementById("panel");
     const cards = exs.map((x,i)=>{
-      const n = (x.series && x.series>0) ? x.series : 3;
       const ult = ULTIMAS[x.exercicio_id];
-      let series = "";
-      for(let s=1;s<=n;s++){
-        series += `<div class="ser-row">
-          <span class="ser-num">${s}ª</span>
-          <input class="ser-in" type="number" step="0.5" placeholder="kg" value="${ult??""}" onchange="salvarSerie('${x.id}','${x.exercicio_id||""}',${s},this.value,null)">
-          <input class="ser-in" type="number" placeholder="reps" onchange="salvarSerie('${x.id}','${x.exercicio_id||""}',${s},null,this.value)">
-          <button class="ser-ok" onclick="marcarSerie(this)">✓</button>
-        </div>`;
-      }
       const alvo = [];
       if(x.series!=null && x.reps) alvo.push(`${x.series}x${esc(x.reps)}`);
       if(x.carga_alvo!=null) alvo.push(`alvo ${x.carga_alvo} kg`);
       const descBtn = (x.descanso_seg!=null) ?
-        `<button class="desc-btn" style="margin-top:12px" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
+        `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
       return `<div class="ex-card">
         <div class="ex-card-top">
           <div><div class="ex-card-nome">${esc(x.nome_cache||"Exercício")}</div>
           <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${ult} kg`:""}</div></div>
         </div>
-        <div class="ser-head"><span>série</span><span>carga</span><span>reps</span><span>ok</span></div>
-        ${series}
-        ${descBtn}
+        ${x.obs?`<div class="tr-obs" style="margin-top:8px">📝 ${esc(x.obs)}</div>`:""}
+        <div class="carga-linha">
+          <label>Carga usada</label>
+          <input class="carga-in" type="number" step="0.5" placeholder="${ult!=null?ult:"kg"}" value="${ult??""}"
+                 onchange="salvarCarga('${x.id}','${x.exercicio_id||""}',this.value)">
+          <span class="carga-un">kg</span>
+          ${descBtn}
+        </div>
       </div>`;
     }).join("");
 
@@ -720,14 +723,27 @@
           <div class="exec-titulo">${esc(dia.label)}</div>
           <span class="exec-crono" id="execCrono">⏲️ 00:00</span>
         </div>
-        <button class="btn small" id="descBtn" onclick="descanso(60)">⏱️ Descanso</button>
       </div>
       ${cards}
       <button class="btn" style="width:100%;margin-top:8px" onclick="finalizarTreino()">✅ Finalizar treino</button>`;
     window.scrollTo({top:0});
   }
 
-  function marcarSerie(btn){ btn.classList.toggle("done"); }
+  async function salvarCarga(fichaExId, exId, carga){
+    let atual = EXEC_LOGS[fichaExId] || {};
+    atual.carga = carga===""?null:Number(carga);
+    EXEC_LOGS[fichaExId] = atual;
+    const payload = {
+      sessao_id: EXEC_SESSAO.id, student_id: ME.id, professional_id: EXEC_SESSAO.professional_id,
+      ficha_exercicio_id: fichaExId, exercicio_id: exId||null, serie_num: 1,
+      carga: atual.carga, reps: null
+    };
+    if(atual.id){ await sb.from("series_feitas").update(payload).eq("id", atual.id); }
+    else {
+      const { data } = await sb.from("series_feitas").insert(payload).select("id").single();
+      if(data) EXEC_LOGS[fichaExId].id = data.id;
+    }
+  }
 
   async function salvarSerie(fichaExId, exId, serie, carga, reps){
     const chave = fichaExId + "_" + serie;
@@ -1967,14 +1983,18 @@
 
     const rows = lista.map(x=>`
       <div class="fx-row">
-        <div class="fx-nome">${esc(x.nome_cache || "Exercício")}</div>
+        <div class="fx-topo">
+          <div class="fx-nome">${esc(x.nome_cache || "Exercício")}</div>
+          <button class="btn small ghost" title="Remover" onclick="removerEx('${x.id}')">🗑</button>
+        </div>
         <div class="fx-campos">
           <label>Séries<input type="number" value="${x.series??""}" onchange="updEx('${x.id}','series',this.value)"></label>
           <label>Reps<input type="text" value="${esc(x.reps??"")}" onchange="updEx('${x.id}','reps',this.value)"></label>
           <label>Carga<input type="number" step="0.5" value="${x.carga_alvo??""}" onchange="updEx('${x.id}','carga_alvo',this.value)"></label>
           <label>Desc(s)<input type="number" value="${x.descanso_seg??""}" onchange="updEx('${x.id}','descanso_seg',this.value)"></label>
         </div>
-        <button class="btn small ghost" title="Remover" onclick="removerEx('${x.id}')">🗑</button>
+        <input class="fx-obs" type="text" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
+               value="${esc(x.obs??"")}" onchange="updEx('${x.id}','obs',this.value)">
       </div>`).join("");
 
     // não repetir na busca os exercícios já adicionados neste dia
@@ -2006,7 +2026,8 @@
   }
 
   async function updEx(id, campo, valor){
-    const v = (campo==="reps") ? (valor.trim()||null) : (valor===""?null:Number(valor));
+    const textFields = ["reps","obs"];
+    const v = textFields.includes(campo) ? (valor.trim()||null) : (valor===""?null:Number(valor));
     await sb.from("ficha_exercicios").update({ [campo]: v }).eq("id", id);
   }
 
