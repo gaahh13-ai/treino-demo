@@ -72,6 +72,7 @@
   .aluno-item.sel{background:linear-gradient(120deg,#1d2027,#262a33);color:var(--pink-deep);font-weight:800}
   .aluno-item .ai-n{font-size:11px;font-weight:800;color:var(--muted);background:#1d2027;border-radius:999px;padding:1px 8px;min-width:22px;text-align:center}
   .aluno-detalhe{min-height:130px}
+  .det-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
   .det-nome{font-size:18px;font-weight:800}
   .det-sub{font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:16px}
   .det-acoes{display:flex;flex-direction:column;gap:8px;max-width:280px}
@@ -1798,19 +1799,26 @@
     const n = ASSESS.filter(a=>a.student_id===id).length;
     det.innerHTML = `
       <div class="det-head">
-        <div class="det-nome">${esc(nomeAluno(s))}</div>
-        <div class="det-sub">${s.email?esc(s.email)+" · ":""}${n} avaliação(ões)</div>
+        <div>
+          <div class="det-nome">${esc(nomeAluno(s))}</div>
+          <div class="det-sub">${s.email?esc(s.email)+" · ":""}${n} avaliação(ões)</div>
+        </div>
+        <span class="menu-wrap">
+          <button class="btn small ghost dots" title="Mais opções" onclick="abrirMenu(event,'detmenu_${id}')">⋮</button>
+          <span class="menu-drop" id="detmenu_${id}">
+            <button onclick="novaAvaliacao('${id}')">Nova avaliação</button>
+            <button onclick="abrirMetas('${id}')">Metas</button>
+            <button onclick="dadosCliente('${id}')">Dados do cliente</button>
+            <button onclick="arquivarAluno('${id}')">Arquivar</button>
+          </span>
+        </span>
       </div>
       ${temTreino()?`<div class="treino-resumo-al" id="treinoResumo_${id}">🏋️ carregando treino…</div>`:""}
       <div class="det-acoes">
         <a class="btn small" href="dashboard.html?aluno=${id}">Dashboard</a>
-        ${temTreino()?`<button class="btn small" onclick="abrirTreino('${id}')">Treino</button>`:""}
-        <button class="btn small" onclick="novaAvaliacao('${id}')">Nova avaliação</button>
-        <button class="btn small ghost" onclick="verAvaliacoes('${id}')">Ver avaliações</button>
+        ${temTreino()?`<button class="btn small ghost" onclick="abrirTreino('${id}')">Treinos</button>`:""}
+        <button class="btn small ghost" onclick="verAvaliacoes('${id}')">Avaliações</button>
         <button class="btn small ghost" onclick="novaConsulta('${id}')">Consultas</button>
-        <button class="btn small ghost" onclick="abrirMetas('${id}')">Metas</button>
-        <button class="btn small ghost" onclick="dadosCliente('${id}')">Dados do cliente</button>
-        <button class="btn small ghost" onclick="arquivarAluno('${id}')">Arquivar</button>
       </div>
       <div id="assessList_${id}" style="margin-top:6px"></div>`;
     if(temTreino()) carregarResumoTreinoAluno(id);
