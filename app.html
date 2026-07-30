@@ -25,6 +25,10 @@
   .aj-item b{font-size:13.5px;color:var(--txt)}
   .aj-item span{font-size:12.5px;color:var(--muted);line-height:1.4}
   .aj-wa{width:100%;display:block;text-align:center;text-decoration:none}
+  .ajuda-ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.62)}
+  .ajuda-pop{position:fixed;top:70px;right:16px;width:min(360px,92vw);background:#15171c;border-radius:16px;padding:20px;
+    border:1px solid var(--line);box-shadow:0 22px 60px rgba(0,0,0,.4)}
+  .ajuda-pop h3{font-size:17px;font-weight:800;color:var(--pink-deep)}
   .presenca-box{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
   .presenca-tit{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
   .presenca-btns{display:flex;gap:8px;flex-wrap:wrap}
@@ -543,6 +547,9 @@
   .pl-lista li.no{color:#9aa0ab!important}
   .pl-lista li.ok .pl-ic{color:#7fff00!important}
   .pl-lista li.no .pl-ic{color:#ff9aa2!important}
+  /* popover de ajuda */
+  .ajuda-pop{background:#15171c!important;border-color:#262a33!important}
+  .ajuda-pop h3{color:#7fff00!important}
 </style>
 
 </head>
@@ -1645,12 +1652,14 @@
   function abrirAjuda(){
     if(typeof fecharMenus==="function") fecharMenus();
     if(document.getElementById("ajudaModal")) return;
+    const anchor = (document.querySelector(".av-help") && document.querySelector(".av-help").closest(".perfil-av"))
+                || document.querySelector("#topAcoes .perfil-av, #topAcoes .logout");
     const ov = document.createElement("div");
-    ov.id = "ajudaModal"; ov.className = "modal-ov";
+    ov.id = "ajudaModal"; ov.className = "ajuda-ov";
     ov.onclick = (e)=>{ if(e.target===ov) fecharAjuda(); };
     const msg = encodeURIComponent("Olá! Preciso de ajuda com o app LEVO.");
     ov.innerHTML = `
-      <div class="modal-cx" style="max-width:400px">
+      <div class="ajuda-pop" id="ajudaPop">
         <h3 style="margin:0 0 4px">Central de ajuda</h3>
         <p class="meta-sm" style="margin:0 0 14px">Aqui vão algumas dicas rápidas para você aproveitar o app.</p>
         <div class="ajuda-dicas">
@@ -1666,6 +1675,16 @@
         <button class="btn ghost" style="width:100%;margin-top:12px" onclick="fecharAjuda()">Fechar</button>
       </div>`;
     document.body.appendChild(ov);
+    // posiciona o painel logo abaixo do botão de ajuda
+    const pop = document.getElementById("ajudaPop");
+    if(anchor && pop){
+      const r = anchor.getBoundingClientRect();
+      const w = pop.offsetWidth || 360;
+      let left = r.left + r.width/2 - w/2;
+      left = Math.max(12, Math.min(left, window.innerWidth - w - 12));
+      pop.style.top  = (r.bottom + 8) + "px";
+      pop.style.left = left + "px";
+    }
   }
   function fecharAjuda(){ const m=document.getElementById("ajudaModal"); if(m) m.remove(); }
 
