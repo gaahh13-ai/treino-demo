@@ -28,6 +28,28 @@
   .presenca-box{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
   .presenca-tit{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
   .presenca-btns{display:flex;gap:8px;flex-wrap:wrap}
+  /* Assinatura / planos */
+  .assin-tabs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .assin-tab{padding:26px 18px;border:2px solid var(--line);border-radius:16px;background:#15171c;cursor:pointer;
+    font-size:18px;font-weight:800;color:var(--txt);transition:.15s}
+  .assin-tab:hover{border-color:var(--pink)}
+  .assin-tab.active{border-color:var(--pink);background:linear-gradient(120deg,#1d2027,#262a33);color:var(--pink-deep)}
+  .plano-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .plano-card{position:relative;border:1px solid var(--line);border-radius:16px;padding:22px;background:#15171c;display:flex;flex-direction:column}
+  .plano-card.destaque{border:2px solid var(--pink)}
+  .pl-badge{position:absolute;top:-11px;right:16px;background:var(--pink-deep);color:#fff;font-size:11px;font-weight:800;
+    padding:4px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.4px}
+  .pl-nome{font-size:19px;font-weight:800}
+  .pl-preco{font-size:28px;font-weight:800;color:var(--pink-deep);margin:6px 0 16px}
+  .pl-preco-sub{font-size:13px;font-weight:600;color:var(--muted);margin-left:4px}
+  .pl-lista{list-style:none;padding:0;margin:0 0 18px;display:flex;flex-direction:column;gap:9px;flex:1}
+  .pl-lista li{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;line-height:1.35;color:var(--txt)}
+  .pl-lista li.no{color:var(--muted)}
+  .pl-ic{font-weight:800;flex:none}
+  .pl-lista li.ok .pl-ic{color:#15803d}
+  .pl-lista li.no .pl-ic{color:#c2410c}
+  .pl-btn{width:100%}
+  @media(max-width:760px){ .assin-tabs,.plano-grid{grid-template-columns:1fr} }
   .av-cap{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
   /* perfil resumido */
   .perfil-foto{text-align:center;margin:6px 0 20px}
@@ -509,6 +531,18 @@
   .fin-tag.pg{background:#12210f!important;color:#bff08a!important}
   .fin-tag.pe{background:#2a2410!important;color:#ffd98a!important}
   .fin-tag.at{background:#2a1416!important;color:#ff9aa2!important}
+  /* assinatura / planos */
+  .assin-tab{background:#15171c!important;border-color:#262a33!important;color:#e8eaee!important}
+  .assin-tab.active{background:rgba(127,255,0,.14)!important;border-color:#7fff00!important;color:#7fff00!important}
+  .plano-card{background:#15171c!important;border-color:#262a33!important}
+  .plano-card.destaque{border-color:#7fff00!important}
+  .pl-badge{background:#7fff00!important;color:#0a0b0d!important}
+  .pl-nome{color:#fff!important}
+  .pl-preco{color:#7fff00!important}
+  .pl-lista li{color:#e8eaee!important}
+  .pl-lista li.no{color:#9aa0ab!important}
+  .pl-lista li.ok .pl-ic{color:#7fff00!important}
+  .pl-lista li.no .pl-ic{color:#ff9aa2!important}
 </style>
 
 </head>
@@ -745,6 +779,7 @@
     else if(id === "meutreino"){  p.innerHTML = viewMeuTreino();  carregarMeuTreino(); }
     else if(id === "consultas"){  p.innerHTML = viewConsultas();  carregarMinhasConsultas(); }
     else if(id === "perfil"){ p.innerHTML = viewPerfil(); }
+    else if(id === "assinatura"){ p.innerHTML = viewAssinatura(); }
     else if(id === "admin")p.innerHTML = viewAdmin();
     else if(id === "alunos"){    p.innerHTML = viewAlunos();    loadStudents(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
@@ -1528,7 +1563,82 @@
     if(msg){ msg.className="msg ok"; msg.textContent="Foto removida."; }
     renderTopo();
   }
-  function assinaturaInfo(){ alert("Assinatura — em breve 🙂"); }
+  function assinaturaInfo(){ go("assinatura"); }
+
+  const PLANOS = {
+    alunos: [
+      { nome:"LEVO Light", preco:"Grátis", sub:"", destaque:false, itens:[
+        {ok:true,  t:"Acesso ao treino montado pelo personal"},
+        {ok:true,  t:"Marcar treinos e ver o histórico"},
+        {ok:true,  t:"Dashboard de evolução básico"},
+        {ok:false, t:"Avaliações físicas completas (composição corporal, RCQ)"},
+        {ok:false, t:"Gráficos de evolução de carga e medidas"},
+        {ok:false, t:"Acompanhamento com comentários"},
+        {ok:false, t:"Metas personalizadas"}
+      ]},
+      { nome:"LEVO Pro", preco:"R$ 39,90", sub:"/mês", destaque:true, itens:[
+        {ok:true,  t:"Tudo do LEVO Light"},
+        {ok:true,  t:"Avaliações físicas completas (composição corporal, RCQ)"},
+        {ok:true,  t:"Gráficos de evolução de carga e medidas"},
+        {ok:true,  t:"Acompanhamento com comentários"},
+        {ok:true,  t:"Metas personalizadas (treinos por semana)"},
+        {ok:true,  t:"Suporte prioritário"}
+      ]}
+    ],
+    personal: [
+      { nome:"LEVO Fit", preco:"R$ 39,90", sub:"/mês", destaque:false, itens:[
+        {ok:true,  t:"Montagem de treinos ilimitada"},
+        {ok:true,  t:"Avaliações físicas dos alunos"},
+        {ok:true,  t:"Dashboard de desempenho e retenção"},
+        {ok:true,  t:"Controle financeiro dos alunos"},
+        {ok:false, t:"Marca própria (white-label): seu logo e suas cores"},
+        {ok:false, t:"Domínio próprio"},
+        {ok:false, t:"App com a sua marca (You LEVO)"}
+      ]},
+      { nome:"You LEVO", preco:"R$ 59,90", sub:"/mês", destaque:true, itens:[
+        {ok:true,  t:"Tudo do LEVO Fit"},
+        {ok:true,  t:"Alunos ilimitados"},
+        {ok:true,  t:"White-label completo: seu logo e suas cores"},
+        {ok:true,  t:"Domínio próprio"},
+        {ok:true,  t:"Seu próprio app com a sua marca"},
+        {ok:true,  t:"Suporte dedicado"}
+      ]}
+    ]
+  };
+
+  function viewAssinatura(){
+    return `<h2>Assinatura</h2>
+      <p class="meta-sm" style="margin:-4px 0 16px">Escolha para quem você quer ver os planos.</p>
+      <div class="assin-tabs">
+        <button class="assin-tab" id="assinTab_alunos" onclick="assinAba('alunos')">Alunos</button>
+        <button class="assin-tab" id="assinTab_personal" onclick="assinAba('personal')">Personal Trainer</button>
+      </div>
+      <div id="assinConteudo" style="margin-top:18px">
+        <div class="empty">Selecione <b>Alunos</b> ou <b>Personal Trainer</b> acima para ver os planos.</div>
+      </div>`;
+  }
+
+  function planoCard(p){
+    const lis = p.itens.map(it=>
+      `<li class="${it.ok?"ok":"no"}"><span class="pl-ic">${it.ok?"✓":"✗"}</span><span>${esc(it.t)}</span></li>`).join("");
+    return `<div class="plano-card${p.destaque?" destaque":""}">
+      ${p.destaque?`<span class="pl-badge">Mais completo</span>`:""}
+      <div class="pl-nome">${esc(p.nome)}</div>
+      <div class="pl-preco">${esc(p.preco)}<span class="pl-preco-sub">${esc(p.sub||"")}</span></div>
+      <ul class="pl-lista">${lis}</ul>
+      <button class="btn pl-btn" onclick="assinarPlano('${esc(p.nome)}')">Assinar ${esc(p.nome)}</button>
+    </div>`;
+  }
+
+  function assinAba(qual){
+    ["alunos","personal"].forEach(q=>{
+      const b=document.getElementById("assinTab_"+q); if(b) b.classList.toggle("active", q===qual);
+    });
+    const box=document.getElementById("assinConteudo"); if(!box) return;
+    box.innerHTML = `<div class="plano-grid">${PLANOS[qual].map(planoCard).join("")}</div>`;
+  }
+
+  function assinarPlano(nome){ alert(`Assinatura do plano "${nome}" — pagamento em breve. 🙂`); }
 
   // Número de suporte (formato internacional, só dígitos). Ex.: 55 + DDD + número.
   const SUPORTE_WHATSAPP = "5511999999999"; // TODO: trocar pelo número de suporte real
