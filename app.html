@@ -19,6 +19,12 @@
     display:flex;align-items:center;justify-content:center;font-size:18px}
   .av-thumb img{width:100%;height:100%;object-fit:cover}
   .av-thumb.av-money{font-size:20px;font-weight:800;color:var(--pink-deep)}
+  .av-thumb.av-help{font-size:20px;font-weight:800;color:var(--pink-deep)}
+  .ajuda-dicas{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+  .aj-item{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
+  .aj-item b{font-size:13.5px;color:var(--txt)}
+  .aj-item span{font-size:12.5px;color:var(--muted);line-height:1.4}
+  .aj-wa{width:100%;display:block;text-align:center;text-decoration:none}
   .av-cap{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
   /* perfil resumido */
   .perfil-foto{text-align:center;margin:6px 0 20px}
@@ -686,11 +692,19 @@
            <span class="av-thumb av-money">$</span>
            <span class="av-cap">assinatura</span>
          </button>` : "";
-    box.innerHTML = `${assinatura}
+    const ajuda = (role === "professional")
+      ? `<button class="perfil-av" onclick="abrirAjuda()">
+           <span class="av-thumb av-help">?</span>
+           <span class="av-cap">ajuda</span>
+         </button>` : "";
+    const itemAjudaMenu = (role === "professional")
+      ? "" : `<button onclick="abrirAjuda()">Ajuda</button>`;
+    box.innerHTML = `${assinatura}${ajuda}
       <span class="menu-wrap">
         ${gatilho}
         <span class="menu-drop" id="perfilMenu">
           <button onclick="go('perfil')">Meu perfil</button>
+          ${itemAjudaMenu}
           <button onclick="sair()">Sair</button>
         </span>
       </span>`;
@@ -1497,6 +1511,35 @@
     renderTopo();
   }
   function assinaturaInfo(){ alert("Assinatura — em breve 🙂"); }
+
+  // Número de suporte (formato internacional, só dígitos). Ex.: 55 + DDD + número.
+  const SUPORTE_WHATSAPP = "5511999999999"; // TODO: trocar pelo número de suporte real
+  function abrirAjuda(){
+    if(typeof fecharMenus==="function") fecharMenus();
+    if(document.getElementById("ajudaModal")) return;
+    const ov = document.createElement("div");
+    ov.id = "ajudaModal"; ov.className = "modal-ov";
+    ov.onclick = (e)=>{ if(e.target===ov) fecharAjuda(); };
+    const msg = encodeURIComponent("Olá! Preciso de ajuda com o app LEVO.");
+    ov.innerHTML = `
+      <div class="modal-cx" style="max-width:400px">
+        <h3 style="margin:0 0 4px">Central de ajuda</h3>
+        <p class="meta-sm" style="margin:0 0 14px">Aqui vão algumas dicas rápidas para você aproveitar o app.</p>
+        <div class="ajuda-dicas">
+          <div class="aj-item"><b>Menu à esquerda</b><span>Seus alunos, financeiro, desempenho e avaliações ficam ali.</span></div>
+          <div class="aj-item"><b>Meus alunos</b><span>Clique para expandir e ver "Cadastrar aluno" e "Alunos inativos".</span></div>
+          <div class="aj-item"><b>Financeiro</b><span>Defina o valor e o vencimento de cada aluno e registre os pagamentos do mês.</span></div>
+          <div class="aj-item"><b>Perfil</b><span>No canto superior direito você edita seus dados, troca a foto ou sai.</span></div>
+        </div>
+        <a class="btn aj-wa" href="https://wa.me/${SUPORTE_WHATSAPP}?text=${msg}" target="_blank" rel="noopener">
+          Falar com o suporte no WhatsApp
+        </a>
+        <p class="meta-sm" style="text-align:center;margin:12px 0 0">Em breve adicionaremos um FAQ completo aqui. 🙂</p>
+        <button class="btn ghost" style="width:100%;margin-top:12px" onclick="fecharAjuda()">Fechar</button>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function fecharAjuda(){ const m=document.getElementById("ajudaModal"); if(m) m.remove(); }
 
   function viewAdmin(){
     return `<h2>Painel do criador</h2>
