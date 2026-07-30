@@ -252,6 +252,11 @@
   .treino-resumo-al{font-size:12.5px;color:var(--txt);background:#1d2027;border:1px solid var(--line);
     border-radius:10px;padding:8px 11px;margin:2px 0 10px}
   .treino-resumo-al b{color:var(--pink-deep)}
+  .wk-mini{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .wk-lbl{font-size:12.5px;font-weight:700}
+  .wk-row{display:flex;gap:4px}
+  .wk-sq{width:17px;height:17px;border-radius:4px;border:1px solid var(--line);display:inline-block}
+  .wk-sq.atual{outline:1.5px solid var(--pink-deep);outline-offset:1px}
   .assess-item{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
   .assess-item:last-child{border-bottom:none}
   .assess-item b{color:var(--pink-deep)}
@@ -330,6 +335,8 @@
     .form-grid{grid-template-columns:1fr}
   }
 </style>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -1903,10 +1910,26 @@
     const dias = ult ? Math.floor((agora-new Date(ult).getTime())/86400000) : null;
     const quando = dias==null ? "Nunca treinou" :
       (dias===0 ? "Treinou hoje" : dias===1 ? "Treinou ontem" : `Há ${dias} dias sem treinar`);
-    const ades = previsto
-      ? ` · <b style="color:${corDegradeMeta(semana,previsto)}">${semana}/${previsto}</b> treinos essa semana`
-      : ` · ${semana} treino${semana===1?"":"s"} essa semana`;
-    el.innerHTML = `🏋️ ${quando}${ades}`;
+    // adesão das últimas 6 semanas (seg-dom) em miniquadrados
+    const hoje0 = new Date(); hoje0.setHours(0,0,0,0);
+    const dow = (hoje0.getDay()+6)%7;
+    const inicioSem = new Date(hoje0); inicioSem.setDate(hoje0.getDate()-dow);
+    const semanas = [];
+    for(let i=5;i>=0;i--){
+      const ini = new Date(inicioSem); ini.setDate(inicioSem.getDate()-7*i);
+      const fim = new Date(ini); fim.setDate(ini.getDate()+7);
+      const n = (sess||[]).filter(x=>{ const d=new Date(x.data); return d>=ini && d<fim; }).length;
+      semanas.push({ n, rot: ini.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}) });
+    }
+    const ref = previsto>0 ? previsto : Math.max(1, ...semanas.map(w=>w.n));
+    const quadros = semanas.map((w,i)=>{
+      const atual = i===semanas.length-1 ? " atual" : "";
+      return `<span class="wk-sq${atual}" title="Semana de ${w.rot}: ${w.n} treino${w.n===1?"":"s"}${previsto?" de "+previsto:""}" style="background:${corDegradeMeta(w.n, ref)}"></span>`;
+    }).join("");
+    el.innerHTML = `<div class="wk-mini">
+        <span class="wk-lbl">🏋️ ${quando}</span>
+        <span class="wk-row" title="Adesão nas últimas 6 semanas">${quadros}</span>
+      </div>`;
   }
 
   async function loadInvites(){
