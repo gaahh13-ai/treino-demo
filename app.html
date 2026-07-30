@@ -1739,10 +1739,8 @@
     if(!lista.length){ box.innerHTML = `<div class="empty">Nenhum aluno encontrado.</div>`; return; }
     box.innerHTML = lista.map(s=>{
       const sel = SELECTED_STUDENT===s.id ? " sel" : "";
-      const n = ASSESS.filter(a=>a.student_id===s.id).length;
       return `<button class="aluno-item${sel}" onclick="selecionarAluno('${s.id}')">
         <span class="ai-nome">${esc(nomeAluno(s))}</span>
-        <span class="ai-n">${n}</span>
       </button>`;
     }).join("");
   }

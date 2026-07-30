@@ -95,6 +95,9 @@
   .cmt-resp{border:none;background:none;color:var(--pink-deep);font-size:11.5px;font-weight:700;
     cursor:pointer;padding:4px 0 0;margin-top:2px}
   .cmt-resp:hover{text-decoration:underline}
+  .cmt-del{border:none;background:none;cursor:pointer;font-size:12px;opacity:.6;margin-left:auto;padding:0 2px}
+  .cmt-del:hover{opacity:1}
+  .cmt-top{display:flex;align-items:center;gap:6px}
   .cmt-compose{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
   .cmt-input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;
     font-family:inherit;resize:vertical;margin-bottom:8px}
@@ -579,9 +582,11 @@
     const respostasDe = id => COMENTARIOS.filter(c=>c.parent_id===id);
     const bloco = (c, ehResposta) => {
       const aluno = c.author_role === "student";
+      const meu = ME_USER && c.author_id === ME_USER.id;
       return `<div class="cmt${ehResposta?" reply":""}">
         <div class="cmt-top"><span class="cmt-autor ${aluno?"aluno":""}">${esc(c.author_name||"Alguém")}</span>
-          <span class="cmt-hora">${cmtHora(c.created_at)}</span></div>
+          <span class="cmt-hora">${cmtHora(c.created_at)}</span>
+          ${meu?`<button class="cmt-del" title="Excluir comentário" onclick="deletarComentario('${c.id}')">🗑️</button>`:""}</div>
         <div class="cmt-txt">${esc(c.texto)}</div>
         ${!ehResposta?`<button class="cmt-resp" onclick="responder('${c.id}')">↳ Responder</button>`:""}
       </div>`;
@@ -589,6 +594,16 @@
     box.innerHTML = `<div class="cmt-lista">` + topo.map(c=>
       bloco(c,false) + respostasDe(c.id).map(r=>bloco(r,true)).join("")
     ).join("") + `</div>`;
+  }
+
+  async function deletarComentario(id){
+    if(!confirm("Excluir este comentário?")) return;
+    const { error } = await sb.from("comentarios").delete().eq("id", id);
+    if(error){ alert("Não consegui excluir: "+error.message); return; }
+    // remove o comentário e as respostas dele (apagadas em cascata no banco)
+    COMENTARIOS = COMENTARIOS.filter(c => c.id !== id && c.parent_id !== id);
+    if(REPLY_TO === id) cancelarResposta();
+    renderComentarios();
   }
 
   function responder(id){
