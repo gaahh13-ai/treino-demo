@@ -252,10 +252,12 @@
   .treino-resumo-al{font-size:12.5px;color:var(--txt);background:#1d2027;border:1px solid var(--line);
     border-radius:10px;padding:8px 11px;margin:2px 0 10px}
   .treino-resumo-al b{color:var(--pink-deep)}
-  .wk-mini{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  .wk-lbl{font-size:12.5px;font-weight:700}
-  .wk-row{display:flex;gap:4px}
-  .wk-sq{width:17px;height:17px;border-radius:4px;border:1px solid var(--line);display:inline-block}
+  .wk-mini{display:flex;flex-direction:column;gap:7px}
+  .wk-lbl{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .wk-row{display:flex;gap:5px;flex-wrap:wrap}
+  .wk-sq{min-width:42px;height:34px;padding:0 4px;border-radius:7px;border:1px solid var(--line);
+    display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:800}
+  .wk-sq.pre{background:transparent!important;color:var(--muted)!important;border-style:dashed}
   .wk-sq.atual{outline:1.5px solid var(--pink-deep);outline-offset:1px}
   .assess-item{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
   .assess-item:last-child{border-bottom:none}
@@ -1896,6 +1898,8 @@
   async function carregarResumoTreinoAluno(id){
     const el = document.getElementById("treinoResumo_"+id);
     if(!el) return;
+    const s = STUDENTS.find(x=>x.id===id);
+    const criado = (s && s.created_at) ? new Date(s.created_at) : null;   // desde quando é aluno
     const agora = Date.now();
     const { data: sess } = await sb.from("sessoes").select("data")
       .eq("student_id", id).eq("finalizada", true).order("data",{ascending:false});
@@ -1907,9 +1911,6 @@
       const { count } = await sb.from("ficha_dias").select("id",{count:"exact",head:true}).eq("ficha_id", fichas[0].id);
       previsto = count || 0;
     }
-    const dias = ult ? Math.floor((agora-new Date(ult).getTime())/86400000) : null;
-    const quando = dias==null ? "Nunca treinou" :
-      (dias===0 ? "Treinou hoje" : dias===1 ? "Treinou ontem" : `Há ${dias} dias sem treinar`);
     // adesão das últimas 6 semanas (seg-dom) em miniquadrados
     const hoje0 = new Date(); hoje0.setHours(0,0,0,0);
     const dow = (hoje0.getDay()+6)%7;
@@ -1919,16 +1920,23 @@
       const ini = new Date(inicioSem); ini.setDate(inicioSem.getDate()-7*i);
       const fim = new Date(ini); fim.setDate(ini.getDate()+7);
       const n = (sess||[]).filter(x=>{ const d=new Date(x.data); return d>=ini && d<fim; }).length;
-      semanas.push({ n, rot: ini.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}) });
+      semanas.push({ n, ini, fim, rot: ini.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}) });
     }
     const ref = previsto>0 ? previsto : Math.max(1, ...semanas.map(w=>w.n));
     const quadros = semanas.map((w,i)=>{
       const atual = i===semanas.length-1 ? " atual" : "";
-      return `<span class="wk-sq${atual}" title="Semana de ${w.rot}: ${w.n} treino${w.n===1?"":"s"}${previsto?" de "+previsto:""}" style="background:${corDegradeMeta(w.n, ref)}"></span>`;
+      // semana inteira antes de o aluno entrar no app → não conta como perdida
+      if(criado && criado >= w.fim){
+        return `<span class="wk-sq pre${atual}" title="Semana de ${w.rot}: antes do cadastro">–</span>`;
+      }
+      const ratio = ref>0 ? Math.min(1, w.n/ref) : 0;
+      const txtCor = ratio>0.55 ? "#0a0b0d" : "#e8eaee";
+      const txt = previsto ? `${w.n}/${previsto}` : `${w.n}`;
+      return `<span class="wk-sq${atual}" title="Semana de ${w.rot}: ${w.n} treino${w.n===1?"":"s"}${previsto?" de "+previsto:""}" style="background:${corDegradeMeta(w.n, ref)};color:${txtCor}">${txt}</span>`;
     }).join("");
     el.innerHTML = `<div class="wk-mini">
-        <span class="wk-lbl">🏋️ ${quando}</span>
-        <span class="wk-row" title="Adesão nas últimas 6 semanas">${quadros}</span>
+        <span class="wk-lbl">Treinos</span>
+        <span class="wk-row" title="Adesão nas últimas 6 semanas (feitos/meta)">${quadros}</span>
       </div>`;
   }
 
