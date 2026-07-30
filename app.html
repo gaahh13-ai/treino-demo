@@ -16,7 +16,7 @@
   .top-acoes{display:flex;align-items:center;gap:12px}
   .perfil-av{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:none;cursor:pointer;padding:0;width:74px}
   .av-thumb{width:38px;height:38px;border-radius:9px;overflow:hidden;background:#1d2027;border:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center;font-size:18px}
+    display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--pink-deep)}
   .av-thumb img{width:100%;height:100%;object-fit:cover}
   .av-thumb.av-money{font-size:20px;font-weight:800;color:var(--pink-deep)}
   .av-thumb.av-help{font-size:20px;font-weight:800;color:var(--pink-deep)}
@@ -543,6 +543,8 @@
   /* coluna de alunos (visão do profissional) */
   .alunos-col{background:#15171c!important;border-color:#262a33!important}
   .alunos-head{color:#fff!important}
+  /* tiles do topo (avatar/inicial, $, ?) */
+  .av-thumb{background:#1d2027!important;border-color:#2a2e37!important;color:#7fff00!important}
   /* menu de contexto (3 pontinhos) */
   .menu-drop{background:#15171c!important;border-color:#2a2e37!important}
   .menu-drop button{color:#e8eaee!important}
@@ -753,47 +755,35 @@
     document.getElementById("content").style.display = "block";
   }
 
-  // topo direito: assinatura (profissional) + acesso ao perfil (miniatura da foto)
+  // topo direito (todos os perfis): assinatura · ajuda (+menu) · perfil (foto ou inicial)
   function renderTopo(){
     const box = document.getElementById("topAcoes");
     if(!box || !ME) return;
-    const role = ME.role || "student";
-    const gatilho = (role === "professional")
-      ? `<button class="perfil-av" onclick="abrirMenu(event,'perfilMenu')">
-           <span class="av-thumb">${ME.avatar?`<img src="${esc(ME.avatar)}" alt="">`:"👤"}</span>
+    const nome = (ME.full_name||"").trim();
+    const inicial = nome ? esc(nome[0].toUpperCase()) : "?";
+    const avatarInner = ME.avatar ? `<img src="${esc(ME.avatar)}" alt="">` : inicial;
+    const gatilho = `<button class="perfil-av" onclick="abrirMenu(event,'perfilMenu')">
+           <span class="av-thumb">${avatarInner}</span>
            <span class="av-cap">perfil</span>
-         </button>`
-      : `<button class="logout" onclick="abrirMenu(event,'perfilMenu')">Perfil ▾</button>`;
-    const assinatura = (role === "professional")
-      ? `<button class="perfil-av" onclick="assinaturaInfo()">
+         </button>`;
+    const assinatura = `<button class="perfil-av" onclick="assinaturaInfo()">
            <span class="av-thumb av-money">$</span>
            <span class="av-cap">assinatura</span>
-         </button>` : "";
-    const ajuda = (role === "professional")
-      ? `<button class="perfil-av" onclick="abrirAjuda()">
+         </button>`;
+    const ajuda = `<button class="perfil-av" onclick="abrirAjuda()">
            <span class="av-thumb av-help">?</span>
            <span class="av-cap">ajuda</span>
-         </button>` : "";
-    const itemAjudaMenu = (role === "professional")
-      ? "" : `<button onclick="abrirAjuda()">Ajuda</button>`;
+         </button>`;
     const menuItems = `
       <button onclick="go('perfil')">Meu perfil</button>
-      ${itemAjudaMenu}
       <button onclick="sair()">Sair</button>`;
-    box.innerHTML = (role === "professional")
-      ? `<div class="top-tiles">
+    box.innerHTML = `<div class="top-tiles">
            ${assinatura}
            <span class="menu-anchor">
              ${ajuda}
              <span class="menu-drop" id="perfilMenu">${menuItems}</span>
            </span>
            ${gatilho}
-         </div>`
-      : `<div class="top-tiles">
-           <span class="menu-anchor">
-             ${gatilho}
-             <span class="menu-drop" id="perfilMenu">${menuItems}</span>
-           </span>
          </div>`;
   }
 
@@ -3139,13 +3129,46 @@
     alert(`Presença de "${dia.label}" registrada para hoje! ✅`);
   }
 
-  async function novoTreino(){
-    if(!confirm("Criar um novo treino?\n\nO treino atual vira histórico (treinos passados) e um novo, em branco, fica ativo.")) return;
+  function novoTreino(){
+    if(document.getElementById("novoTreinoModal")) return;
+    const ov = document.createElement("div");
+    ov.id = "novoTreinoModal"; ov.className = "modal-ov";
+    ov.onclick = (e)=>{ if(e.target===ov) fecharNovoTreino(); };
+    ov.innerHTML = `
+      <div class="modal-cx">
+        <h3 style="margin:0 0 6px">Novo treino</h3>
+        <p class="meta-sm" style="margin:0 0 16px">O treino atual vira histórico (treinos passados) e o novo fica ativo. Como quer começar?</p>
+        <button class="btn" style="width:100%;margin-bottom:8px" onclick="criarNovoTreino(true)">Duplicar o treino atual</button>
+        <p class="meta-sm" style="margin:-2px 0 12px">Copia todos os dias e exercícios — você ajusta só o que mudar, mantendo o histórico do treino anterior.</p>
+        <button class="btn ghost" style="width:100%;margin-bottom:8px" onclick="criarNovoTreino(false)">Começar em branco</button>
+        <button class="btn ghost" style="width:100%" onclick="fecharNovoTreino()">Cancelar</button>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  function fecharNovoTreino(){ const m=document.getElementById("novoTreinoModal"); if(m) m.remove(); }
+
+  async function criarNovoTreino(duplicar){
+    fecharNovoTreino();
     const studentId = FICHA.student_id;
-    await sb.from("fichas").update({ ativa:false }).eq("id", FICHA.id);
+    const origem = FICHA;
+    await sb.from("fichas").update({ ativa:false }).eq("id", origem.id);
     const { data: nova, error } = await sb.from("fichas")
       .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true }).select().single();
     if(error){ alert("Erro: "+error.message); return; }
+    if(duplicar){
+      const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", origem.id).order("ordem");
+      for(const d of (dias||[])){
+        const { id:_di, created_at:_dc, ...restDia } = d;
+        const { data: novoDia, error: eDia } = await sb.from("ficha_dias")
+          .insert({ ...restDia, ficha_id: nova.id }).select().single();
+        if(eDia || !novoDia) continue;
+        const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("dia_id", d.id).order("ordem");
+        if(exs && exs.length){
+          const linhas = exs.map(x=>{ const { id:_xi, created_at:_xc, ...restEx } = x; return { ...restEx, ficha_id: nova.id, dia_id: novoDia.id }; });
+          await sb.from("ficha_exercicios").insert(linhas);
+        }
+      }
+    }
     FICHAS_TODAS.forEach(f=>f.ativa=false);
     FICHAS_TODAS.unshift(nova);
     FICHA = nova; FICHA_READONLY = false;
