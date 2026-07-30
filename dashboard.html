@@ -84,6 +84,25 @@
   .treino-alvo{font-size:22px;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:700}
   .meta-sm{font-size:12px;color:var(--muted);margin-top:4px}
 
+  /* mural de comentários */
+  .cmt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#ffffff}
+  .cmt.reply{margin-left:26px;background:#eef2ff;border-left:3px solid var(--lilac)}
+  .cmt-top{font-size:12px;margin-bottom:3px}
+  .cmt-autor{font-weight:800;color:var(--pink-deep)}
+  .cmt-autor.aluno{color:var(--blue-deep)}
+  .cmt-hora{color:var(--muted);font-weight:600;margin-left:6px;font-size:11px}
+  .cmt-txt{font-size:13.5px;line-height:1.5;color:var(--txt)}
+  .cmt-resp{border:none;background:none;color:var(--pink-deep);font-size:11.5px;font-weight:700;
+    cursor:pointer;padding:4px 0 0;margin-top:2px}
+  .cmt-resp:hover{text-decoration:underline}
+  .cmt-compose{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+  .cmt-input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;
+    font-family:inherit;resize:vertical;margin-bottom:8px}
+  .cmt-input:focus{outline:2px solid var(--pink-soft);border-color:var(--pink-soft)}
+  .cmt-reply-info{font-size:12px;color:var(--muted);background:#f1f5f9;border-radius:8px;
+    padding:6px 10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .cmt-reply-info button{border:none;background:none;color:var(--pink-deep);font-weight:800;cursor:pointer}
+  .cmt-lista{max-height:340px;overflow-y:auto}
   html,body{overflow-x:hidden}
   .perim-wide{grid-column:span 2}
   .chart-box canvas{max-width:100%}
@@ -133,9 +152,27 @@
       </div>
     </div>
 
-    <!-- Acompanhamento -->
+    <!-- Acompanhamento: comentários (metade) + metas (metade) -->
     <div class="section-title">🧑‍⚕️ Acompanhamento</div>
-    <div class="card"><h3>Observações do profissional</h3><div id="obsBox"><div class="empty">Nenhuma observação registrada ainda.</div></div></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>💬 Comentários</h3>
+        <div id="comentariosBox"><div class="empty">Carregando…</div></div>
+        <div class="cmt-compose">
+          <div id="cmtReplyInfo" class="cmt-reply-info" style="display:none"></div>
+          <textarea id="cmtInput" class="cmt-input" rows="2" placeholder="Escreva um comentário…"></textarea>
+          <button class="btn small" onclick="postarComentario()">Enviar</button>
+        </div>
+      </div>
+      <div class="card"><h3>🎯 Metas</h3>
+        <div class="metas" id="metasBox">
+          <div><span>Peso ideal</span><b id="m_peso">—</b></div>
+          <div><span>% de gordura alvo</span><b id="m_bf">—</b></div>
+          <div><span>Data alvo</span><b id="m_data">—</b></div>
+          <div><span>Próxima consulta</span><b id="m_consulta">—</b></div>
+        </div>
+      </div>
+    </div>
 
     <!-- Evolução -->
     <div class="section-title">📈 Evolução — composição corporal</div>
@@ -145,14 +182,6 @@
       <div class="card"><h3>Massa magra × Massa gorda (kg)</h3><div class="chart-box" id="box_mass"><canvas id="c_mass"></canvas></div></div>
       <div class="card"><h3>Soma de dobras (mm) — menor é melhor</h3><div class="chart-box" id="box_folds"><canvas id="c_folds"></canvas></div></div>
       <div class="card perim-wide"><h3>Perímetros-chave (cm)</h3><div class="chart-box" id="box_perim" style="height:300px"><canvas id="c_perim"></canvas></div></div>
-      <div class="card"><h3>🎯 Metas</h3>
-        <div class="metas" id="metasBox">
-          <div><span>Peso ideal</span><b id="m_peso">—</b></div>
-          <div><span>% de gordura alvo</span><b id="m_bf">—</b></div>
-          <div><span>Data alvo</span><b id="m_data">—</b></div>
-          <div><span>Próxima consulta</span><b id="m_consulta">—</b></div>
-        </div>
-      </div>
     </div>
 
   </div>
@@ -186,6 +215,8 @@
   let REPORTS = [];         // mensagens recebidas pelo Telegram
   let SESSOES = [];         // treinos concluídos (sessões finalizadas)
   let META = null;          // metas do aluno
+  let ME_USER = null;       // usuário logado (autor dos comentários)
+  let COMENTARIOS = [], REPLY_TO = null, CMT_OK = true;
   const FUSO = "America/Sao_Paulo";
 
   /* sessão expira em 1 hora */
@@ -239,15 +270,19 @@
     } else {
       ALVO = me;
     }
+    ME_USER = me;
 
-    const [{ data: avals }, { data: metas }, { data: consultas }, { data: sessoes }] = await Promise.all([
+    const [{ data: avals }, { data: metas }, { data: consultas }, { data: sessoes }, comRes] = await Promise.all([
       sb.from("assessments").select("*").eq("student_id", ALVO.id).order("date",{ascending:true}),
       sb.from("goals").select("*").eq("student_id", ALVO.id).limit(1),
       sb.from("consultations").select("scheduled_at").eq("student_id", ALVO.id).order("scheduled_at",{ascending:true}),
-      sb.from("sessoes").select("data,dia_id").eq("student_id", ALVO.id).eq("finalizada", true).order("data",{ascending:false})
+      sb.from("sessoes").select("data,dia_id").eq("student_id", ALVO.id).eq("finalizada", true).order("data",{ascending:false}),
+      sb.from("comentarios").select("*").eq("student_id", ALVO.id).order("created_at",{ascending:true})
     ]);
 
     SESSOES = sessoes || [];
+    CMT_OK = !comRes.error;               // false se a tabela ainda não existe
+    COMENTARIOS = comRes.data || [];
 
     const agora = new Date();
     const prox = (consultas||[]).find(c=>new Date(c.scheduled_at) >= agora);
@@ -293,7 +328,7 @@
 
     META = meta;
     renderTreinoReal();
-    renderObs(avals);
+    renderComentarios();
 
     if(avals.length){
       const ult = avals[avals.length-1];
@@ -431,6 +466,71 @@
         <div class="rep-txt">${esc(a.notes)}</div>
       </div>`);
     box.innerHTML = listaComVerMais(itens, "obs", comNotas.length-3 === 1 ? "observação" : "observações");
+  }
+
+  /* ---------- mural de comentários (profissional <-> aluno) ---------- */
+  function cmtHora(v){ const d=new Date(v); return d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}); }
+
+  function renderComentarios(){
+    const box = document.getElementById("comentariosBox");
+    if(!box) return;
+    if(!CMT_OK){
+      box.innerHTML = `<div class="empty">Os comentários ficam disponíveis assim que a atualização do banco for aplicada.</div>`;
+      const comp=document.querySelector(".cmt-compose"); if(comp) comp.style.display="none";
+      return;
+    }
+    if(!COMENTARIOS.length){
+      box.innerHTML = `<div class="empty">Nenhum comentário ainda. Escreva o primeiro abaixo. 💬</div>`;
+      return;
+    }
+    const topo = COMENTARIOS.filter(c=>!c.parent_id);
+    const respostasDe = id => COMENTARIOS.filter(c=>c.parent_id===id);
+    const bloco = (c, ehResposta) => {
+      const aluno = c.author_role === "student";
+      return `<div class="cmt${ehResposta?" reply":""}">
+        <div class="cmt-top"><span class="cmt-autor ${aluno?"aluno":""}">${esc(c.author_name||"Alguém")}</span>
+          <span class="cmt-hora">${cmtHora(c.created_at)}</span></div>
+        <div class="cmt-txt">${esc(c.texto)}</div>
+        ${!ehResposta?`<button class="cmt-resp" onclick="responder('${c.id}')">↳ Responder</button>`:""}
+      </div>`;
+    };
+    box.innerHTML = `<div class="cmt-lista">` + topo.map(c=>
+      bloco(c,false) + respostasDe(c.id).map(r=>bloco(r,true)).join("")
+    ).join("") + `</div>`;
+  }
+
+  function responder(id){
+    REPLY_TO = id;
+    const c = COMENTARIOS.find(x=>x.id===id);
+    const info = document.getElementById("cmtReplyInfo");
+    if(info){
+      info.style.display = "flex";
+      info.innerHTML = `<span>Respondendo a <b>${esc(c?c.author_name:"comentário")}</b></span><button onclick="cancelarResposta()">✕ cancelar</button>`;
+    }
+    const inp = document.getElementById("cmtInput"); if(inp) inp.focus();
+  }
+  function cancelarResposta(){
+    REPLY_TO = null;
+    const info = document.getElementById("cmtReplyInfo"); if(info){ info.style.display="none"; info.innerHTML=""; }
+  }
+
+  async function postarComentario(){
+    const inp = document.getElementById("cmtInput");
+    const texto = inp && inp.value.trim();
+    if(!texto) return;
+    const profId = (ME_USER.role === "student") ? (ALVO.professional_id||null) : ME_USER.id;
+    const payload = {
+      student_id: ALVO.id, professional_id: profId,
+      author_id: ME_USER.id, author_name: (ME_USER.full_name || ME_USER.email || "Usuário"),
+      author_role: ME_USER.role, parent_id: REPLY_TO, texto
+    };
+    inp.disabled = true;
+    const { data, error } = await sb.from("comentarios").insert(payload).select().single();
+    inp.disabled = false;
+    if(error){ alert("Não consegui enviar o comentário: "+error.message); return; }
+    COMENTARIOS.push(data);
+    inp.value = ""; cancelarResposta();
+    renderComentarios();
   }
 
   function renderReports(){
