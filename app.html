@@ -1667,7 +1667,7 @@
     const lista = comFicha.slice().sort((a,b)=> (a.semana/a.previsto) - (b.semana/b.previsto));
     box.innerHTML = lista.map(r=>{
       const pct = Math.min(100, Math.round(100 * r.semana / r.previsto));
-      const cor = pct>=100 ? "#15803d" : pct>=50 ? "#b45309" : "#be123c";
+      const cor = corDegradeMeta(r.semana, r.previsto);   // preto → verde conforme a meta
       return `<div class="ades-row">
         <div class="ades-top">
           <span class="rr-nome">${esc(nomeAluno(r.s))}</span>
@@ -1676,6 +1676,13 @@
         <div class="ades-bar"><div class="ades-fill" style="width:${pct}%;background:${cor}"></div></div>
       </div>`;
     }).join("");
+  }
+  // cor do "preto ao verde LEVO" conforme a proximidade da meta (0 → 1)
+  function corDegradeMeta(n, meta){
+    const ratio = meta>0 ? Math.max(0, Math.min(1, n/meta)) : 0;
+    const a=[38,42,50], b=[127,255,0];   // grafite → chartreuse
+    const c=a.map((x,i)=>Math.round(x+(b[i]-x)*ratio));
+    return `rgb(${c[0]},${c[1]},${c[2]})`;
   }
 
   function renderResumoRet(){
@@ -1871,7 +1878,7 @@
       </div>
       ${temTreino()?`<div class="treino-resumo-al" id="treinoResumo_${id}">🏋️ carregando treino…</div>`:""}
       <div class="det-acoes">
-        <a class="btn small" href="dashboard.html?aluno=${id}">Dashboard</a>
+        <a class="btn small ghost" href="dashboard.html?aluno=${id}">Dashboard</a>
         ${temTreino()?`<button class="btn small ghost" id="btnTreinos" onclick="abrirTreino('${id}')">Treinos</button>`:""}
         <button class="btn small ghost" id="btnAvals" onclick="verAvaliacoes('${id}')">Avaliações</button>
       </div>
@@ -1896,8 +1903,9 @@
     const dias = ult ? Math.floor((agora-new Date(ult).getTime())/86400000) : null;
     const quando = dias==null ? "Nunca treinou" :
       (dias===0 ? "Treinou hoje" : dias===1 ? "Treinou ontem" : `Há ${dias} dias sem treinar`);
-    const ades = previsto ? ` · <b>${semana}/${previsto}</b> treinos essa semana`
-                          : ` · ${semana} treino${semana===1?"":"s"} essa semana`;
+    const ades = previsto
+      ? ` · <b style="color:${corDegradeMeta(semana,previsto)}">${semana}/${previsto}</b> treinos essa semana`
+      : ` · ${semana} treino${semana===1?"":"s"} essa semana`;
     el.innerHTML = `🏋️ ${quando}${ades}`;
   }
 
