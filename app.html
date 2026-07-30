@@ -25,6 +25,9 @@
   .aj-item b{font-size:13.5px;color:var(--txt)}
   .aj-item span{font-size:12.5px;color:var(--muted);line-height:1.4}
   .aj-wa{width:100%;display:block;text-align:center;text-decoration:none}
+  .presenca-box{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+  .presenca-tit{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+  .presenca-btns{display:flex;gap:8px;flex-wrap:wrap}
   .av-cap{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
   /* perfil resumido */
   .perfil-foto{text-align:center;margin:6px 0 20px}
@@ -353,9 +356,11 @@
 
   /* menu de 3 pontinhos */
   .menu-wrap{position:relative;display:inline-block}
-  .menu-drop{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:30;background:#15171c;
+  .top-tiles{display:flex;align-items:center;gap:18px}
+  .menu-anchor{position:relative;display:inline-flex;flex-direction:column;align-items:center}
+  .menu-drop{display:none;position:absolute;left:50%;transform:translateX(-50%);top:calc(100% + 8px);z-index:30;background:#15171c;
     border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(120,60,100,.16);
-    min-width:160px;overflow:hidden;padding:4px}
+    min-width:170px;overflow:hidden;padding:4px}
   .menu-drop.open{display:block}
   .menu-drop button{display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;
     padding:10px 12px;font-size:13.5px;font-weight:600;color:var(--txt);border-radius:9px}
@@ -699,15 +704,25 @@
          </button>` : "";
     const itemAjudaMenu = (role === "professional")
       ? "" : `<button onclick="abrirAjuda()">Ajuda</button>`;
-    box.innerHTML = `${assinatura}${ajuda}
-      <span class="menu-wrap">
-        ${gatilho}
-        <span class="menu-drop" id="perfilMenu">
-          <button onclick="go('perfil')">Meu perfil</button>
-          ${itemAjudaMenu}
-          <button onclick="sair()">Sair</button>
-        </span>
-      </span>`;
+    const menuItems = `
+      <button onclick="go('perfil')">Meu perfil</button>
+      ${itemAjudaMenu}
+      <button onclick="sair()">Sair</button>`;
+    box.innerHTML = (role === "professional")
+      ? `<div class="top-tiles">
+           ${assinatura}
+           <span class="menu-anchor">
+             ${ajuda}
+             <span class="menu-drop" id="perfilMenu">${menuItems}</span>
+           </span>
+           ${gatilho}
+         </div>`
+      : `<div class="top-tiles">
+           <span class="menu-anchor">
+             ${gatilho}
+             <span class="menu-drop" id="perfilMenu">${menuItems}</span>
+           </span>
+         </div>`;
   }
 
   function go(id){
@@ -1010,7 +1025,10 @@
     const dia = ALUNO_DIAS.find(d=>d.id===ALUNO_DIA);
     if(!lista.length){ box.innerHTML = `<div class="empty">Sem exercícios neste dia.</div>`; return; }
     const titulo = `<div style="font-weight:800;font-size:15px;margin:14px 0 4px">${esc(dia?dia.label:"Treino")}</div>`;
-    const btnIniciar = `<button class="btn" style="margin:6px 0 14px" onclick="iniciarTreino('${ALUNO_DIA}')">▶ Iniciar este treino</button>`;
+    const podeMarcar = (ME.modalidade||"online") !== "presencial";
+    const btnIniciar = podeMarcar
+      ? `<button class="btn" style="margin:6px 0 14px" onclick="iniciarTreino('${ALUNO_DIA}')">▶ Iniciar este treino</button>`
+      : `<div class="tr-obs" style="margin:6px 0 14px">📍 Treino presencial — a presença é registrada pelo seu personal.</div>`;
     box.innerHTML = titulo + btnIniciar + lista.map(x=>{
       const partes = [];
       if(x.series!=null && x.reps) partes.push(`<b>${x.series}x${esc(x.reps)}</b>`);
@@ -1647,6 +1665,13 @@
             </select>
           </div>
           <div class="field"><label>Data de nascimento</label><input id="cli_birth" type="date"></div>
+        </div>
+        <div class="field" style="margin-top:2px"><label>Categoria do treino</label>
+          <select id="cli_modal">
+            <option value="online">Online — o aluno marca o treino</option>
+            <option value="presencial">Presencial — o personal marca o treino</option>
+            <option value="misto">Misto — quem treinou marca (aluno ou personal)</option>
+          </select>
         </div>
         <button class="btn small" id="cliBtn" onclick="salvarDados()">Salvar dados</button>
         <div class="msg" id="cliMsg"></div>
@@ -2389,6 +2414,7 @@
     document.getElementById("cli_nome").value = s?.full_name || "";
     document.getElementById("cli_sex").value = s?.sex || "";
     document.getElementById("cli_birth").value = s?.birth_date ? String(s.birth_date).slice(0,10) : "";
+    document.getElementById("cli_modal").value = s?.modalidade || "online";
     const m = document.getElementById("cliMsg"); m.className="msg"; m.textContent="";
     const card = document.getElementById("clienteCard");
     card.style.display = "block"; registrarJanela("clienteCard");
@@ -2402,12 +2428,13 @@
     const nome  = document.getElementById("cli_nome").value.trim() || null;
     const sex   = document.getElementById("cli_sex").value || null;
     const birth = document.getElementById("cli_birth").value || null;
+    const modalidade = document.getElementById("cli_modal").value || "online";
     btn.disabled=true; msg.className="msg"; msg.textContent="";
-    const { error } = await sb.from("profiles").update({ full_name:nome, sex, birth_date:birth }).eq("id", id);
+    const { error } = await sb.from("profiles").update({ full_name:nome, sex, birth_date:birth, modalidade }).eq("id", id);
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
     const s = STUDENTS.find(x=>x.id===id);
-    if(s){ s.full_name=nome; s.sex=sex; s.birth_date=birth; }
+    if(s){ s.full_name=nome; s.sex=sex; s.birth_date=birth; s.modalidade=modalidade; }
     msg.className="msg ok"; msg.textContent="✅ Dados salvos!";
     renderStudents();
   }
@@ -2819,6 +2846,16 @@
            ${passadas.map(f=>`<option value="${f.id}">${fmtDiaMes(f.created_at)}</option>`).join("")}
          </select>`
       : `<span class="meta-sm">Sem treinos passados ainda.</span>`;
+    const st = STUDENTS.find(x=>x.id===FICHA.student_id);
+    const modal = (st && st.modalidade) || "online";
+    const presencaBlock = (!FICHA_READONLY && ["presencial","misto"].includes(modal) && FICHA_DIAS.length)
+      ? `<div class="presenca-box">
+           <div class="presenca-tit">Registrar presença de hoje${modal==="misto"?' <span class="meta-sm">(treinos presenciais)</span>':''}</div>
+           <div class="presenca-btns">
+             ${FICHA_DIAS.map(d=>`<button class="btn ghost small" onclick="marcarPresenca('${d.id}')">${esc(d.label)}</button>`).join("")}
+           </div>
+         </div>`
+      : "";
     if(FICHA_READONLY){
       h.innerHTML = `
         <div><span class="tag">treino de ${fmtDiaMes(FICHA.created_at)} · somente leitura</span></div>
@@ -2829,8 +2866,20 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           ${selPassadas}
           <button class="btn small" onclick="novoTreino()">＋ Novo treino</button>
-        </div>`;
+        </div>
+        ${presencaBlock}`;
     }
+  }
+
+  async function marcarPresenca(diaId){
+    const dia = FICHA_DIAS.find(d=>d.id===diaId); if(!dia) return;
+    if(!confirm(`Marcar "${dia.label}" como treinado hoje?`)) return;
+    const { error } = await sb.from("sessoes").insert({
+      student_id: FICHA.student_id, professional_id: ME.id,
+      dia_id: diaId, ficha_id: FICHA.id, finalizada: true, data: new Date().toISOString()
+    });
+    if(error){ alert("Erro ao registrar: "+error.message); return; }
+    alert(`Presença de "${dia.label}" registrada para hoje! ✅`);
   }
 
   async function novoTreino(){
