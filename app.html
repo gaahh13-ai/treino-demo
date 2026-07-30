@@ -3,39 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minha área — TreinoApp</title>
+<title>LEVO</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{color-scheme:light;--txt:#334155;--muted:#64748b;--line:#e5e7eb;--pink:#4f46e5;--pink-deep:#4338ca}
+  :root{color-scheme:light;--txt:#e8eaee;--muted:#9aa0ab;--line:#262a33;--pink:#e6ff00;--pink-deep:#c8de00}
   *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-  body{min-height:100vh;background:linear-gradient(180deg,#f8fafc,#f1f5f9 45%,#eef2ff);color:var(--txt)}
-  nav.top{background:rgba(248,250,252,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  body{min-height:100vh;background:linear-gradient(180deg,#fdf2f8,#f6f1fe 45%,#eef5ff);color:var(--txt)}
+  nav.top{background:rgba(253,244,248,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
   nav.top .in{max-width:1040px;margin:0 auto;padding:0 20px;height:66px;display:flex;align-items:center;justify-content:space-between}
   .logo{height:32px}
   .logout{border:1.5px solid var(--pink);color:var(--pink-deep);background:#fff;border-radius:12px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer}
   .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 60px}
   .hello{font-size:21px;font-weight:800;margin-bottom:4px}
   .role-chip{display:inline-block;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;margin-bottom:18px}
-  .chip-creator{background:#e0e7ff;color:#4338ca}
+  .chip-creator{background:#ede9fe;color:#e6ff00}
   .chip-professional{background:#dbeafe;color:#1d4ed8}
-  .chip-student{background:#e0e7ff;color:#4338ca}
+  .chip-student{background:#fce7f3;color:#e6ff00}
 
   .shell{display:grid;grid-template-columns:212px 1fr;gap:20px;align-items:start}
   .sidebar{background:#fff;border:1px solid var(--line);border-radius:18px;padding:10px;
-           box-shadow:0 8px 22px rgba(30,41,59,.06);position:sticky;top:86px}
+           box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px}
   .navitem{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
            padding:11px 12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--txt);cursor:pointer;text-align:left}
-  .navitem:hover{background:#f1f5f9}
-  .navitem.active{background:linear-gradient(120deg,#e0e7ff,#e0e7ff);color:var(--pink-deep);font-weight:800}
+  .navitem:hover{background:#faf3f8}
+  .navitem.active{background:linear-gradient(120deg,#fce7f3,#e0e7ff);color:var(--pink-deep);font-weight:800}
   .navitem .ico{font-size:15px;line-height:1}
 
   .panel h2{font-size:18px;font-weight:800;margin-bottom:14px}
   .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;
-        box-shadow:0 8px 22px rgba(30,41,59,.06);margin-bottom:16px}
+        box-shadow:0 8px 22px rgba(180,90,140,.06);margin-bottom:16px}
   .card h3{font-size:15px;font-weight:800;color:var(--pink-deep);margin-bottom:8px}
   .card p{font-size:14px;color:var(--muted);line-height:1.55}
   .btn{display:inline-block;border:none;border-radius:12px;padding:11px 20px;font-weight:700;font-size:14px;color:#fff;cursor:pointer;text-decoration:none;
-       background:linear-gradient(120deg,#6366f1,#818cf8);box-shadow:0 6px 16px rgba(79,70,229,.2);margin-top:8px}
+       background:linear-gradient(120deg,#e6ff00,#818cf8);box-shadow:0 6px 16px rgba(236,72,153,.2);margin-top:8px}
   .btn.small{padding:8px 14px;font-size:13px;box-shadow:none}
   .btn.ghost{background:#fff;color:var(--pink-deep);border:1.5px solid var(--line)}
   .tag{display:inline-block;background:#fff7ed;color:#b45309;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;border:1px solid #fed7aa}
@@ -48,29 +48,29 @@
   .field{margin-bottom:12px}
   .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
   .field input,.field textarea{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit}
-  .field input:focus,.field textarea:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
+  .field input:focus,.field textarea:focus{outline:2px solid #c8de00;border-color:#c8de00}
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .msg{margin-top:10px;font-size:13px;padding:9px 11px;border-radius:9px;display:none;line-height:1.45}
   .msg.err{display:block;background:#fdecec;color:#c0392b}
   .msg.ok{display:block;background:#eafaf0;color:#1a8a4a}
   .msg.warn{display:block;background:#fff7ed;color:#b45309}
-  .field input[readonly]{background:#f1f5f9;color:var(--pink-deep);font-weight:800;cursor:not-allowed}
+  .field input[readonly]{background:#faf3f8;color:var(--pink-deep);font-weight:800;cursor:not-allowed}
   .meta-cliente{margin-top:2px}
 
   /* tela "Meus alunos": detalhe + coluna de alunos */
   .alunos-layout{display:grid;grid-template-columns:1fr 258px;gap:16px;align-items:start;margin-bottom:16px}
   .alunos-col{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;
-    box-shadow:0 8px 22px rgba(30,41,59,.06);position:sticky;top:86px}
+    box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px}
   .alunos-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .alunos-head h3{font-size:14px;font-weight:800;color:var(--pink-deep)}
   .aluno-search{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font-size:13px;margin-bottom:10px;font-family:inherit}
-  .aluno-search:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
+  .aluno-search:focus{outline:2px solid #c8de00;border-color:#c8de00}
   #alunosLista{max-height:60vh;overflow-y:auto}
   .aluno-item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;
     border:none;background:none;padding:10px 10px;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--txt);cursor:pointer}
-  .aluno-item:hover{background:#f1f5f9}
-  .aluno-item.sel{background:linear-gradient(120deg,#e0e7ff,#e0e7ff);color:var(--pink-deep);font-weight:800}
-  .aluno-item .ai-n{font-size:11px;font-weight:800;color:var(--muted);background:#eef2ff;border-radius:999px;padding:1px 8px;min-width:22px;text-align:center}
+  .aluno-item:hover{background:#faf3f8}
+  .aluno-item.sel{background:linear-gradient(120deg,#fce7f3,#e0e7ff);color:var(--pink-deep);font-weight:800}
+  .aluno-item .ai-n{font-size:11px;font-weight:800;color:var(--muted);background:#f6eef4;border-radius:999px;padding:1px 8px;min-width:22px;text-align:center}
   .aluno-detalhe{min-height:130px}
   .det-nome{font-size:18px;font-weight:800}
   .det-sub{font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:16px}
@@ -85,11 +85,11 @@
   /* biblioteca de exercícios */
   .chip-f{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;
     padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer}
-  .chip-f.sel{background:linear-gradient(120deg,#e0e7ff,#e0e7ff);color:var(--pink-deep);border-color:transparent}
+  .chip-f.sel{background:linear-gradient(120deg,#fce7f3,#e0e7ff);color:var(--pink-deep);border-color:transparent}
   .ex-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
   .ex-row:last-child{border-bottom:none}
   .ex-thumb{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--line)}
-  .ex-thumb.ph{display:flex;align-items:center;justify-content:center;background:#f1f5f9;font-size:20px}
+  .ex-thumb.ph{display:flex;align-items:center;justify-content:center;background:#faf3f8;font-size:20px}
   .ex-info{flex:1;min-width:0}
   .ex-nome{font-weight:700;font-size:14px}
   .ex-meta{font-size:12px;color:var(--muted);margin-top:2px}
@@ -103,25 +103,25 @@
   .fx-campos label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
   .fx-campos input{width:64px;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:13px}
   .fx-obs{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px}
-  .fx-obs:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
+  .fx-obs:focus{outline:2px solid #c8de00;border-color:#c8de00}
   .fx-add{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
   .fx-add select{flex:1;min-width:160px;padding:9px;border:1px solid var(--line);border-radius:10px;font-size:13px}
   /* treino (aluno) */
-  .tr-ex{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#ffffff}
+  .tr-ex{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#fffdfe}
   .tr-nome{font-weight:800;font-size:14.5px}
   .tr-presc{font-size:13px;color:var(--txt);margin-top:3px}
   .tr-presc b{color:var(--pink-deep)}
   .ficha-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-    padding:10px 12px;background:#f1f5f9;border:1px solid var(--line);border-radius:12px}
+    padding:10px 12px;background:#faf3f8;border:1px solid var(--line);border-radius:12px}
   .ficha-head select{padding:8px;border:1px solid var(--line);border-radius:9px;font-size:12.5px}
 
   /* execução do treino (aluno, tela dedicada) */
   .exec-top{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:66px;z-index:5;
-    background:linear-gradient(180deg,#f8fafc,#f8fafcee);padding:10px 0}
+    background:linear-gradient(180deg,#fdf2f8,#fdf2f8ee);padding:10px 0}
   .exec-titulo{font-size:16px;font-weight:800}
-  .exec-timer{background:linear-gradient(120deg,#6366f1,#818cf8);color:#fff;font-weight:800;text-align:center;
+  .exec-timer{background:linear-gradient(120deg,#e6ff00,#818cf8);color:#fff;font-weight:800;text-align:center;
     padding:12px;border-radius:14px;margin-bottom:12px;font-size:16px}
-  .ex-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(30,41,59,.05)}
+  .ex-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(180,90,140,.05)}
   .ex-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .ex-card-nome{font-weight:800;font-size:15px}
   .ex-check{border:1.5px solid var(--line);background:#fff;border-radius:10px;width:40px;height:40px;
@@ -136,18 +136,18 @@
   .ser-row{display:grid;grid-template-columns:40px 1fr 1fr 44px;gap:8px;align-items:center;margin-bottom:8px}
   .ser-num{font-weight:800;color:var(--pink-deep);text-align:center;font-size:13px}
   .ser-in{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:15px;text-align:center}
-  .ser-in:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
+  .ser-in:focus{outline:2px solid #c8de00;border-color:#c8de00}
   .ser-ok{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:10px 0;font-size:15px;cursor:pointer;color:var(--muted)}
   .ser-ok.done{background:#eafaf0;border-color:#bbeccb;color:#1a8a4a;font-weight:800}
   .carga-linha{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
   .carga-linha label{font-size:12px;font-weight:700;color:var(--muted)}
   .carga-in{width:110px;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:17px;text-align:center;font-weight:700}
-  .carga-in:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
+  .carga-in:focus{outline:2px solid #c8de00;border-color:#c8de00}
   .carga-un{font-size:13px;color:var(--muted);font-weight:700}
   .exec-crono{font-size:12px;font-weight:800;color:var(--pink-deep);background:#fff;border:1px solid var(--line);
     border-radius:999px;padding:5px 11px;white-space:nowrap}
   /* acesso destacado ao treino (dashboard do aluno) */
-  .treino-hero{background:linear-gradient(120deg,#e0e7ff,#e0e7ff);border:1px solid transparent;border-radius:16px;
+  .treino-hero{background:linear-gradient(120deg,#fce7f3,#e0e7ff);border:1px solid transparent;border-radius:16px;
     padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .treino-hero .ico-big{font-size:38px;line-height:1}
   .treino-hero h3{margin:0 0 4px;color:var(--pink-deep)}
@@ -156,27 +156,27 @@
   /* resumo de treinos disponíveis x último treinado */
   .treino-lista{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
   .treino-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;width:100%;
-    border:1px solid var(--line);background:#ffffff;border-radius:12px;padding:11px 14px;cursor:pointer;transition:.15s}
+    border:1px solid var(--line);background:#fffdfe;border-radius:12px;padding:11px 14px;cursor:pointer;transition:.15s}
   .treino-linha:hover{border-color:var(--pink)}
-  .treino-linha.sel{background:linear-gradient(120deg,#e0e7ff,#e0e7ff);border-color:transparent}
+  .treino-linha.sel{background:linear-gradient(120deg,#fce7f3,#e0e7ff);border-color:transparent}
   .treino-linha .tl-nome{font-weight:800;font-size:14px;color:var(--txt)}
   .treino-linha .tl-ult{font-size:11.5px;color:var(--muted);margin-top:2px}
   .treino-linha .tl-seta{color:var(--pink-deep);font-weight:800}
   /* exercício na visão do aluno com imagem e descanso clicável */
-  .ex-thumb-al{width:56px;height:56px;border-radius:12px;flex:0 0 auto;background:linear-gradient(135deg,#e0e7ff,#e0e7ff);
+  .ex-thumb-al{width:56px;height:56px;border-radius:12px;flex:0 0 auto;background:linear-gradient(135deg,#fce7f3,#e0e7ff);
     display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden}
   .ex-thumb-al img{width:100%;height:100%;object-fit:cover}
   .tr-ex-row{display:flex;gap:12px;align-items:flex-start}
   .tr-ex-body{flex:1;min-width:0}
   .desc-btn{border:1px solid var(--pink);background:#fff;color:var(--pink-deep);border-radius:999px;
     padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;display:inline-flex;align-items:center;gap:5px}
-  .desc-btn:hover{background:#f8fafc}
-  .tr-obs{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--txt);background:#eef2ff;
+  .desc-btn:hover{background:#fdf2f8}
+  .tr-obs{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--txt);background:#f8f6ff;
     border-left:3px solid var(--pink);border-radius:0 10px 10px 0;padding:8px 11px}
   /* cronômetro flutuante de descanso (qualquer tela) */
   .desc-float{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;
-    background:linear-gradient(120deg,#6366f1,#818cf8);color:#fff;font-weight:800;font-size:16px;
-    padding:14px 22px;border-radius:16px;box-shadow:0 10px 30px rgba(30,41,59,.3);display:flex;align-items:center;gap:14px}
+    background:linear-gradient(120deg,#e6ff00,#818cf8);color:#fff;font-weight:800;font-size:16px;
+    padding:14px 22px;border-radius:16px;box-shadow:0 10px 30px rgba(120,60,100,.3);display:flex;align-items:center;gap:14px}
   .desc-float button{background:rgba(255,255,255,.25);border:none;color:#fff;font-weight:800;
     border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px}
   /* modal (sair do treino) */
@@ -193,16 +193,16 @@
   /* pílula "treino em andamento" (fora da tela de execução) */
   .treino-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;
     display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
-    border-radius:999px;padding:8px 10px 8px 16px;box-shadow:0 10px 30px rgba(30,41,59,.18)}
+    border-radius:999px;padding:8px 10px 8px 16px;box-shadow:0 10px 30px rgba(180,90,140,.18)}
   .treino-pill .tp-lbl{font-size:12.5px;font-weight:800;color:var(--pink-deep)}
   .treino-pill .tp-crono{font-size:12.5px;font-weight:800;color:var(--txt)}
-  .treino-pill .tp-go{border:none;background:linear-gradient(120deg,#6366f1,#818cf8);color:#fff;
+  .treino-pill .tp-go{border:none;background:linear-gradient(120deg,#e6ff00,#818cf8);color:#fff;
     font-weight:800;border-radius:999px;padding:7px 14px;cursor:pointer;font-size:12.5px}
-  .treino-pill .tp-x{border:none;background:#eef2ff;color:var(--muted);border-radius:50%;
+  .treino-pill .tp-x{border:none;background:#f6eef4;color:var(--muted);border-radius:50%;
     width:28px;height:28px;cursor:pointer;font-weight:800}
   /* alerta de fim de descanso (tela cheia) */
   .rest-done-ov{position:fixed;inset:0;z-index:90;padding:24px;
-    background:linear-gradient(160deg,#6366f1,#818cf8);
+    background:linear-gradient(160deg,#e6ff00,#818cf8);
     display:flex;align-items:center;justify-content:center;animation:restFade .18s ease}
   .rest-done-cx{text-align:center;color:#fff}
   .rest-done-ico{width:140px;height:140px;margin:0 auto;border-radius:50%;
@@ -221,7 +221,7 @@
   .rate-lbl{text-align:center;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;min-height:18px}
   .rate-txt{width:100%;min-height:88px;padding:11px;border:1px solid var(--line);border-radius:12px;font-size:14px;
     font-family:inherit;resize:vertical;margin-bottom:6px}
-  .rate-txt:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
+  .rate-txt:focus{outline:2px solid #c8de00;border-color:#c8de00}
   .empty{font-size:13px;color:var(--muted);padding:8px 0}
   /* desempenho / retenção (profissional) */
   .ret-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -232,7 +232,7 @@
   .ret-card .rc-num{font-size:24px;font-weight:800;line-height:1}
   .ret-card .rc-lbl{font-size:11.5px;font-weight:700;margin-top:3px}
   .ret-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-    border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px;background:#ffffff}
+    border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px;background:#fffdfe}
   .ret-row .rr-nome{font-weight:800;font-size:14px}
   .ret-row .rr-sub{font-size:12px;color:var(--muted);margin-top:2px}
   .ret-badge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
@@ -241,7 +241,7 @@
   .ades-num{font-size:13px;font-weight:800;color:var(--txt)}
   .ades-bar{height:9px;border-radius:999px;background:#eee;overflow:hidden}
   .ades-fill{height:100%;border-radius:999px;transition:width .3s}
-  .treino-resumo-al{font-size:12.5px;color:var(--txt);background:#f1f5f9;border:1px solid var(--line);
+  .treino-resumo-al{font-size:12.5px;color:var(--txt);background:#faf3f8;border:1px solid var(--line);
     border-radius:10px;padding:8px 11px;margin:2px 0 10px}
   .treino-resumo-al b{color:var(--pink-deep)}
   .assess-item{font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
@@ -250,40 +250,40 @@
   .close-x{float:right;cursor:pointer;color:var(--muted);font-weight:800;font-size:18px;line-height:1}
 
   /* avaliações e consultas do aluno */
-  .aval{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:#ffffff}
+  .aval{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:#fffdfe}
   .aval-head{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:10px}
   .meds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .med{background:#f1f5f9;border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:12.5px;
+  .med{background:#faf3f8;border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:12.5px;
        display:flex;gap:7px;align-items:center;justify-content:space-between}
   @media(max-width:520px){ .meds{grid-template-columns:1fr} }
   .aval-body{display:none;margin-top:12px}
   .aval.open .aval-body{display:block}
   .chev{border:none;background:none;cursor:pointer;color:var(--pink-deep);font-size:13px;line-height:1;
         padding:4px 6px;border-radius:8px;transition:transform .18s ease}
-  .chev:hover{background:#f1f5f9}
+  .chev:hover{background:#faf3f8}
   .aval.open .chev{transform:rotate(90deg)}
   .med span{color:var(--muted);font-weight:600}
   .med b{color:var(--pink-deep);font-weight:800}
   .dif{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;margin-left:-4px}
   .dif.up{background:#fff1f2;color:#be123c}
   .dif.down{background:#eafaf0;color:#1a8a4a}
-  .obs{margin-top:11px;font-size:13px;line-height:1.55;color:var(--txt);background:#eef2ff;border-left:3px solid var(--pink);border-radius:0 10px 10px 0;padding:10px 12px}
+  .obs{margin-top:11px;font-size:13px;line-height:1.55;color:var(--txt);background:#f8f6ff;border-left:3px solid var(--pink);border-radius:0 10px 10px 0;padding:10px 12px}
   .meta-sm{font-size:12px;color:var(--muted);margin-top:8px}
-  .proxima{background:linear-gradient(120deg,#e0e7ff,#e0e7ff);border-radius:14px;padding:18px}
+  .proxima{background:linear-gradient(120deg,#fce7f3,#e0e7ff);border-radius:14px;padding:18px}
   .proxima .quando{font-size:19px;font-weight:800;color:var(--pink-deep)}
 
   /* menu de 3 pontinhos */
   .menu-wrap{position:relative;display:inline-block}
   .menu-drop{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:30;background:#fff;
-    border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(30,41,59,.16);
+    border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(120,60,100,.16);
     min-width:160px;overflow:hidden;padding:4px}
   .menu-drop.open{display:block}
   .menu-drop button{display:block;width:100%;text-align:left;border:none;background:none;cursor:pointer;
     padding:10px 12px;font-size:13.5px;font-weight:600;color:var(--txt);border-radius:9px}
-  .menu-drop button:hover{background:#f1f5f9;color:var(--pink-deep)}
+  .menu-drop button:hover{background:#faf3f8;color:var(--pink-deep)}
   .dots{font-size:16px;line-height:1;letter-spacing:1px}
-  .card.cta{background:linear-gradient(135deg,#e0e7ff,#e0e7ff);border:1px solid #a5b4fc}
-  .card.cta p{color:#475569}
+  .card.cta{background:linear-gradient(135deg,#fce7f3,#e0e7ff);border:1px solid #c8de00}
+  .card.cta p{color:#c7ccd6}
 
   /* formulário de avaliação */
   .form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -299,10 +299,90 @@
     .form-grid{grid-template-columns:1fr}
   }
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style id="levo-theme">
+  :root{
+    --txt:#e8eaee!important; --muted:#9aa0ab!important; --line:#262a33!important;
+    --pink:#e6ff00!important; --pink-deep:#e6ff00!important; --pink-soft:#e6ff00!important;
+    --blue:#e6ff00!important; --blue-deep:#e6ff00!important; --lilac:#e6ff00!important;
+    color-scheme:dark;
+  }
+  *{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  h1,h2,h3,.hello,.section-title,.exec-titulo,.treino-num,.logo-levo,.det-nome,.rc-num{
+    font-family:'Rajdhani','Inter',sans-serif!important;letter-spacing:.4px}
+  body{background:#0a0b0d!important;color:var(--txt)!important}
+  nav.top{background:rgba(10,11,13,.92)!important;border-bottom:1px solid #20242c!important}
+  .logo-levo{font-weight:700;font-style:italic;font-size:23px;color:#fff;letter-spacing:2px;line-height:1}
+  .logo-levo .ac{color:#e6ff00}
+  /* superfícies escuras */
+  .card,.sidebar,.aluno-detalhe,.modal-cx,.ex-card,.treino-pill,.ret-row,.ret-card,.tr-ex,
+  .fx-row,.student-row,.assess-item,.aval,.med,.proxima,.kpi{
+    background:#15171c!important;border-color:#262a33!important;box-shadow:none!important}
+  .panel h2,h2,.hello,.section-title,.det-nome{color:#fff!important}
+  .card h3,.card h3 *{color:#e6ff00!important}
+  .muted,.meta-sm,.empty,.sub,.tl-ult,.rr-sub,.det-sub,.updated,.med span{color:#9aa0ab!important}
+  .empty{border-color:#2a2e37!important}
+  /* menu lateral */
+  .navitem{color:#c7ccd6!important}
+  .navitem:hover{background:#1d2027!important}
+  .navitem.active{background:#e6ff00!important;color:#0a0b0d!important}
+  /* botões */
+  .btn{background:#e6ff00!important;color:#0a0b0d!important;border:none!important;font-weight:800!important}
+  .btn.ghost,.nbtn,.logout,.ver-mais,.chev{background:transparent!important;color:#e6ff00!important;border:1.5px solid #3a3f4a!important}
+  .nbtn.solid{background:#e6ff00!important;color:#0a0b0d!important;border:none!important}
+  .dots,.close-x,.seta{color:#9aa0ab!important}
+  /* campos */
+  input,select,textarea{background:#0f1116!important;color:#e8eaee!important;border-color:#2a2e37!important}
+  input::placeholder,textarea::placeholder{color:#6b7079!important}
+  input[readonly]{background:#0c0d10!important;color:#9aa0ab!important}
+  /* chips e etiquetas */
+  .role-chip,.chip-student,.chip-professional,.chip-creator,.tag{background:#1d2027!important;color:#e6ff00!important;border-color:#2a2e37!important}
+  .chip-f{background:#0f1116!important;color:#c7ccd6!important;border-color:#2a2e37!important}
+  .chip-f.sel,.treino-linha.sel{background:#e6ff00!important;color:#0a0b0d!important;border-color:transparent!important}
+  .treino-linha{background:#0f1116!important;border-color:#2a2e37!important}
+  .treino-linha .tl-nome,.aluno-item{color:#e8eaee!important}
+  .aluno-item{background:#0f1116!important;border-color:#2a2e37!important}
+  .aluno-item.sel{background:#e6ff00!important;color:#0a0b0d!important}
+  /* barras de progresso */
+  .bar-track,.ades-bar{background:#0f1116!important}
+  .bar-fill,.ades-fill{background:#e6ff00!important}
+  /* execução */
+  .exec-top{background:transparent!important}
+  .exec-crono{background:#15171c!important;border-color:#2a2e37!important;color:#e6ff00!important}
+  .ser-in,.carga-in{background:#0f1116!important;color:#fff!important}
+  .ser-head{color:#9aa0ab!important}
+  .ex-check{background:#0f1116!important;border-color:#2a2e37!important;color:#9aa0ab!important}
+  .ex-card.done{background:#12160b!important;border-color:#3a4a12!important}
+  .ex-card.done .ex-check{background:#e6ff00!important;border-color:#e6ff00!important;color:#0a0b0d!important}
+  .ex-card.done .ex-card-nome{color:#e6ff00!important}
+  .ex-thumb-al{background:#1d2027!important}
+  .tr-obs{background:#12140b!important;border-color:#e6ff00!important;color:#cfd3da!important}
+  .desc-btn{background:#0f1116!important;color:#e6ff00!important;border-color:#3a3f4a!important}
+  /* comentários */
+  .cmt,.cmt.reply{background:#0f1116!important;border-color:#2a2e37!important}
+  .cmt.reply{border-left:3px solid #e6ff00!important}
+  .cmt-txt{color:#e8eaee!important}
+  .cmt-input,.rate-txt,.cmt-reply-info{background:#0f1116!important;color:#e8eaee!important}
+  /* metas / kpis */
+  .metas div{border-color:#2a2e37!important}
+  .metas b,.med b{color:#e6ff00!important}
+  .kpi .val{color:#fff!important}
+  /* mensagens */
+  .msg.ok{background:#122110!important;color:#bff08a!important}
+  .msg.err{background:#2a1416!important;color:#ff9aa2!important}
+  .msg.warn{background:#2a2410!important;color:#ffd98a!important}
+  /* menu de contexto (3 pontinhos) */
+  .menu-drop{background:#15171c!important;border-color:#2a2e37!important}
+  .menu-drop button{color:#e8eaee!important}
+  .menu-drop button:hover{background:#1d2027!important}
+</style>
+
 </head>
 <body>
 <nav class="top"><div class="in">
-  <a href="index.html"><span style="font-weight:800;font-size:20px;color:var(--pink-deep)">TreinoApp</span></a>
+  <a href="index.html"><span class="logo-levo">L<span class="ac">E</span>VO</span></a>
   <button class="logout" onclick="sair()">Sair</button>
 </div></nav>
 
@@ -415,7 +495,7 @@
       {id:"alunos",     ico:"👥", label:"Meus alunos"},
       {id:"cadastrar",  ico:"➕", label:"Cadastrar aluno"}
     ];
-    // módulo de treino só para profissionais habilitados (personal). Nutri (TreinoApp) não vê.
+    // módulo de treino só para profissionais habilitados (personal). Nutri (LEVO) não vê.
     if(temTreino()){
       m.push({id:"exercicios", ico:"🏋️", label:"Exercícios"});
       m.push({id:"desempenho", ico:"📈", label:"Desempenho"});
@@ -1120,7 +1200,7 @@
         <p>${falta ? "Informe seu nome para personalizar a saudação." : "Altere seu nome se precisar."}</p>
         <div class="field" style="margin-top:12px">
           <label>Nome completo</label>
-          <input id="myName" type="text" value="${esc(ME.full_name||"")}" placeholder="ex: TreinoApp">
+          <input id="myName" type="text" value="${esc(ME.full_name||"")}" placeholder="ex: LEVO">
         </div>
         <div class="form-grid2">
           <div class="field"><label>Sexo</label>

@@ -3,26 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meu dashboard — TreinoApp</title>
+<title>LEVO — Meu dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root{
     color-scheme:light;
-    --txt:#334155; --muted:#64748b; --line:#e5e7eb;
-    --pink:#4f46e5; --pink-deep:#4338ca; --pink-soft:#a5b4fc;
+    --txt:#e8eaee; --muted:#9aa0ab; --line:#262a33;
+    --pink:#e6ff00; --pink-deep:#c8de00; --pink-soft:#c8de00;
     --blue:#60a5fa; --blue-deep:#3b82f6;
     --lilac:#818cf8; --green:#16a34a; --amber:#f59e0b;
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-  body{min-height:100vh;background:linear-gradient(180deg,#f8fafc,#f1f5f9 45%,#eef2ff);color:var(--txt)}
+  body{min-height:100vh;background:linear-gradient(180deg,#fdf2f8,#f6f1fe 45%,#eef5ff);color:var(--txt)}
 
   nav.top{background:rgba(253,244,248,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
   nav.top .in{max-width:1120px;margin:0 auto;padding:0 20px;height:66px;display:flex;align-items:center;justify-content:space-between;gap:12px}
   .logo{height:32px}
   .navbtns{display:flex;gap:8px}
   .nbtn{border:1.5px solid var(--line);background:#fff;color:var(--pink-deep);border-radius:12px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;white-space:nowrap}
-  .nbtn.solid{border:none;color:#fff;background:linear-gradient(120deg,#6366f1,#818cf8)}
+  .nbtn.solid{border:none;color:#fff;background:linear-gradient(120deg,#e6ff00,#818cf8)}
 
   .wrap{max-width:1120px;margin:0 auto;padding:26px 20px 70px}
   .hello{font-size:22px;font-weight:800}
@@ -49,8 +49,8 @@
   .empty{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;
          border:2px dashed var(--line);border-radius:14px;color:var(--muted);font-size:13px;text-align:center;padding:16px;line-height:1.5}
 
-  .bar-track{height:14px;border-radius:99px;background:#eef2ff;overflow:hidden;margin:10px 0 6px}
-  .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#6366f1,#818cf8);width:0%}
+  .bar-track{height:14px;border-radius:99px;background:#f6eef4;overflow:hidden;margin:10px 0 6px}
+  .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#e6ff00,#818cf8);width:0%}
   .bar-legend{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 
   .metas div{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px}
@@ -68,25 +68,25 @@
   .aluno-op:last-child{border-bottom:none}
   .aluno-op:hover{color:var(--pink-deep)}
   .aluno-op .seta{color:var(--pink)}
-  .quem{display:inline-block;background:#e0e7ff;color:#4338ca;font-size:12px;font-weight:800;
+  .quem{display:inline-block;background:#fce7f3;color:#e6ff00;font-size:12px;font-weight:800;
     padding:4px 12px;border-radius:999px;margin-top:8px}
   .rep{padding:11px 0;border-bottom:1px dashed var(--line)}
   .rep:last-child{border-bottom:none}
   .rep-top{font-size:11.5px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px}
   .rep-txt{font-size:13.5px;line-height:1.5;color:var(--txt)}
   .ver-mais{display:block;width:100%;margin-top:10px;padding:9px;border:1px dashed var(--line);
-    background:#ffffff;border-radius:11px;color:var(--pink-deep);font-weight:700;font-size:12.5px;cursor:pointer}
-  .ver-mais:hover{background:#f1f5f9}
+    background:#fffdfe;border-radius:11px;color:var(--pink-deep);font-weight:700;font-size:12.5px;cursor:pointer}
+  .ver-mais:hover{background:#faf3f8}
   .treino-linha{display:flex;align-items:center;gap:18px}
   .treino-num{font-size:44px;font-weight:800;line-height:1;
-    background:linear-gradient(120deg,#6366f1,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
+    background:linear-gradient(120deg,#e6ff00,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
   .treino-rot{font-size:15px;font-weight:700}
   .treino-alvo{font-size:22px;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:700}
   .meta-sm{font-size:12px;color:var(--muted);margin-top:4px}
 
   /* mural de comentários */
-  .cmt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#ffffff}
-  .cmt.reply{margin-left:26px;background:#eef2ff;border-left:3px solid var(--lilac)}
+  .cmt{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:#fffdfe}
+  .cmt.reply{margin-left:26px;background:#f8f6ff;border-left:3px solid var(--lilac)}
   .cmt-top{font-size:12px;margin-bottom:3px}
   .cmt-autor{font-weight:800;color:var(--pink-deep)}
   .cmt-autor.aluno{color:var(--blue-deep)}
@@ -99,7 +99,7 @@
   .cmt-input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;
     font-family:inherit;resize:vertical;margin-bottom:8px}
   .cmt-input:focus{outline:2px solid var(--pink-soft);border-color:var(--pink-soft)}
-  .cmt-reply-info{font-size:12px;color:var(--muted);background:#f1f5f9;border-radius:8px;
+  .cmt-reply-info{font-size:12px;color:var(--muted);background:#faf3f8;border-radius:8px;
     padding:6px 10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
   .cmt-reply-info button{border:none;background:none;color:var(--pink-deep);font-weight:800;cursor:pointer}
   .cmt-lista{max-height:340px;overflow-y:auto}
@@ -116,10 +116,90 @@
   @media(max-width:980px){ .kpis{grid-template-columns:repeat(3,1fr)} .grid3{grid-template-columns:1fr} .perim-wide{grid-column:auto} }
   @media(max-width:680px){ .kpis{grid-template-columns:repeat(2,1fr)} .grid2{grid-template-columns:1fr} }
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style id="levo-theme">
+  :root{
+    --txt:#e8eaee!important; --muted:#9aa0ab!important; --line:#262a33!important;
+    --pink:#e6ff00!important; --pink-deep:#e6ff00!important; --pink-soft:#e6ff00!important;
+    --blue:#e6ff00!important; --blue-deep:#e6ff00!important; --lilac:#e6ff00!important;
+    color-scheme:dark;
+  }
+  *{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  h1,h2,h3,.hello,.section-title,.exec-titulo,.treino-num,.logo-levo,.det-nome,.rc-num{
+    font-family:'Rajdhani','Inter',sans-serif!important;letter-spacing:.4px}
+  body{background:#0a0b0d!important;color:var(--txt)!important}
+  nav.top{background:rgba(10,11,13,.92)!important;border-bottom:1px solid #20242c!important}
+  .logo-levo{font-weight:700;font-style:italic;font-size:23px;color:#fff;letter-spacing:2px;line-height:1}
+  .logo-levo .ac{color:#e6ff00}
+  /* superfícies escuras */
+  .card,.sidebar,.aluno-detalhe,.modal-cx,.ex-card,.treino-pill,.ret-row,.ret-card,.tr-ex,
+  .fx-row,.student-row,.assess-item,.aval,.med,.proxima,.kpi{
+    background:#15171c!important;border-color:#262a33!important;box-shadow:none!important}
+  .panel h2,h2,.hello,.section-title,.det-nome{color:#fff!important}
+  .card h3,.card h3 *{color:#e6ff00!important}
+  .muted,.meta-sm,.empty,.sub,.tl-ult,.rr-sub,.det-sub,.updated,.med span{color:#9aa0ab!important}
+  .empty{border-color:#2a2e37!important}
+  /* menu lateral */
+  .navitem{color:#c7ccd6!important}
+  .navitem:hover{background:#1d2027!important}
+  .navitem.active{background:#e6ff00!important;color:#0a0b0d!important}
+  /* botões */
+  .btn{background:#e6ff00!important;color:#0a0b0d!important;border:none!important;font-weight:800!important}
+  .btn.ghost,.nbtn,.logout,.ver-mais,.chev{background:transparent!important;color:#e6ff00!important;border:1.5px solid #3a3f4a!important}
+  .nbtn.solid{background:#e6ff00!important;color:#0a0b0d!important;border:none!important}
+  .dots,.close-x,.seta{color:#9aa0ab!important}
+  /* campos */
+  input,select,textarea{background:#0f1116!important;color:#e8eaee!important;border-color:#2a2e37!important}
+  input::placeholder,textarea::placeholder{color:#6b7079!important}
+  input[readonly]{background:#0c0d10!important;color:#9aa0ab!important}
+  /* chips e etiquetas */
+  .role-chip,.chip-student,.chip-professional,.chip-creator,.tag{background:#1d2027!important;color:#e6ff00!important;border-color:#2a2e37!important}
+  .chip-f{background:#0f1116!important;color:#c7ccd6!important;border-color:#2a2e37!important}
+  .chip-f.sel,.treino-linha.sel{background:#e6ff00!important;color:#0a0b0d!important;border-color:transparent!important}
+  .treino-linha{background:#0f1116!important;border-color:#2a2e37!important}
+  .treino-linha .tl-nome,.aluno-item{color:#e8eaee!important}
+  .aluno-item{background:#0f1116!important;border-color:#2a2e37!important}
+  .aluno-item.sel{background:#e6ff00!important;color:#0a0b0d!important}
+  /* barras de progresso */
+  .bar-track,.ades-bar{background:#0f1116!important}
+  .bar-fill,.ades-fill{background:#e6ff00!important}
+  /* execução */
+  .exec-top{background:transparent!important}
+  .exec-crono{background:#15171c!important;border-color:#2a2e37!important;color:#e6ff00!important}
+  .ser-in,.carga-in{background:#0f1116!important;color:#fff!important}
+  .ser-head{color:#9aa0ab!important}
+  .ex-check{background:#0f1116!important;border-color:#2a2e37!important;color:#9aa0ab!important}
+  .ex-card.done{background:#12160b!important;border-color:#3a4a12!important}
+  .ex-card.done .ex-check{background:#e6ff00!important;border-color:#e6ff00!important;color:#0a0b0d!important}
+  .ex-card.done .ex-card-nome{color:#e6ff00!important}
+  .ex-thumb-al{background:#1d2027!important}
+  .tr-obs{background:#12140b!important;border-color:#e6ff00!important;color:#cfd3da!important}
+  .desc-btn{background:#0f1116!important;color:#e6ff00!important;border-color:#3a3f4a!important}
+  /* comentários */
+  .cmt,.cmt.reply{background:#0f1116!important;border-color:#2a2e37!important}
+  .cmt.reply{border-left:3px solid #e6ff00!important}
+  .cmt-txt{color:#e8eaee!important}
+  .cmt-input,.rate-txt,.cmt-reply-info{background:#0f1116!important;color:#e8eaee!important}
+  /* metas / kpis */
+  .metas div{border-color:#2a2e37!important}
+  .metas b,.med b{color:#e6ff00!important}
+  .kpi .val{color:#fff!important}
+  /* mensagens */
+  .msg.ok{background:#122110!important;color:#bff08a!important}
+  .msg.err{background:#2a1416!important;color:#ff9aa2!important}
+  .msg.warn{background:#2a2410!important;color:#ffd98a!important}
+  /* menu de contexto (3 pontinhos) */
+  .menu-drop{background:#15171c!important;border-color:#2a2e37!important}
+  .menu-drop button{color:#e8eaee!important}
+  .menu-drop button:hover{background:#1d2027!important}
+</style>
+
 </head>
 <body>
 <nav class="top"><div class="in">
-  <a href="index.html"><span style="font-weight:800;font-size:20px;color:var(--pink-deep)">TreinoApp</span></a>
+  <a href="index.html"><span class="logo-levo">L<span class="ac">E</span>VO</span></a>
   <div class="navbtns">
     <a class="nbtn" id="btnPainel" href="app.html">← Painel</a>
     <button class="nbtn solid" onclick="sair()">Sair</button>
@@ -203,7 +283,7 @@
     auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
   });
 
-  const CORES = { pink:"#4f46e5", lilac:"#818cf8", blue:"#60a5fa", green:"#16a34a", grid:"#e5e7eb", txt:"#64748b" };
+  const CORES = { pink:"#e6ff00", lilac:"#818cf8", blue:"#60a5fa", green:"#16a34a", grid:"#262a33", txt:"#9aa0ab" };
 
   // as 7 dobras cutâneas (somadas em um único valor por avaliação)
   const DOBRAS = ["tricipital","subescapular","peitoral","axilar_media","suprailiaca","abdominal","coxa"];
@@ -216,7 +296,7 @@
     ["cintura",         "Cintura",         "#f59e0b"],
     ["abdominal",       "Abdominal",       "#f97316"],
     ["quadril",         "Quadril",         "#a855f7"],
-    ["coxa",            "Coxa",            "#4f46e5"],
+    ["coxa",            "Coxa",            "#e6ff00"],
     ["panturrilha",     "Panturrilha",     "#0d9488"]
   ];
   let ALVO = null;          // perfil do aluno exibido
@@ -688,8 +768,8 @@
     const barras = semanas.map(w=>`
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
         <div style="font-size:11px;font-weight:800;color:var(--pink-deep)">${w.n}</div>
-        <div style="width:100%;height:52px;background:#eef2ff;border-radius:6px;display:flex;align-items:flex-end">
-          <div style="width:100%;height:${Math.round(52*w.n/maxS)}px;border-radius:6px;background:linear-gradient(180deg,#6366f1,#818cf8)"></div>
+        <div style="width:100%;height:52px;background:#f6eef4;border-radius:6px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:${Math.round(52*w.n/maxS)}px;border-radius:6px;background:linear-gradient(180deg,#e6ff00,#818cf8)"></div>
         </div>
         <div style="font-size:9.5px;color:var(--muted)">${w.rot}</div>
       </div>`).join("");
