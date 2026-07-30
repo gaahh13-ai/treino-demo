@@ -317,6 +317,11 @@
   .rcq-tag.baixo{background:#122110;color:#1a8a4a}
   .rcq-tag.alto{background:#2a1416;color:#be123c}
   .rcq-tag.neutro{background:#15171c;color:var(--muted)}
+  /* RCQ no histórico da avaliação */
+  .rcq-line{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    margin:16px 0;padding:4px 0}
+  .rcq-line-tit{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .rcq-line-res{display:flex;align-items:center;gap:10px;margin-left:auto}
 
   @media(max-width:760px){
     .shell{grid-template-columns:1fr}
@@ -2034,9 +2039,9 @@
       </div>
       <div class="aval-body">
         ${gerais ? `<div class="meds">${gerais}</div>` : ""}
+        ${rcqDetalhe(a.circumferences)}
         ${dob ? `<div class="grupo-tit" style="margin-top:14px">Dobras cutâneas</div><div class="meds">${dob}</div>` : ""}
         ${per ? `<div class="grupo-tit" style="margin-top:14px">Circunferências</div><div class="meds">${per}</div>` : ""}
-        ${rcqDetalhe(a.circumferences)}
         ${a.notes ? `<div class="obs"><b>Observação:</b> ${esc(a.notes)}</div>` : ""}
         ${!gerais && !dob && !per && !a.notes ? `<div class="empty">Sem medidas registradas nesta avaliação.</div>` : ""}
       </div>
@@ -2193,10 +2198,12 @@
     if(!c || !q) return "";
     const r = c / q;
     const cl = classificaRcq(r, AVAL_SEXO);
-    return `<div class="grupo-tit" style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span>Relação Cintura-Quadril</span>
-      <span class="rcq-num" style="font-size:18px">${r.toFixed(2)}</span>
-      ${cl.tag?`<span class="rcq-tag ${cl.cls}">${cl.tag}</span>`:`<span class="meta-sm">sexo não informado</span>`}
+    return `<div class="rcq-line">
+      <span class="rcq-line-tit">Relação Cintura-Quadril</span>
+      <span class="rcq-line-res">
+        <span class="rcq-num">${r.toFixed(2)}</span>
+        ${cl.tag?`<span class="rcq-tag ${cl.cls}">${cl.tag}</span>`:`<span class="meta-sm">sexo não informado</span>`}
+      </span>
     </div>`;
   }
   function toggleRcqHelp(ev){ ev.stopPropagation(); const i=document.getElementById("rcqInfo"); if(i) i.classList.toggle("show"); }
