@@ -77,6 +77,11 @@
   .det-sub{font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:16px}
   .det-acoes{display:flex;flex-direction:column;gap:8px;max-width:280px}
   .det-acoes .btn{width:100%;text-align:center}
+  .det-acoes .btn.ativo{border-color:var(--pink-deep);color:var(--pink-deep);background:#0a0b0d;font-weight:800}
+  .prox-aval{background:#1d2027;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
+  .prox-aval .pa-lbl{font-size:13px;font-weight:700;margin-bottom:8px}
+  .prox-aval .pa-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .prox-aval input{padding:8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
   .det-acoes .btn{margin-top:0}
   @media(max-width:760px){
     .alunos-layout{grid-template-columns:1fr}
@@ -333,6 +338,7 @@
   /* botões */
   .btn{background:#7fff00!important;color:#0a0b0d!important;border:none!important;font-weight:800!important}
   .btn.ghost,.nbtn,.logout,.ver-mais,.chev{background:transparent!important;color:#7fff00!important;border:1.5px solid #3a3f4a!important}
+  .det-acoes .btn.ativo{border-color:#7fff00!important;color:#7fff00!important;background:rgba(127,255,0,.14)!important}
   .nbtn.solid{background:#7fff00!important;color:#0a0b0d!important;border:none!important}
   .dots,.close-x,.seta{color:#9aa0ab!important}
   /* campos */
@@ -370,6 +376,12 @@
   .cmt.reply{border-left:3px solid #7fff00!important}
   .cmt-txt{color:#e8eaee!important}
   .cmt-input,.rate-txt,.cmt-reply-info{background:#0f1116!important;color:#e8eaee!important}
+  /* anel "rumo à meta" */
+  .prog-ring{box-shadow:0 0 34px rgba(127,255,0,.16)!important}
+  .prog-ring-in{background:#15171c!important}
+  .prog-big{color:#7fff00!important}
+  .prog-msg{color:#0a0b0d!important;background:#7fff00!important}
+  .prog-legend2 b{color:#fff!important}
   /* metas / kpis */
   .metas div{border-color:#2a2e37!important}
   .metas b,.med b{color:#7fff00!important}
@@ -1765,6 +1777,8 @@
   /* ---- gerenciador de janelas do aluno (máx. 2 abertas; toggle no ícone) ---- */
   let JANELAS = [];  // ids de card na ordem de abertura
   function cardAberto(cardId){ const c=document.getElementById(cardId); return !!(c && c.style.display!=="none"); }
+  // destaca o botão cujo painel está aberto
+  function syncBtnTreinos(){ const t=document.getElementById("btnTreinos"); if(t) t.classList.toggle("ativo", cardAberto("fichaCard")); }
   function registrarJanela(cardId){
     JANELAS = JANELAS.filter(x=>x!==cardId);
     JANELAS.push(cardId);
@@ -1772,16 +1786,19 @@
       const antigo = JANELAS.shift();
       const c = document.getElementById(antigo); if(c) c.style.display = "none";
     }
+    syncBtnTreinos();
   }
   function fecharJanela(cardId){
     const c = document.getElementById(cardId); if(c) c.style.display = "none";
     JANELAS = JANELAS.filter(x=>x!==cardId);
+    syncBtnTreinos();
   }
   function fecharTodasJanelas(){
     ["assessCard","clienteCard","goalsCard","consultCard","fichaCard"].forEach(id=>{
       const c=document.getElementById(id); if(c) c.style.display="none";
     });
     JANELAS = [];
+    syncBtnTreinos();
   }
   // toggle: se já está aberto, fecha e avisa quem chamou para não reabrir
   function alternarJanela(cardId){
@@ -1816,9 +1833,8 @@
       ${temTreino()?`<div class="treino-resumo-al" id="treinoResumo_${id}">🏋️ carregando treino…</div>`:""}
       <div class="det-acoes">
         <a class="btn small" href="dashboard.html?aluno=${id}">Dashboard</a>
-        ${temTreino()?`<button class="btn small ghost" onclick="abrirTreino('${id}')">Treinos</button>`:""}
-        <button class="btn small ghost" onclick="verAvaliacoes('${id}')">Avaliações</button>
-        <button class="btn small ghost" onclick="novaConsulta('${id}')">Consultas</button>
+        ${temTreino()?`<button class="btn small ghost" id="btnTreinos" onclick="abrirTreino('${id}')">Treinos</button>`:""}
+        <button class="btn small ghost" id="btnAvals" onclick="verAvaliacoes('${id}')">Avaliações</button>
       </div>
       <div id="assessList_${id}" style="margin-top:6px"></div>`;
     if(temTreino()) carregarResumoTreinoAluno(id);
@@ -1995,14 +2011,46 @@
   async function verAvaliacoes(id){
     const el = document.getElementById("assessList_"+id);
     if(!el) return;
-    if(el.innerHTML){ el.innerHTML=""; return; }
+    const btn = document.getElementById("btnAvals");
+    if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
+    if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
+    // próxima avaliação agendada (usa a tabela de agendamentos)
+    const agora = new Date();
+    const { data: cons } = await sb.from("consultations").select("scheduled_at")
+      .eq("student_id", id).order("scheduled_at",{ascending:true});
+    const prox = (cons||[]).find(c=>new Date(c.scheduled_at) >= agora);
+    const proxVal = prox ? String(prox.scheduled_at).slice(0,10) : "";
+    const sched = `<div class="prox-aval">
+      <div class="pa-lbl">📅 Próxima avaliação${prox?`: <b>${fmtDate(prox.scheduled_at)}</b>`:""}</div>
+      <div class="pa-row">
+        <input type="date" id="proxAval_${id}" value="${proxVal}">
+        <button class="btn small" onclick="salvarProxAval('${id}')">Salvar data</button>
+      </div>
+      <div class="msg" id="proxAvalMsg_${id}"></div>
+    </div>`;
     const { data, error } = await sb.from("assessments").select("*")
       .eq("student_id", id).order("date",{ascending:false});
-    if(error){ el.innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
-    el.innerHTML = (data && data.length)
+    if(error){ el.innerHTML = sched + `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+    el.innerHTML = sched + ((data && data.length)
       ? `<div style="margin-top:12px">${data.map((a,i)=>avaliacaoDetalhe(a,i,true)).join("")}</div>`
-      : `<div class="empty">Sem avaliações ainda.</div>`;
+      : `<div class="empty" style="margin-top:10px">Sem avaliações ainda.</div>`);
+  }
+
+  async function salvarProxAval(id){
+    const inp = document.getElementById("proxAval_"+id);
+    const msg = document.getElementById("proxAvalMsg_"+id);
+    const d = inp && inp.value;
+    if(!d){ if(msg){ msg.className="msg err"; msg.textContent="Escolha uma data."; } return; }
+    // mantém apenas uma "próxima avaliação": remove futuras e insere a nova
+    await sb.from("consultations").delete().eq("student_id", id).gte("scheduled_at", new Date().toISOString());
+    const { error } = await sb.from("consultations").insert({
+      student_id: id, scheduled_at: new Date(`${d}T09:00`).toISOString(), created_by: ME.id
+    });
+    if(error){ if(msg){ msg.className="msg err"; msg.textContent="Erro: "+error.message; } return; }
+    if(msg){ msg.className="msg ok"; msg.textContent="Data da próxima avaliação salva!"; }
+    const lbl = document.querySelector("#assessList_"+id+" .pa-lbl");
+    if(lbl) lbl.innerHTML = `📅 Próxima avaliação: <b>${fmtDate(d)}</b>`;
   }
 
   function montarCamposMedidas(){

@@ -113,6 +113,19 @@
   /* "Rumo à meta" com a barra centralizada verticalmente */
   .prog-card{display:flex;flex-direction:column}
   .prog-mid{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .prog-ring{width:168px;height:168px;border-radius:50%;margin:6px auto 0;
+    background:conic-gradient(#7fff00 calc(var(--pct)*1%), #262a33 0);
+    display:flex;align-items:center;justify-content:center;transition:background .7s ease;
+    box-shadow:0 0 30px rgba(236,72,153,.18)}
+  .prog-ring-in{width:126px;height:126px;border-radius:50%;background:#15171c;
+    display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .prog-big{font-size:44px;font-weight:800;line-height:1;color:#7fff00}
+  .prog-sub{font-size:11px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.6px}
+  .prog-legend2{display:flex;justify-content:space-around;gap:6px;margin-top:18px;text-align:center}
+  .prog-legend2 span{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .prog-legend2 b{font-size:15px;color:var(--txt)}
+  .prog-msg{text-align:center;margin-top:14px;font-size:13.5px;font-weight:800;
+    background:linear-gradient(120deg,#1d2027,#262a33);border-radius:10px;padding:10px 12px;color:#7fff00}
   html,body{overflow-x:hidden}
   .perim-wide{grid-column:span 2}
   .chart-box canvas{max-width:100%}
@@ -151,6 +164,7 @@
   /* botões */
   .btn{background:#7fff00!important;color:#0a0b0d!important;border:none!important;font-weight:800!important}
   .btn.ghost,.nbtn,.logout,.ver-mais,.chev{background:transparent!important;color:#7fff00!important;border:1.5px solid #3a3f4a!important}
+  .det-acoes .btn.ativo{border-color:#7fff00!important;color:#7fff00!important;background:rgba(127,255,0,.14)!important}
   .nbtn.solid{background:#7fff00!important;color:#0a0b0d!important;border:none!important}
   .dots,.close-x,.seta{color:#9aa0ab!important}
   /* campos */
@@ -188,6 +202,12 @@
   .cmt.reply{border-left:3px solid #7fff00!important}
   .cmt-txt{color:#e8eaee!important}
   .cmt-input,.rate-txt,.cmt-reply-info{background:#0f1116!important;color:#e8eaee!important}
+  /* anel "rumo à meta" */
+  .prog-ring{box-shadow:0 0 34px rgba(127,255,0,.16)!important}
+  .prog-ring-in{background:#15171c!important}
+  .prog-big{color:#7fff00!important}
+  .prog-msg{color:#0a0b0d!important;background:#7fff00!important}
+  .prog-legend2 b{color:#fff!important}
   /* metas / kpis */
   .metas div{border-color:#2a2e37!important}
   .metas b,.med b{color:#7fff00!important}
@@ -235,10 +255,20 @@
     <div class="section-title">🎯 Progresso &amp; 🏋️ Treino</div>
     <div class="grid-1-2">
       <div class="card prog-card">
-        <h3>Rumo à meta <span id="progPct" style="float:right;color:var(--pink-deep);font-weight:800"></span></h3>
+        <h3>Rumo à meta</h3>
         <div class="prog-mid">
-          <div class="bar-track"><div class="bar-fill" id="progressFill"></div></div>
-          <div class="bar-legend"><span id="progIni">Início —</span><span id="progAtual">Atual —</span><span id="progMeta">Meta —</span></div>
+          <div class="prog-ring" id="progRing" style="--pct:0">
+            <div class="prog-ring-in">
+              <div class="prog-big" id="progPctBig">—</div>
+              <div class="prog-sub">concluído</div>
+            </div>
+          </div>
+          <div class="prog-legend2">
+            <div><span>Início</span><b id="progIni">—</b></div>
+            <div><span>Atual</span><b id="progAtual">—</b></div>
+            <div><span>Meta</span><b id="progMeta">—</b></div>
+          </div>
+          <div class="prog-msg" id="progMsg" style="display:none"></div>
           <div class="empty" id="progEmpty" style="margin-top:14px">Sua meta aparecerá aqui assim que seu profissional definir seu objetivo.</div>
         </div>
       </div>
@@ -267,7 +297,7 @@
           <div><span>Peso ideal</span><b id="m_peso">—</b></div>
           <div><span>% de gordura alvo</span><b id="m_bf">—</b></div>
           <div><span>Data alvo</span><b id="m_data">—</b></div>
-          <div><span>Próxima consulta</span><b id="m_consulta">—</b></div>
+          <div><span>Próxima avaliação</span><b id="m_consulta">—</b></div>
         </div>
       </div>
     </div>
@@ -812,17 +842,34 @@
     return `${s}${d.toLocaleString("pt-BR",{maximumFractionDigits:1})} ${unidade} desde a anterior`;
   }
 
+  // preenche o anel de progresso + mensagem motivacional
+  function aplicarProgresso(p, iniTxt, atualTxt, metaTxt){
+    const pr = Math.round(p);
+    const ring = document.getElementById("progRing"); if(ring) ring.style.setProperty("--pct", pr);
+    const big = document.getElementById("progPctBig"); if(big) big.textContent = pr + "%";
+    document.getElementById("progIni").textContent   = iniTxt;
+    document.getElementById("progAtual").textContent = atualTxt;
+    document.getElementById("progMeta").textContent  = metaTxt;
+    document.getElementById("progEmpty").style.display = "none";
+    const msg = document.getElementById("progMsg");
+    if(msg){
+      let t = "";
+      if(pr>=100) t = "🎉 Meta atingida! Você chegou lá.";
+      else if(pr>=75) t = "🔥 Quase lá! Falta pouquinho.";
+      else if(pr>=50) t = "💪 Mais da metade do caminho!";
+      else if(pr>=25) t = "Bom ritmo — continue firme!";
+      else if(pr>0)   t = "Começou! Cada treino conta.";
+      msg.textContent = t;
+      msg.style.display = pr>0 ? "block" : "none";
+    }
+  }
+
   function montarProgresso(avals, meta){
     const ini = n1(avals[0].body_fat), atual = n1(avals[avals.length-1].body_fat), alvo = n1(meta.target_bodyfat);
     if(ini==null || atual==null || alvo==null) return;
     const total = ini - alvo, feito = ini - atual;
     const p = total>0 ? Math.max(0, Math.min(100, (feito/total)*100)) : 0;
-    document.getElementById("progressFill").style.width = p.toFixed(0)+"%";
-    const pp=document.getElementById("progPct"); if(pp) pp.textContent = p>0 ? p.toFixed(0)+"% concluído" : "";
-    document.getElementById("progIni").textContent   = "Início "+pct(ini);
-    document.getElementById("progAtual").textContent = "Atual "+pct(atual);
-    document.getElementById("progMeta").textContent  = "Meta "+pct(alvo);
-    document.getElementById("progEmpty").style.display = "none";
+    aplicarProgresso(p, pct(ini), pct(atual), pct(alvo));
     const falta = atual - alvo;
     document.getElementById("k_meta").textContent = falta>0 ? pct(falta) : "atingida 🎉";
     document.getElementById("d_meta").textContent = falta>0 ? "de gordura para a meta" : "parabéns!";
@@ -833,12 +880,7 @@
     if(ini==null || atual==null || alvo==null) return;
     const total = Math.abs(ini - alvo), feito = Math.abs(ini - atual);
     const p = total>0 ? Math.max(0, Math.min(100, (feito/total)*100)) : 0;
-    document.getElementById("progressFill").style.width = p.toFixed(0)+"%";
-    const pp=document.getElementById("progPct"); if(pp) pp.textContent = p>0 ? p.toFixed(0)+"% concluído" : "";
-    document.getElementById("progIni").textContent   = "Início "+kg(ini);
-    document.getElementById("progAtual").textContent = "Atual "+kg(atual);
-    document.getElementById("progMeta").textContent  = "Meta "+kg(alvo);
-    document.getElementById("progEmpty").style.display = "none";
+    aplicarProgresso(p, kg(ini), kg(atual), kg(alvo));
     const falta = Math.abs(atual - alvo);
     document.getElementById("k_meta").textContent = falta>0.05 ? kg(falta) : "atingida 🎉";
     document.getElementById("d_meta").textContent = falta>0.05 ? "para o peso ideal" : "parabéns!";
