@@ -19,10 +19,25 @@
     display:flex;align-items:center;justify-content:center;font-size:18px}
   .av-thumb img{width:100%;height:100%;object-fit:cover}
   .av-cap{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-  .foto-wrap{display:flex;align-items:center;gap:16px;margin-top:10px}
-  .foto-preview{width:88px;height:88px;border-radius:50%;overflow:hidden;background:#1d2027;border:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center;font-size:36px;flex:0 0 auto}
+  /* perfil resumido */
+  .perfil-foto{text-align:center;margin:6px 0 20px}
+  .foto-btn{position:relative;border:none;background:none;cursor:pointer;padding:0;display:inline-block}
+  .foto-preview{width:112px;height:112px;border-radius:50%;overflow:hidden;background:#1d2027;border:3px solid var(--pink);
+    display:flex;align-items:center;justify-content:center;font-size:46px}
   .foto-preview img{width:100%;height:100%;object-fit:cover}
+  .foto-plus{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font-size:34px;font-weight:700;
+    text-shadow:0 1px 8px rgba(0,0,0,.55);pointer-events:none}
+  .foto-cap{margin-top:8px;font-weight:700;font-size:13px;color:var(--pink-deep)}
+  .acc{border:1px solid var(--line);border-radius:14px;margin-bottom:12px;background:#15171c;overflow:hidden}
+  .acc-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:16px;background:none;border:none;cursor:pointer;text-align:left}
+  .acc-txt{display:flex;flex-direction:column;gap:3px}
+  .acc-tit{font-weight:800;font-size:15px;color:var(--txt)}
+  .acc-sub{font-size:12.5px;color:var(--pink-deep);font-weight:600}
+  .acc-chev{color:var(--pink-deep);font-size:22px;line-height:1;transition:transform .2s}
+  .acc.open .acc-chev{transform:rotate(90deg)}
+  .acc-body{display:none;padding:0 16px 16px}
+  .acc.open .acc-body{display:block}
   .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 60px}
   .hello{font-size:21px;font-weight:800;margin-bottom:4px}
   .role-chip{display:inline-block;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;margin-bottom:18px}
@@ -1279,68 +1294,79 @@
 
   /* ================= TELA: PERFIL ================= */
   function viewPerfil(){
-    const falta = !primeiroNome();
+    const role = ME.role || "student";
+    const isProf = role === "professional" || role === "creator";
+    const resumo = isProf ? "Nome, E-mail, WhatsApp, CREF, Instagram" : "Nome, E-mail, Sexo, Nascimento";
+    const camposProf = `
+      <div class="field"><label>WhatsApp</label><input id="myWhats" type="text" value="${esc(ME.whatsapp||"")}" placeholder="(11) 99999-9999"></div>
+      <div class="field"><label>CREF</label><input id="myCref" type="text" value="${esc(ME.cref||"")}" placeholder="ex: 000000-G/SP"></div>
+      <div class="field"><label>Instagram</label><input id="myInsta" type="text" value="${esc(ME.instagram||"")}" placeholder="@seuperfil"></div>`;
+    const camposAluno = `
+      <div class="form-grid2">
+        <div class="field"><label>Sexo</label>
+          <select id="mySex"><option value="">—</option>
+            <option value="M" ${ME.sex==="M"?"selected":""}>Masculino</option>
+            <option value="F" ${ME.sex==="F"?"selected":""}>Feminino</option></select></div>
+        <div class="field"><label>Data de nascimento</label>
+          <input id="myBirth" type="date" value="${ME.birth_date?String(ME.birth_date).slice(0,10):""}"></div>
+      </div>`;
     return `<h2>Meu perfil</h2>
-      <div class="card">
-        <h3>📷 Foto de perfil</h3>
-        <div class="foto-wrap">
-          <div class="foto-preview" id="fotoPreview">${ME.avatar?`<img src="${esc(ME.avatar)}" alt="">`:"👤"}</div>
-          <div>
-            <input type="file" id="fotoInput" accept="image/*" style="display:none" onchange="uploadFoto(event)">
-            <button class="btn small" onclick="document.getElementById('fotoInput').click()">Escolher foto</button>
-            <button class="btn small ghost" id="fotoRem" onclick="removerFoto()" style="${ME.avatar?"":"display:none"}">Remover</button>
-            <div class="msg" id="fotoMsg"></div>
-          </div>
+      <div class="perfil-foto">
+        <input type="file" id="fotoInput" accept="image/*" style="display:none" onchange="uploadFoto(event)">
+        <button class="foto-btn" onclick="document.getElementById('fotoInput').click()" title="Alterar foto">
+          <span class="foto-preview" id="fotoPreview">${ME.avatar?`<img src="${esc(ME.avatar)}" alt="">`:"👤"}</span>
+          <span class="foto-plus">+</span>
+        </button>
+        <div class="foto-cap">Editar foto</div>
+        <div class="msg" id="fotoMsg" style="text-align:center"></div>
+      </div>
+
+      <div class="acc">
+        <button class="acc-head" onclick="toggleAcc('accDados')">
+          <span class="acc-txt"><span class="acc-tit">Seus dados</span><span class="acc-sub">${resumo}</span></span>
+          <span class="acc-chev">›</span>
+        </button>
+        <div class="acc-body" id="accDados">
+          <div class="field"><label>Nome completo</label>
+            <input id="myName" type="text" value="${esc(ME.full_name||"")}" placeholder="Seu nome"></div>
+          <div class="field"><label>E-mail</label><input type="text" value="${esc(ME.email||"")}" disabled></div>
+          ${isProf ? camposProf : camposAluno}
+          <button class="btn small" id="nameBtn" onclick="salvarNome()">Salvar dados</button>
+          <div class="msg" id="nameMsg"></div>
         </div>
       </div>
 
-      <div class="card">
-        <h3>👤 Meus dados</h3>
-        <p>${falta ? "Informe seu nome para personalizar a saudação." : "Altere seu nome se precisar."}</p>
-        <div class="field" style="margin-top:12px">
-          <label>Nome completo</label>
-          <input id="myName" type="text" value="${esc(ME.full_name||"")}" placeholder="ex: LEVO">
-        </div>
-        <div class="form-grid2">
-          <div class="field"><label>Sexo</label>
-            <select id="mySex">
-              <option value="">—</option>
-              <option value="M" ${ME.sex==="M"?"selected":""}>Masculino</option>
-              <option value="F" ${ME.sex==="F"?"selected":""}>Feminino</option>
-            </select>
+      <div class="acc">
+        <button class="acc-head" onclick="toggleAcc('accSenha')">
+          <span class="acc-txt"><span class="acc-tit">Atualizar senha</span><span class="acc-sub">••••••••••</span></span>
+          <span class="acc-chev">›</span>
+        </button>
+        <div class="acc-body" id="accSenha">
+          <div class="form-grid" style="margin-top:4px">
+            <div class="field"><label>Nova senha</label><input id="np1" type="password" placeholder="mín. 6 caracteres"></div>
+            <div class="field"><label>Confirmar nova senha</label><input id="np2" type="password" placeholder="repita a senha"></div>
           </div>
-          <div class="field"><label>Data de nascimento</label>
-            <input id="myBirth" type="date" value="${ME.birth_date ? String(ME.birth_date).slice(0,10) : ""}">
-          </div>
+          <button class="btn small" id="pwBtn" onclick="definirSenha()">Salvar nova senha</button>
+          <div class="msg" id="pwMsg"></div>
         </div>
-        <div class="field"><label>E-mail</label><input type="text" value="${esc(ME.email||"")}" disabled></div>
-        <button class="btn small" id="nameBtn" onclick="salvarNome()">Salvar dados</button>
-        <div class="msg" id="nameMsg"></div>
-      </div>
-
-      <div class="card">
-        <h3>🔐 Senha de acesso</h3>
-        <p>Crie uma nova senha para entrar com e-mail e senha na próxima vez.</p>
-        <div class="form-grid" style="margin-top:12px">
-          <div class="field"><label>Nova senha</label><input id="np1" type="password" placeholder="mín. 6 caracteres"></div>
-          <div class="field"><label>Confirmar nova senha</label><input id="np2" type="password" placeholder="repita a senha"></div>
-        </div>
-        <button class="btn small" id="pwBtn" onclick="definirSenha()">Salvar nova senha</button>
-        <div class="msg" id="pwMsg"></div>
       </div>`;
   }
+  function toggleAcc(id){ const b=document.getElementById(id); if(b) b.parentElement.classList.toggle("open"); }
 
   async function salvarNome(){
     const v=document.getElementById("myName").value.trim();
-    const sex=document.getElementById("mySex").value || null;
-    const birth=document.getElementById("myBirth").value || null;
     const msg=document.getElementById("nameMsg"), btn=document.getElementById("nameBtn");
     if(!v){ msg.className="msg err"; msg.textContent="Digite seu nome."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
-    const { error } = await sb.from("profiles").update({ full_name:v, sex, birth_date:birth }).eq("id", ME.id);
+    const upd = { full_name:v };
+    const val = id => { const e=document.getElementById(id); return e ? (e.value.trim()||null) : undefined; };
+    const sexEl = document.getElementById("mySex");
+    if(sexEl){ upd.sex = sexEl.value||null; upd.birth_date = document.getElementById("myBirth").value||null; }
+    if(document.getElementById("myWhats")){ upd.whatsapp = val("myWhats"); upd.cref = val("myCref"); upd.instagram = val("myInsta"); }
+    const { error } = await sb.from("profiles").update(upd).eq("id", ME.id);
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
-    ME.full_name = v; ME.sex = sex; ME.birth_date = birth;
+    Object.assign(ME, upd);
     msg.className="msg ok"; msg.textContent="✅ Dados salvos com sucesso!";
     const h = document.querySelector(".hello");
     const pn = primeiroNome();
