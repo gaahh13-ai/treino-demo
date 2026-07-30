@@ -74,7 +74,8 @@
   .aluno-detalhe{min-height:130px}
   .det-nome{font-size:18px;font-weight:800}
   .det-sub{font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:16px}
-  .det-acoes{display:flex;flex-wrap:wrap;gap:8px}
+  .det-acoes{display:flex;flex-direction:column;gap:8px;max-width:280px}
+  .det-acoes .btn{width:100%;text-align:center}
   .det-acoes .btn{margin-top:0}
   @media(max-width:760px){
     .alunos-layout{grid-template-columns:1fr}
@@ -343,6 +344,9 @@
   .chip-f.sel,.treino-linha.sel{background:#7fff00!important;color:#0a0b0d!important;border-color:transparent!important}
   .treino-linha{background:#0f1116!important;border-color:#2a2e37!important}
   .treino-linha .tl-nome,.aluno-item{color:#e8eaee!important}
+  /* treino selecionado: texto escuro sobre o verde (legível) */
+  .treino-linha.sel .tl-nome,.treino-linha.sel .tl-ult,.treino-linha.sel .tl-seta{color:#0a0b0d!important}
+  .aluno-item.sel,.aluno-item.sel .ai-nome{color:#0a0b0d!important}
   .aluno-item{background:#0f1116!important;border-color:#2a2e37!important}
   .aluno-item.sel{background:#7fff00!important;color:#0a0b0d!important}
   /* barras de progresso */
@@ -1799,14 +1803,14 @@
       </div>
       ${temTreino()?`<div class="treino-resumo-al" id="treinoResumo_${id}">🏋️ carregando treino…</div>`:""}
       <div class="det-acoes">
-        <a class="btn small" href="dashboard.html?aluno=${id}">📊 Dashboard</a>
-        ${temTreino()?`<button class="btn small" onclick="abrirTreino('${id}')">🏋️ Treino</button>`:""}
-        <button class="btn small" onclick="novaAvaliacao('${id}')">➕ Nova avaliação</button>
-        <button class="btn small ghost" onclick="verAvaliacoes('${id}')">📋 Ver avaliações</button>
-        <button class="btn small ghost" onclick="novaConsulta('${id}')">📅 Consultas</button>
-        <button class="btn small ghost" onclick="abrirMetas('${id}')">🎯 Metas</button>
-        <button class="btn small ghost" onclick="dadosCliente('${id}')">👤 Dados do cliente</button>
-        <button class="btn small ghost" onclick="arquivarAluno('${id}')">📁 Arquivar</button>
+        <a class="btn small" href="dashboard.html?aluno=${id}">Dashboard</a>
+        ${temTreino()?`<button class="btn small" onclick="abrirTreino('${id}')">Treino</button>`:""}
+        <button class="btn small" onclick="novaAvaliacao('${id}')">Nova avaliação</button>
+        <button class="btn small ghost" onclick="verAvaliacoes('${id}')">Ver avaliações</button>
+        <button class="btn small ghost" onclick="novaConsulta('${id}')">Consultas</button>
+        <button class="btn small ghost" onclick="abrirMetas('${id}')">Metas</button>
+        <button class="btn small ghost" onclick="dadosCliente('${id}')">Dados do cliente</button>
+        <button class="btn small ghost" onclick="arquivarAluno('${id}')">Arquivar</button>
       </div>
       <div id="assessList_${id}" style="margin-top:6px"></div>`;
     if(temTreino()) carregarResumoTreinoAluno(id);
