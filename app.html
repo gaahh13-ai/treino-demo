@@ -436,7 +436,13 @@
 <body>
 <nav class="top"><div class="in">
   <a href="index.html"><span class="logo-levo">L<span class="ac">E</span>VO</span></a>
-  <button class="logout" onclick="sair()">Sair</button>
+  <span class="menu-wrap">
+    <button class="logout" onclick="abrirMenu(event,'perfilMenu')">Perfil ▾</button>
+    <span class="menu-drop" id="perfilMenu">
+      <button onclick="go('perfil')">Meu perfil</button>
+      <button onclick="sair()">Sair</button>
+    </span>
+  </span>
 </div></nav>
 
 <div class="wrap">
@@ -541,7 +547,6 @@
       ];
       if(alunoTemTreino()) menu.push({id:"meutreino", ico:"🏋️", label:"Meu treino"});
       menu.push({id:"consultas", ico:"📅", label:"Consultas"});
-      menu.push({id:"perfil",    ico:"👤", label:"Perfil"});
       return menu;
     }
     const m = [
@@ -554,7 +559,6 @@
       m.push({id:"desempenho", ico:"📈", label:"Desempenho"});
     }
     m.push({id:"inativos", ico:"📁", label:"Alunos inativos"});
-    m.push({id:"perfil",   ico:"👤", label:"Meu perfil"});
     if(role === "creator") m.push({id:"admin", ico:"🛠️", label:"Painel do criador"});
     return m;
   }
