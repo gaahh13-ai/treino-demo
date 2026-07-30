@@ -431,7 +431,7 @@
   ];
 
   /* sessão expira em 1 hora */
-  const DURACAO_MS = 60*60*1000;
+  const DURACAO_MS = 12*60*60*1000;
   function marcarInicio(){ if(!localStorage.getItem("sessao_inicio")) localStorage.setItem("sessao_inicio", String(Date.now())); }
   async function expirouSessao(){
     const ini = Number(localStorage.getItem("sessao_inicio")||0);

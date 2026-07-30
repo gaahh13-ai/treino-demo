@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
   html,body{height:100%}
@@ -35,5 +36,28 @@
     <div class="slogan">Seu método, <b>com a sua marca.</b></div>
     <div class="soon">site em construção</div>
   </div>
+  <script>
+    const SUPABASE_URL = "https://qubjknesswejsddcapom.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1YmprbmVzc3dlanNkZGNhcG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTYzNTYsImV4cCI6MjA5OTkzMjM1Nn0._nDLQ_Q5wN-4eNS0jf-lnyhGHixoZ5_SdXvTvBV_d3E";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+    });
+    const DURACAO_MS = 12*60*60*1000;
+    (async ()=>{
+      try{
+        const { data:{ session } } = await sb.auth.getSession();
+        if(!session) return;
+        const ini = Number(localStorage.getItem("sessao_inicio")||0);
+        if(ini && Date.now()-ini > DURACAO_MS) return;   // sessão de 12h expirada
+        let nome = session.user.email || "Minha conta";
+        try{
+          const { data:p } = await sb.from("profiles").select("full_name").eq("id", session.user.id).single();
+          if(p && p.full_name) nome = p.full_name.trim().split(/\s+/)[0];
+        }catch(e){}
+        const btn = document.querySelector(".login-btn");
+        if(btn){ btn.textContent = nome + " →"; btn.href = "app.html"; }
+      }catch(e){}
+    })();
+  </script>
 </body>
 </html>
