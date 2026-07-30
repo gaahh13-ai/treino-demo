@@ -54,6 +54,11 @@
   .navitem:hover{background:#1d2027}
   .navitem.active{background:linear-gradient(120deg,#1d2027,#262a33);color:var(--pink-deep);font-weight:800}
   .navitem .ico{font-size:15px;line-height:1}
+  .navgroup{display:flex;flex-direction:column;gap:2px}
+  .navsubs{display:none;margin:2px 0 4px 10px;padding-left:10px;border-left:1px solid var(--line);
+           flex-direction:column;gap:2px}
+  .navgroup.open .navsubs{display:flex}
+  .navsub{padding:9px 12px;font-size:13px;font-weight:600;opacity:.92}
 
   .panel h2{font-size:18px;font-weight:800;margin-bottom:14px}
   .card{background:#15171c;border:1px solid var(--line);border-radius:18px;padding:22px;
@@ -562,24 +567,25 @@
   function menuFor(role){
     if(role === "student"){
       const menu = [
-        {id:"dash",       ico:"📊", label:"Meu dashboard"},
-        {id:"avaliacoes", ico:"📋", label:"Avaliações Físicas"}
+        {id:"dash",       label:"Meu dashboard"},
+        {id:"avaliacoes", label:"Avaliações Físicas"}
       ];
-      if(alunoTemTreino()) menu.push({id:"meutreino", ico:"🏋️", label:"Meu treino"});
-      menu.push({id:"consultas", ico:"📅", label:"Consultas"});
+      if(alunoTemTreino()) menu.push({id:"meutreino", label:"Meu treino"});
+      menu.push({id:"consultas", label:"Consultas"});
       return menu;
     }
     const m = [
-      {id:"alunos",     ico:"👥", label:"Meus alunos"},
-      {id:"cadastrar",  ico:"➕", label:"Cadastrar aluno"}
+      {id:"alunos", label:"Meus alunos", sub:[
+        {id:"cadastrar", label:"Cadastrar aluno"},
+        {id:"inativos",  label:"Alunos inativos"}
+      ]}
     ];
     // módulo de treino só para profissionais habilitados (personal). Nutri (LEVO) não vê.
     if(temTreino()){
-      m.push({id:"exercicios", ico:"🏋️", label:"Exercícios"});
-      m.push({id:"desempenho", ico:"📈", label:"Desempenho"});
+      m.push({id:"exercicios", label:"Exercícios"});
+      m.push({id:"desempenho", label:"Desempenho"});
     }
-    m.push({id:"inativos", ico:"📁", label:"Alunos inativos"});
-    if(role === "creator") m.push({id:"admin", ico:"🛠️", label:"Painel do criador"});
+    if(role === "creator") m.push({id:"admin", label:"Painel do criador"});
     return m;
   }
 
@@ -600,9 +606,15 @@
       return;
     }
 
-    const itens = menuFor(role).map(i=>
-      `<button class="navitem" id="nav_${i.id}" onclick="go('${i.id}')">
-         <span class="ico">${i.ico}</span><span class="lbl">${i.label}</span></button>`).join("");
+    const itens = menuFor(role).map(i=>{
+      const main = `<button class="navitem" id="nav_${i.id}" onclick="go('${i.id}')"><span class="lbl">${i.label}</span></button>`;
+      if(i.sub && i.sub.length){
+        const subs = i.sub.map(s=>
+          `<button class="navitem navsub" id="nav_${s.id}" onclick="go('${s.id}')"><span class="lbl">${s.label}</span></button>`).join("");
+        return `<div class="navgroup" id="grp_${i.id}">${main}<div class="navsubs">${subs}</div></div>`;
+      }
+      return main;
+    }).join("");
 
     document.getElementById("content").innerHTML = `
       <div class="hello">${first ? "Olá, "+esc(first)+" 👋" : "Olá! 👋"}</div>
@@ -656,6 +668,11 @@
     if(!EXEC_SESSAO && typeof pararCronoTreino==="function") pararCronoTreino();
     document.querySelectorAll(".navitem").forEach(b=>b.classList.remove("active"));
     const nav = document.getElementById("nav_"+id); if(nav) nav.classList.add("active");
+    // expande o grupo "Meus alunos" quando estiver em qualquer subitem
+    document.querySelectorAll(".navgroup").forEach(g=>g.classList.remove("open"));
+    if(["alunos","cadastrar","inativos"].includes(id)){
+      const grp = document.getElementById("grp_alunos"); if(grp) grp.classList.add("open");
+    }
     const p = document.getElementById("panel"); if(!p) return;
 
     if(id === "dash")      p.innerHTML = viewDash();
