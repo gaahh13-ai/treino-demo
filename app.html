@@ -59,6 +59,33 @@
            flex-direction:column;gap:2px}
   .navgroup.open .navsubs{display:flex}
   .navsub{padding:9px 12px;font-size:13px;font-weight:600;opacity:.92}
+  /* Financeiro */
+  .fin-topo{display:flex;align-items:center;gap:12px}
+  .fin-mes{font-weight:800;font-size:16px;min-width:150px;text-align:center}
+  .fin-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .fin-kpi{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+  .fin-kpi .fk-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .fin-kpi b{font-size:18px}
+  .fin-kpi.ok b{color:#15803d}
+  .fin-kpi.warn b{color:#be123c}
+  .fin-row{display:grid;grid-template-columns:1.4fr .9fr 1fr .8fr auto;align-items:center;gap:10px;
+           padding:11px 4px;border-bottom:1px solid var(--line)}
+  .fin-nome{font-weight:700;font-size:14px}
+  .fin-campo{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .fin-in{width:90px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+  .fin-in.fin-dia{width:56px}
+  .fin-tag{display:inline-block;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800}
+  .fin-tag.pg{background:#122110;color:#15803d}
+  .fin-tag.pe{background:#2a2410;color:#b45309}
+  .fin-tag.at{background:#2a1416;color:#be123c}
+  .fin-btn{padding:8px 12px;font-size:13px;white-space:nowrap}
+  @media(max-width:760px){
+    .fin-cards{grid-template-columns:repeat(2,1fr)}
+    .fin-row{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
+    .fin-nome{grid-column:1/-1}
+    .fin-ac{grid-column:1/-1}
+    .fin-btn{width:100%}
+  }
 
   .panel h2{font-size:18px;font-weight:800;margin-bottom:14px}
   .card{background:#15171c;border:1px solid var(--line);border-radius:18px;padding:22px;
@@ -461,6 +488,16 @@
   .menu-drop{background:#15171c!important;border-color:#2a2e37!important}
   .menu-drop button{color:#e8eaee!important}
   .menu-drop button:hover{background:#1d2027!important}
+  /* financeiro */
+  .fin-mes{color:#fff!important}
+  .fin-kpi{background:#0f1116!important;border-color:#262a33!important}
+  .fin-kpi.ok b{color:#7fff00!important}
+  .fin-kpi.warn b{color:#ff9aa2!important}
+  .fin-in{background:#0f1116!important;color:#e8eaee!important;border-color:#2a2e37!important}
+  .fin-row{border-color:#262a33!important}
+  .fin-tag.pg{background:#12210f!important;color:#bff08a!important}
+  .fin-tag.pe{background:#2a2410!important;color:#ffd98a!important}
+  .fin-tag.at{background:#2a1416!important;color:#ff9aa2!important}
 </style>
 
 </head>
@@ -571,7 +608,6 @@
         {id:"avaliacoes", label:"Avaliações Físicas"}
       ];
       if(alunoTemTreino()) menu.push({id:"meutreino", label:"Meu treino"});
-      menu.push({id:"consultas", label:"Consultas"});
       return menu;
     }
     const m = [
@@ -585,6 +621,7 @@
       m.push({id:"exercicios", label:"Exercícios"});
       m.push({id:"desempenho", label:"Desempenho"});
     }
+    m.push({id:"financeiro", label:"Financeiro"});
     if(role === "creator") m.push({id:"admin", label:"Painel do criador"});
     return m;
   }
@@ -685,6 +722,7 @@
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
     else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); carregarDesempenho(); }
+    else if(id === "financeiro"){ p.innerHTML = viewFinanceiro(); carregarFinanceiro(); }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
     atualizarPill();
     window.scrollTo({top:0, behavior:"smooth"});
@@ -862,7 +900,7 @@
     const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", ficha.id).order("ordem");
     ALUNO_DIAS = dias || [];
     if(!ALUNO_DIAS.length){ if(box) box.innerHTML = `<div class="empty">Seu personal ainda não adicionou os dias do treino.</div>`; return; }
-    ALUNO_DIA = ALUNO_DIAS[0].id;
+    ALUNO_DIA = null; // abre a lista sem nenhum treino aberto; só abre ao clicar
     // carrega os exercícios de todos os dias de uma vez
     const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("ficha_id", ficha.id).order("ordem");
     ALUNO_EXS = exs || [];
@@ -931,6 +969,7 @@
   function renderAlunoExs(){
     const box = document.getElementById("treinoBoxAluno");
     if(!box) return;
+    if(!ALUNO_DIA){ box.innerHTML = `<div class="empty">Selecione um treino acima para ver os exercícios.</div>`; return; }
     const lista = ALUNO_EXS.filter(x=>x.dia_id===ALUNO_DIA);
     const dia = ALUNO_DIAS.find(d=>d.id===ALUNO_DIA);
     if(!lista.length){ box.innerHTML = `<div class="empty">Sem exercícios neste dia.</div>`; return; }
@@ -1734,6 +1773,147 @@
     ASSESS = ast || [];
     renderStudents();
     loadInvites();
+  }
+
+  /* ---------- PROFISSIONAL: FINANCEIRO ---------- */
+  let FIN_COMP = null;            // 'YYYY-MM' em foco
+  let FIN_MENS = {};              // student_id -> {valor, dia_venc}
+  let FIN_PAGS = {};             // student_id -> {id, valor, pago_em}
+
+  function fmtBRL(n){
+    return "R$ " + (Number(n)||0).toLocaleString("pt-BR",{minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function compAtual(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+  function compLabel(c){
+    const [y,m]=c.split("-").map(Number);
+    const nomes=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    return nomes[m-1]+" de "+y;
+  }
+
+  function viewFinanceiro(){
+    if(!FIN_COMP) FIN_COMP = compAtual();
+    return `<h2>Financeiro</h2>
+      <div class="card">
+        <div class="fin-topo">
+          <button class="chev" onclick="finMudarMes(-1)">‹</button>
+          <div class="fin-mes" id="finMes">${compLabel(FIN_COMP)}</div>
+          <button class="chev" onclick="finMudarMes(1)">›</button>
+        </div>
+        <p class="meta-sm" style="margin-top:2px">Controle de mensalidades dos alunos. Defina o valor e o dia de vencimento de cada um e registre os pagamentos do mês.</p>
+        <div id="finCards" class="fin-cards" style="margin:14px 0"></div>
+        <div id="finLista"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+
+  async function carregarFinanceiro(){
+    if(!FIN_COMP) FIN_COMP = compAtual();
+    if(!STUDENTS.length){
+      const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
+      STUDENTS = studs || [];
+    }
+    // planos (mensalidades)
+    const { data: mens } = await sb.from("mensalidades").select("*").eq("professional_id", ME.id);
+    FIN_MENS = {}; (mens||[]).forEach(m=>{ FIN_MENS[m.student_id] = m; });
+    // pagamentos da competência em foco
+    const { data: pags } = await sb.from("pagamentos").select("*").eq("professional_id", ME.id).eq("competencia", FIN_COMP);
+    FIN_PAGS = {}; (pags||[]).forEach(p=>{ FIN_PAGS[p.student_id] = p; });
+    renderFinanceiro();
+  }
+
+  function finStatus(sid){
+    const pago = FIN_PAGS[sid];
+    if(pago) return "pago";
+    const m = FIN_MENS[sid] || {};
+    const dia = m.dia_venc || 5;
+    const [y,mo] = FIN_COMP.split("-").map(Number);
+    const venc = new Date(y, mo-1, dia, 23,59,59);
+    return (Date.now() > venc.getTime()) ? "atrasado" : "pendente";
+  }
+
+  function renderFinanceiro(){
+    const mesEl = document.getElementById("finMes"); if(mesEl) mesEl.textContent = compLabel(FIN_COMP);
+    const ativos = STUDENTS.filter(s => (s.status||"active") === "active");
+    const lista = document.getElementById("finLista");
+    const cards = document.getElementById("finCards");
+    if(!lista) return;
+
+    let recebido=0, aReceber=0, atraso=0;
+    ativos.forEach(s=>{
+      const m = FIN_MENS[s.id] || {}; const v = Number(m.valor)||0;
+      const st = finStatus(s.id);
+      if(st==="pago")      recebido += Number((FIN_PAGS[s.id]||{}).valor ?? v);
+      else if(st==="atrasado") atraso += v;
+      else                 aReceber += v;
+    });
+
+    if(cards){
+      cards.innerHTML = `
+        <div class="fin-kpi ok"><span class="fk-lbl">Recebido</span><b>${fmtBRL(recebido)}</b></div>
+        <div class="fin-kpi"><span class="fk-lbl">A receber</span><b>${fmtBRL(aReceber)}</b></div>
+        <div class="fin-kpi warn"><span class="fk-lbl">Em atraso</span><b>${fmtBRL(atraso)}</b></div>
+        <div class="fin-kpi"><span class="fk-lbl">Alunos ativos</span><b>${ativos.length}</b></div>`;
+    }
+
+    if(!ativos.length){ lista.innerHTML = `<div class="empty">Nenhum aluno ativo.</div>`; return; }
+
+    const rows = ativos.map(s=>{
+      const m = FIN_MENS[s.id] || {};
+      const valor = Number(m.valor)||0;
+      const dia = m.dia_venc || 5;
+      const st = finStatus(s.id);
+      const chip = st==="pago"     ? `<span class="fin-tag pg">Pago</span>`
+                 : st==="atrasado" ? `<span class="fin-tag at">Atrasado</span>`
+                 :                    `<span class="fin-tag pe">Pendente</span>`;
+      const acao = st==="pago"
+        ? `<button class="btn ghost fin-btn" onclick="desfazerPagamento('${s.id}')">Desfazer</button>`
+        : `<button class="btn fin-btn" onclick="registrarPagamento('${s.id}')">Registrar pagamento</button>`;
+      return `<div class="fin-row">
+        <div class="fin-nome">${esc(s.full_name||"Aluno")}</div>
+        <label class="fin-campo">R$ <input id="finVal_${s.id}" class="fin-in" type="number" step="0.01" min="0" value="${valor}" onchange="salvarMens('${s.id}')"></label>
+        <label class="fin-campo">venc. dia <input id="finDia_${s.id}" class="fin-in fin-dia" type="number" min="1" max="28" value="${dia}" onchange="salvarMens('${s.id}')"></label>
+        <div class="fin-st">${chip}</div>
+        <div class="fin-ac">${acao}</div>
+      </div>`;
+    }).join("");
+    lista.innerHTML = rows;
+  }
+
+  function finMudarMes(delta){
+    let [y,m] = FIN_COMP.split("-").map(Number);
+    m += delta; if(m<1){m=12;y--;} if(m>12){m=1;y++;}
+    FIN_COMP = y+"-"+String(m).padStart(2,"0");
+    carregarFinanceiro();
+  }
+
+  async function salvarMens(sid){
+    const vEl = document.getElementById("finVal_"+sid);
+    const dEl = document.getElementById("finDia_"+sid);
+    const valor = Math.max(0, Number(vEl && vEl.value)||0);
+    let dia = Math.round(Number(dEl && dEl.value)||5); dia = Math.min(28, Math.max(1, dia));
+    const { error } = await sb.from("mensalidades")
+      .upsert({ student_id:sid, professional_id:ME.id, valor, dia_venc:dia }, { onConflict:"student_id" });
+    if(error){ alert("Não consegui salvar: "+error.message); return; }
+    FIN_MENS[sid] = { student_id:sid, valor, dia_venc:dia };
+    renderFinanceiro();
+  }
+
+  async function registrarPagamento(sid){
+    const m = FIN_MENS[sid] || {};
+    const valor = Number(m.valor)||0;
+    const { data, error } = await sb.from("pagamentos")
+      .upsert({ student_id:sid, professional_id:ME.id, competencia:FIN_COMP, valor, pago_em:new Date().toISOString() },
+              { onConflict:"student_id,competencia" })
+      .select().single();
+    if(error){ alert("Não consegui registrar: "+error.message); return; }
+    FIN_PAGS[sid] = data;
+    renderFinanceiro();
+  }
+
+  async function desfazerPagamento(sid){
+    const { error } = await sb.from("pagamentos").delete().eq("student_id", sid).eq("competencia", FIN_COMP);
+    if(error){ alert("Não consegui desfazer: "+error.message); return; }
+    delete FIN_PAGS[sid];
+    renderFinanceiro();
   }
 
   /* ---------- PROFISSIONAL: DESEMPENHO / RETENÇÃO ---------- */
