@@ -604,10 +604,9 @@
   function menuFor(role){
     if(role === "student"){
       const menu = [
-        {id:"dash",       label:"Meu dashboard"},
+        {id:"dash",       label:"Dashboard"},
         {id:"avaliacoes", label:"Avaliações Físicas"}
       ];
-      if(alunoTemTreino()) menu.push({id:"meutreino", label:"Meu treino"});
       return menu;
     }
     const m = [
@@ -638,7 +637,7 @@
         <div class="hello">${first ? "Olá, "+esc(first) : "Olá!"}</div>
         <div class="card"><h3>⏸️ Acompanhamento inativo</h3>
         <p>Seu acompanhamento está pausado no momento, então o painel fica indisponível.
-           Seu histórico continua guardado. Fale com sua nutricionista para reativar.</p></div>`;
+           Seu histórico continua guardado. Fale com seu personal trainer para reativar.</p></div>`;
       mostrar();
       return;
     }
@@ -760,7 +759,7 @@
         </div>
         <button class="btn" onclick="go('meutreino')">Acessar meu treino →</button>
       </div>` : "";
-    return `<h2>Meu dashboard</h2>
+    return `<h2>Dashboard</h2>
       ${heroTreino}
       <div class="card">
         <h3>📊 Sua evolução</h3>
@@ -774,7 +773,7 @@
     const { data: bot, error } = await sb.rpc("meu_bot_telegram");
     if(error || !bot){
       msg.className="msg err";
-      msg.textContent="Sua nutricionista ainda não ativou os reports por Telegram.";
+      msg.textContent="Seu personal trainer ainda não ativou os reports por Telegram.";
       return;
     }
     gerarLinkTelegram(bot, "ctaMsg");
@@ -793,7 +792,7 @@
     if(!box) return;
     const { data: bot, error } = await sb.rpc("meu_bot_telegram");
     if(error || !bot){
-      box.innerHTML = `<div class="empty">Sua nutricionista ainda não ativou os reports por Telegram.</div>`;
+      box.innerHTML = `<div class="empty">Seu personal trainer ainda não ativou os reports por Telegram.</div>`;
       return;
     }
     if(ME.telegram_chat_id){
@@ -841,8 +840,12 @@
   function viewAvaliacoes(){
     return `<h2>Avaliações Físicas</h2>
       <div class="card">
+        <h3>Próxima avaliação</h3>
+        <div id="proxAvalAluno" style="margin-top:8px"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="card">
         <h3>📋 Minhas avaliações</h3>
-        <p>Todos os dados levantados pela sua nutricionista, da mais recente para a mais antiga.</p>
+        <p>Todos os dados levantados pelo seu personal trainer, da mais recente para a mais antiga.</p>
         <div id="avalBox" style="margin-top:12px"><div class="empty">Carregando…</div></div>
       </div>`;
   }
@@ -859,17 +862,36 @@
   }
 
   async function carregarMinhasAvaliacoes(){
+    carregarProxAvalAluno();
     const box = document.getElementById("avalBox");
     const { data, error } = await sb.from("assessments").select("*")
       .eq("student_id", ME.id).order("date",{ascending:false});
     if(!box) return;
     if(error){ box.innerHTML = `<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
     if(!data || !data.length){
-      box.innerHTML = `<div class="empty">Você ainda não tem avaliações registradas.<br>Elas aparecerão aqui assim que sua nutricionista lançar a primeira.</div>`;
+      box.innerHTML = `<div class="empty">Você ainda não tem avaliações registradas.<br>Elas aparecerão aqui assim que seu personal trainer lançar a primeira.</div>`;
       return;
     }
     AVAL_SEXO = ME.sex || "";
     box.innerHTML = data.map((a,idx)=>avaliacaoDetalhe(a,idx)).join("");
+  }
+
+  async function carregarProxAvalAluno(){
+    const box = document.getElementById("proxAvalAluno");
+    if(!box) return;
+    const { data } = await sb.from("consultations").select("scheduled_at,notes")
+      .eq("student_id", ME.id).order("scheduled_at",{ascending:true});
+    const agora = new Date();
+    const futuras = (data||[]).filter(c=>new Date(c.scheduled_at) >= agora);
+    if(futuras.length){
+      const p = futuras[0];
+      box.innerHTML = `<div class="proxima">
+          <div class="quando">${fmtDataHora(p.scheduled_at)}</div>
+          ${p.notes ? `<div class="obs">${esc(p.notes)}</div>` : ""}
+        </div>`;
+    }else{
+      box.innerHTML = `<div class="empty">Nenhuma data de avaliação agendada ainda.</div>`;
+    }
   }
 
   /* ---------- ALUNO: MEU TREINO ---------- */
@@ -1342,7 +1364,7 @@
            ${futuras[0].notes ? `<div class="obs">${esc(futuras[0].notes)}</div>` : ""}
          </div>
          ${futuras.length>1 ? `<div class="meta-sm">+ ${futuras.length-1} outra(s) agendada(s)</div>` : ""}`
-      : `<div class="empty">Nenhuma consulta agendada no momento.<br>Sua nutricionista agendará por aqui.</div>`;
+      : `<div class="empty">Nenhuma consulta agendada no momento.<br>Seu personal trainer agendará por aqui.</div>`;
 
     if(hist) hist.innerHTML = passadas.length
       ? passadas.map(c=>`<div class="aval">
