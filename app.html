@@ -385,8 +385,12 @@
       const { count } = await sb.from("ficha_dias").select("id",{count:"exact",head:true}).eq("student_id", ME.id);
       ALUNO_TREINO = (count||0) > 0;
     }
+    // profissional voltando do dashboard de um aluno (?aluno=<id>): reabrir esse aluno
+    const alunoParam = new URLSearchParams(location.search).get("aluno");
+    if(ME.role !== "student" && alunoParam) PENDING_SELECT = alunoParam;
     montar();
   }
+  let PENDING_SELECT = null;
   let ALUNO_TREINO = false;
   function alunoTemTreino(){ return ALUNO_TREINO; }
 
@@ -1622,6 +1626,13 @@
     const busca = (document.getElementById("alunoSearch")||{}).value || "";
     desenharListaAlunos(filtrar(ativos, busca));
 
+    // voltou do dashboard de um aluno: seleciona ele automaticamente
+    if(PENDING_SELECT && ativos.some(s=>s.id===PENDING_SELECT)){
+      const alvo = PENDING_SELECT; PENDING_SELECT = null;
+      selecionarAluno(alvo);
+      const det = document.getElementById("alunoDetalhe"); if(det) det.scrollIntoView({behavior:"smooth",block:"start"});
+      return;
+    }
     // se o aluno selecionado ainda existe e está ativo, mantém o detalhe
     if(SELECTED_STUDENT && ativos.some(s=>s.id===SELECTED_STUDENT)) selecionarAluno(SELECTED_STUDENT);
     else if(SELECTED_STUDENT){ SELECTED_STUDENT=null; const d=document.getElementById("alunoDetalhe");
@@ -1665,7 +1676,35 @@
     if(mostrar){ e.focus(); } else { e.value=""; filtrarAlunos(); }
   }
 
+  /* ---- gerenciador de janelas do aluno (máx. 2 abertas; toggle no ícone) ---- */
+  let JANELAS = [];  // ids de card na ordem de abertura
+  function cardAberto(cardId){ const c=document.getElementById(cardId); return !!(c && c.style.display!=="none"); }
+  function registrarJanela(cardId){
+    JANELAS = JANELAS.filter(x=>x!==cardId);
+    JANELAS.push(cardId);
+    while(JANELAS.length > 2){                 // fecha a mais antiga
+      const antigo = JANELAS.shift();
+      const c = document.getElementById(antigo); if(c) c.style.display = "none";
+    }
+  }
+  function fecharJanela(cardId){
+    const c = document.getElementById(cardId); if(c) c.style.display = "none";
+    JANELAS = JANELAS.filter(x=>x!==cardId);
+  }
+  function fecharTodasJanelas(){
+    ["assessCard","clienteCard","goalsCard","consultCard","fichaCard"].forEach(id=>{
+      const c=document.getElementById(id); if(c) c.style.display="none";
+    });
+    JANELAS = [];
+  }
+  // toggle: se já está aberto, fecha e avisa quem chamou para não reabrir
+  function alternarJanela(cardId){
+    if(cardAberto(cardId)){ fecharJanela(cardId); return false; }
+    return true;
+  }
+
   function selecionarAluno(id){
+    if(id !== SELECTED_STUDENT) fecharTodasJanelas();  // troca de aluno fecha janelas antigas
     SELECTED_STUDENT = id;
     const s = STUDENTS.find(x=>x.id===id);
     desenharListaAlunos(filtrar(ATIVOS_CACHE, (document.getElementById("alunoSearch")||{}).value));
@@ -1777,6 +1816,7 @@
   });
 
   function dadosCliente(id){
+    if(!alternarJanela("clienteCard")) return;
     const s = STUDENTS.find(x=>x.id===id);
     document.getElementById("cliId").value = id;
     document.getElementById("cli_nome").value = s?.full_name || "";
@@ -1784,10 +1824,10 @@
     document.getElementById("cli_birth").value = s?.birth_date ? String(s.birth_date).slice(0,10) : "";
     const m = document.getElementById("cliMsg"); m.className="msg"; m.textContent="";
     const card = document.getElementById("clienteCard");
-    card.style.display = "block";
+    card.style.display = "block"; registrarJanela("clienteCard");
     card.scrollIntoView({behavior:"smooth",block:"center"});
   }
-  function fecharDados(){ const c=document.getElementById("clienteCard"); if(c) c.style.display="none"; }
+  function fecharDados(){ fecharJanela("clienteCard"); }
 
   async function salvarDados(){
     const id = document.getElementById("cliId").value;
@@ -2026,12 +2066,13 @@
     prepararCalculo(s);
 
     const card = document.getElementById("assessCard");
-    card.style.display = "block";
+    card.style.display = "block"; registrarJanela("assessCard");
     const m = document.getElementById("assessMsg"); m.className="msg"; m.textContent="";
     card.scrollIntoView({behavior:"smooth",block:"center"});
   }
 
   async function novaAvaliacao(id){
+    if(cardAberto("assessCard")){ fecharJanela("assessCard"); return; }
     const s = STUDENTS.find(x=>x.id===id);
     // barra se faltar sexo ou data de nascimento (usados no cálculo)
     if(!s || !s.sex || !s.birth_date){
@@ -2052,7 +2093,7 @@
     PERIMETROS.forEach(([k])=>{const e=document.getElementById("per_"+k); if(e) e.value="";});
     prepararCalculo(s);
     const card = document.getElementById("assessCard");
-    card.style.display="block";
+    card.style.display="block"; registrarJanela("assessCard");
     const m=document.getElementById("assessMsg"); m.className="msg"; m.textContent="";
     card.scrollIntoView({behavior:"smooth",block:"center"});
 
@@ -2066,7 +2107,7 @@
       recalcularComposicao();
     }
   }
-  function fecharForm(){ const c=document.getElementById("assessCard"); if(c) c.style.display="none"; }
+  function fecharForm(){ fecharJanela("assessCard"); }
 
   /* ---------- PROFISSIONAL: MONTADOR DE TREINO ---------- */
   async function garantirExercicios(){
@@ -2076,18 +2117,19 @@
   }
 
   async function abrirTreino(studentId){
+    if(!alternarJanela("fichaCard")) return;
     const s = STUDENTS.find(x=>x.id===studentId);
     document.getElementById("fichaStudentId").value = studentId;
     document.getElementById("fichaAluno").textContent = nomeAluno(s);
     document.getElementById("fichaDias").innerHTML = "";
     document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Carregando…</div>`;
     const card = document.getElementById("fichaCard");
-    card.style.display = "block";
+    card.style.display = "block"; registrarJanela("fichaCard");
     card.scrollIntoView({behavior:"smooth",block:"center"});
     await garantirExercicios();
     await carregarFicha(studentId);
   }
-  function fecharTreino(){ const c=document.getElementById("fichaCard"); if(c) c.style.display="none"; FICHA=null; FICHA_DIA=null; }
+  function fecharTreino(){ fecharJanela("fichaCard"); FICHA=null; FICHA_DIA=null; }
 
   async function carregarFicha(studentId){
     const { data: todas } = await sb.from("fichas").select("*")
@@ -2277,6 +2319,7 @@
 
   /* ---------- PROFISSIONAL: METAS ---------- */
   async function abrirMetas(id){
+    if(!alternarJanela("goalsCard")) return;
     const s = STUDENTS.find(x=>x.id===id);
     document.getElementById("goalsStudentId").value = id;
     document.getElementById("goalsStudentName").textContent = nomeAluno(s);
@@ -2294,10 +2337,10 @@
       if(g.monthly_workouts != null) document.getElementById("g_treinos").value = g.monthly_workouts;
     }
     const card = document.getElementById("goalsCard");
-    card.style.display = "block";
+    card.style.display = "block"; registrarJanela("goalsCard");
     card.scrollIntoView({behavior:"smooth",block:"center"});
   }
-  function fecharMetas(){ const c=document.getElementById("goalsCard"); if(c) c.style.display="none"; }
+  function fecharMetas(){ fecharJanela("goalsCard"); }
 
   async function salvarMetas(){
     const msg=document.getElementById("goalsMsg"), btn=document.getElementById("goalsSaveBtn");
@@ -2318,15 +2361,18 @@
     btn.disabled=true; msg.className="msg"; msg.textContent="";
     let error;
     if(gid){ ({ error } = await sb.from("goals").update(campos).eq("id", gid)); }
-    else   { ({ error } = await sb.from("goals").insert({ student_id, ...campos })); }
+    else   {
+      const { data:ins, error:e2 } = await sb.from("goals").insert({ student_id, ...campos }).select("id").single();
+      error = e2; if(ins) document.getElementById("goalsId").value = ins.id;
+    }
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro ao salvar: "+error.message; return; }
     msg.className="msg ok"; msg.textContent="Metas salvas! Já aparecem no painel do aluno.";
-    if(!gid) abrirMetas(student_id);
   }
 
   /* ---------- PROFISSIONAL: CONSULTAS ---------- */
   function novaConsulta(id){
+    if(!alternarJanela("consultCard")) return;
     const s = STUDENTS.find(x=>x.id===id);
     document.getElementById("consultStudentId").value = id;
     document.getElementById("consultStudentName").textContent = nomeAluno(s);
@@ -2334,12 +2380,12 @@
     document.getElementById("c_time").value = "09:00";
     document.getElementById("c_notes").value = "";
     const card = document.getElementById("consultCard");
-    card.style.display = "block";
+    card.style.display = "block"; registrarJanela("consultCard");
     const m = document.getElementById("consultMsg"); m.className="msg"; m.textContent="";
     listarConsultas(id);
     card.scrollIntoView({behavior:"smooth",block:"center"});
   }
-  function fecharConsulta(){ const c=document.getElementById("consultCard"); if(c) c.style.display="none"; }
+  function fecharConsulta(){ fecharJanela("consultCard"); }
 
   async function listarConsultas(id){
     const box = document.getElementById("consultList");
