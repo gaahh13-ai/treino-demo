@@ -426,6 +426,21 @@
   .rcq-tag.baixo{background:#122110;color:#1a8a4a}
   .rcq-tag.alto{background:#2a1416;color:#be123c}
   .rcq-tag.neutro{background:#15171c;color:var(--muted)}
+  /* "?" discreto com explicação da RCQ */
+  .rcq-hint{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+    border-radius:50%;border:1px solid var(--line);color:var(--muted);font-size:10px;font-weight:800;cursor:help;
+    vertical-align:middle;margin-left:2px;outline:none}
+  .rcq-hint:hover,.rcq-hint:focus{border-color:var(--pink);color:var(--pink-deep)}
+  .rcq-hint-pop{position:absolute;top:calc(100% + 8px);right:0;width:250px;background:#15171c;border:1px solid var(--line);
+    border-radius:14px;padding:13px 14px;font-size:11.5px;line-height:1.5;color:var(--txt);font-weight:500;text-align:left;
+    box-shadow:0 14px 34px rgba(120,60,100,.2);opacity:0;visibility:hidden;transform:translateY(-4px);
+    transition:opacity .13s,transform .13s;z-index:50;pointer-events:none}
+  .rcq-hint:hover .rcq-hint-pop,.rcq-hint:focus .rcq-hint-pop{opacity:1;visibility:visible;transform:translateY(0)}
+  .rhp-tit{display:block;color:var(--pink-deep);font-size:12.5px;font-weight:800;margin-bottom:6px;letter-spacing:.2px}
+  .rhp-linha{display:flex;align-items:center;gap:8px;margin-top:7px}
+  .rhp-dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .rhp-dot.baixo{background:#1a8a4a}
+  .rhp-dot.alto{background:#be123c}
   /* RCQ no histórico da avaliação */
   .rcq-line{display:flex;align-items:center;justify-content:space-between;gap:16px;
     margin:16px 0;padding:4px 0}
@@ -559,6 +574,13 @@
   /* popover de ajuda */
   .ajuda-pop{background:#15171c!important;border-color:#262a33!important}
   .ajuda-pop h3{color:#7fff00!important}
+  /* "?" da RCQ */
+  .rcq-hint{border-color:#2a2e37!important;color:#9aa0ab!important}
+  .rcq-hint:hover,.rcq-hint:focus{border-color:#7fff00!important;color:#7fff00!important}
+  .rcq-hint-pop{background:#15171c!important;border-color:#2a2e37!important;color:#e8eaee!important;box-shadow:0 14px 40px rgba(0,0,0,.55)!important}
+  .rhp-tit{color:#7fff00!important}
+  .rhp-dot.baixo{background:#7fff00!important}
+  .rhp-dot.alto{background:#ff6b74!important}
 </style>
 
 </head>
@@ -1740,7 +1762,7 @@
           <div class="form-grid2" id="gridDobras"></div>
         </div>
 
-        <div class="grupo rcq-box" title="RCQ = cintura ÷ quadril. Estima o risco cardiovascular pela distribuição de gordura. Homens: abaixo de 0,90 = baixo risco. Mulheres: abaixo de 0,85 = baixo risco.">
+        <div class="grupo rcq-box">
           <div class="grupo-tit" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative">
             <span>Relação Cintura-Quadril (RCQ)</span>
             <span class="rcq-val" id="rcqVal"><span class="rcq-num">—</span></span>
@@ -2852,6 +2874,14 @@
     if(sexo === "F"){ const alto = r >= 0.85; return { tag: alto?"alto risco":"baixo risco", cls: alto?"alto":"baixo" }; }
     return { tag: "", cls: "neutro" };
   }
+  function rcqHintHtml(){
+    return `<span class="rcq-hint" tabindex="0">?<span class="rcq-hint-pop">
+      <b class="rhp-tit">Relação Cintura-Quadril</b>
+      Divide a medida da <b>cintura</b> pela do <b>quadril</b> e estima o risco cardiovascular pela distribuição de gordura corporal.
+      <span class="rhp-linha"><span class="rhp-dot baixo"></span> Homens &lt; 0,90 · Mulheres &lt; 0,85 → <b>baixo risco</b></span>
+      <span class="rhp-linha"><span class="rhp-dot alto"></span> Homens ≥ 0,90 · Mulheres ≥ 0,85 → <b>alto risco</b></span>
+    </span></span>`;
+  }
   function recalcularRcq(){
     const el = document.getElementById("rcqVal");
     if(!el) return;
@@ -2862,7 +2892,7 @@
     const sexo = (ASSESS_S && ASSESS_S.sex) || "";
     const cl = classificaRcq(r, sexo);
     const tag = cl.tag || "informe o sexo do cliente";
-    el.innerHTML = `<span class="rcq-num">${r.toFixed(2)}</span><span class="rcq-tag ${cl.cls}">${tag}</span>`;
+    el.innerHTML = `<span class="rcq-num">${r.toFixed(2)}</span><span class="rcq-tag ${cl.cls}">${tag}</span>${cl.tag?rcqHintHtml():""}`;
   }
   // RCQ para o histórico (a partir das circunferências salvas)
   function rcqDetalhe(circ){
@@ -2871,11 +2901,11 @@
     if(!c || !q) return "";
     const r = c / q;
     const cl = classificaRcq(r, AVAL_SEXO);
-    return `<div class="rcq-line" title="RCQ = cintura ÷ quadril. Estima o risco cardiovascular pela distribuição de gordura. Homens: abaixo de 0,90 = baixo risco. Mulheres: abaixo de 0,85 = baixo risco.">
+    return `<div class="rcq-line">
       <span class="rcq-line-tit">Relação Cintura-Quadril</span>
       <span class="rcq-line-res">
         <span class="rcq-num">${r.toFixed(2)}</span>
-        ${cl.tag?`<span class="rcq-tag ${cl.cls}">${cl.tag}</span>`:`<span class="meta-sm">sexo não informado</span>`}
+        ${cl.tag?`<span class="rcq-tag ${cl.cls}">${cl.tag}</span>${rcqHintHtml()}`:`<span class="meta-sm">sexo não informado</span>`}
       </span>
     </div>`;
   }
