@@ -79,8 +79,9 @@
   .det-acoes .btn{width:100%;text-align:center}
   .det-acoes .btn.ativo{border-color:var(--pink-deep);color:var(--pink-deep);background:#0a0b0d;font-weight:800}
   .prox-aval{background:#1d2027;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
-  .prox-aval .pa-lbl{font-size:13px;font-weight:700;margin-bottom:8px}
-  .prox-aval .pa-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .prox-aval .pa-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .prox-aval .pa-lbl{font-size:13px;font-weight:700}
+  .prox-aval .pa-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
   .prox-aval input{padding:8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
   .det-acoes .btn{margin-top:0}
   @media(max-width:760px){
@@ -746,6 +747,7 @@
       box.innerHTML = `<div class="empty">Você ainda não tem avaliações registradas.<br>Elas aparecerão aqui assim que sua nutricionista lançar a primeira.</div>`;
       return;
     }
+    AVAL_SEXO = ME.sex || "";
     box.innerHTML = data.map((a,idx)=>avaliacaoDetalhe(a,idx)).join("");
   }
 
@@ -2034,6 +2036,7 @@
         ${gerais ? `<div class="meds">${gerais}</div>` : ""}
         ${dob ? `<div class="grupo-tit" style="margin-top:14px">Dobras cutâneas</div><div class="meds">${dob}</div>` : ""}
         ${per ? `<div class="grupo-tit" style="margin-top:14px">Circunferências</div><div class="meds">${per}</div>` : ""}
+        ${rcqDetalhe(a.circumferences)}
         ${a.notes ? `<div class="obs"><b>Observação:</b> ${esc(a.notes)}</div>` : ""}
         ${!gerais && !dob && !per && !a.notes ? `<div class="empty">Sem medidas registradas nesta avaliação.</div>` : ""}
       </div>
@@ -2056,14 +2059,18 @@
     const proxData = pd ? `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,"0")}-${String(pd.getDate()).padStart(2,"0")}` : "";
     const proxHora = pd ? `${String(pd.getHours()).padStart(2,"0")}:${String(pd.getMinutes()).padStart(2,"0")}` : "09:00";
     const sched = `<div class="prox-aval">
-      <div class="pa-lbl">📅 Próxima avaliação${prox?`: <b>${fmtDataHora(prox.scheduled_at)}</b>`:""}</div>
-      <div class="pa-row">
+      <div class="pa-head">
+        <span class="pa-lbl">📅 Próxima avaliação: <b>${prox?fmtDataHora(prox.scheduled_at):"nenhum agendamento"}</b></span>
+        <button class="btn small ghost" id="paBtn_${id}" onclick="toggleAgendar('${id}')">${prox?"Reagendar":"Agendar"}</button>
+      </div>
+      <div class="pa-form" id="paForm_${id}" style="display:none">
         <input type="date" id="proxAval_${id}" value="${proxData}">
         <input type="time" id="proxAvalH_${id}" value="${proxHora}">
         <button class="btn small" onclick="salvarProxAval('${id}')">Salvar</button>
       </div>
       <div class="msg" id="proxAvalMsg_${id}"></div>
     </div>`;
+    AVAL_SEXO = ((STUDENTS.find(x=>x.id===id))||{}).sex || "";
     const { data, error } = await sb.from("assessments").select("*")
       .eq("student_id", id).order("date",{ascending:false});
     if(error){ el.innerHTML = sched + `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
@@ -2088,6 +2095,12 @@
     if(msg){ msg.className="msg ok"; msg.textContent="Próxima avaliação salva!"; }
     const lbl = document.querySelector("#assessList_"+id+" .pa-lbl");
     if(lbl) lbl.innerHTML = `📅 Próxima avaliação: <b>${fmtDataHora(iso)}</b>`;
+    const form = document.getElementById("paForm_"+id); if(form) form.style.display="none";
+    const btn = document.getElementById("paBtn_"+id); if(btn) btn.textContent="Reagendar";
+  }
+  function toggleAgendar(id){
+    const form = document.getElementById("paForm_"+id);
+    if(form) form.style.display = (form.style.display==="none") ? "flex" : "none";
   }
 
   function montarCamposMedidas(){
@@ -2154,6 +2167,12 @@
   }
 
   /* Relação Cintura-Quadril (cintura ÷ quadril) com risco por sexo */
+  let AVAL_SEXO = "";   // sexo do aluno sendo visualizado no histórico
+  function classificaRcq(r, sexo){
+    if(sexo === "M"){ const alto = r >= 0.90; return { tag: alto?"alto risco":"baixo risco", cls: alto?"alto":"baixo" }; }
+    if(sexo === "F"){ const alto = r >= 0.85; return { tag: alto?"alto risco":"baixo risco", cls: alto?"alto":"baixo" }; }
+    return { tag: "", cls: "neutro" };
+  }
   function recalcularRcq(){
     const el = document.getElementById("rcqVal");
     if(!el) return;
@@ -2162,11 +2181,22 @@
     if(!c || !q){ el.innerHTML = `<span class="rcq-num">—</span>`; return; }
     const r = c / q;
     const sexo = (ASSESS_S && ASSESS_S.sex) || "";
-    let tag = "", cls = "neutro";
-    if(sexo === "M"){ const alto = r >= 0.90; tag = alto?"alto risco":"baixo risco"; cls = alto?"alto":"baixo"; }
-    else if(sexo === "F"){ const alto = r >= 0.85; tag = alto?"alto risco":"baixo risco"; cls = alto?"alto":"baixo"; }
-    else { tag = "informe o sexo do cliente"; cls = "neutro"; }
-    el.innerHTML = `<span class="rcq-num">${r.toFixed(2)}</span><span class="rcq-tag ${cls}">${tag}</span>`;
+    const cl = classificaRcq(r, sexo);
+    const tag = cl.tag || "informe o sexo do cliente";
+    el.innerHTML = `<span class="rcq-num">${r.toFixed(2)}</span><span class="rcq-tag ${cl.cls}">${tag}</span>`;
+  }
+  // RCQ para o histórico (a partir das circunferências salvas)
+  function rcqDetalhe(circ){
+    if(!circ) return "";
+    const c = Number(circ.cintura), q = Number(circ.quadril);
+    if(!c || !q) return "";
+    const r = c / q;
+    const cl = classificaRcq(r, AVAL_SEXO);
+    return `<div class="grupo-tit" style="margin-top:14px">Relação Cintura-Quadril</div>
+      <div class="rcq-val" style="margin-top:2px">
+        <span class="rcq-num" style="font-size:19px">${r.toFixed(2)}</span>
+        ${cl.tag?`<span class="rcq-tag ${cl.cls}">${cl.tag}</span>`:`<span class="meta-sm">sexo não informado</span>`}
+      </div>`;
   }
   function toggleRcqHelp(ev){ ev.stopPropagation(); const i=document.getElementById("rcqInfo"); if(i) i.classList.toggle("show"); }
   document.addEventListener("click", ()=>{ const i=document.getElementById("rcqInfo"); if(i) i.classList.remove("show"); });
