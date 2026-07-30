@@ -13,6 +13,16 @@
   nav.top .in{max-width:1040px;margin:0 auto;padding:0 20px;height:66px;display:flex;align-items:center;justify-content:space-between}
   .logo{height:32px}
   .logout{border:1.5px solid var(--pink);color:var(--pink-deep);background:#15171c;border-radius:12px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer}
+  .top-acoes{display:flex;align-items:center;gap:12px}
+  .perfil-av{display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:none;cursor:pointer;padding:0}
+  .av-thumb{width:36px;height:36px;border-radius:50%;overflow:hidden;background:#1d2027;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:18px}
+  .av-thumb img{width:100%;height:100%;object-fit:cover}
+  .av-cap{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .foto-wrap{display:flex;align-items:center;gap:16px;margin-top:10px}
+  .foto-preview{width:88px;height:88px;border-radius:50%;overflow:hidden;background:#1d2027;border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:36px;flex:0 0 auto}
+  .foto-preview img{width:100%;height:100%;object-fit:cover}
   .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 60px}
   .hello{font-size:21px;font-weight:800;margin-bottom:4px}
   .role-chip{display:inline-block;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;margin-bottom:18px}
@@ -436,13 +446,7 @@
 <body>
 <nav class="top"><div class="in">
   <a href="index.html"><span class="logo-levo">L<span class="ac">E</span>VO</span></a>
-  <span class="menu-wrap">
-    <button class="logout" onclick="abrirMenu(event,'perfilMenu')">Perfil ▾</button>
-    <span class="menu-drop" id="perfilMenu">
-      <button onclick="go('perfil')">Meu perfil</button>
-      <button onclick="sair()">Sair</button>
-    </span>
-  </span>
+  <div class="top-acoes" id="topAcoes"></div>
 </div></nav>
 
 <div class="wrap">
@@ -567,6 +571,7 @@
     const role = ME.role || "student";
     const rotulo = {creator:"Criador", professional:"Profissional", student:"Aluno"}[role] || role;
     const first = primeiroNome();
+    renderTopo();
 
     // aluno arquivado: sem menu, só o aviso
     if(role === "student" && ME.status === "archived"){
@@ -599,6 +604,29 @@
   function mostrar(){
     document.getElementById("loading").style.display = "none";
     document.getElementById("content").style.display = "block";
+  }
+
+  // topo direito: assinatura (profissional) + acesso ao perfil (miniatura da foto)
+  function renderTopo(){
+    const box = document.getElementById("topAcoes");
+    if(!box || !ME) return;
+    const role = ME.role || "student";
+    const gatilho = (role === "professional")
+      ? `<button class="perfil-av" onclick="abrirMenu(event,'perfilMenu')">
+           <span class="av-thumb">${ME.avatar?`<img src="${esc(ME.avatar)}" alt="">`:"👤"}</span>
+           <span class="av-cap">perfil</span>
+         </button>`
+      : `<button class="logout" onclick="abrirMenu(event,'perfilMenu')">Perfil ▾</button>`;
+    const assinatura = (role === "professional")
+      ? `<button class="logout" onclick="assinaturaInfo()">Assinatura</button>` : "";
+    box.innerHTML = `${assinatura}
+      <span class="menu-wrap">
+        ${gatilho}
+        <span class="menu-drop" id="perfilMenu">
+          <button onclick="go('perfil')">Meu perfil</button>
+          <button onclick="sair()">Sair</button>
+        </span>
+      </span>`;
   }
 
   function go(id){
@@ -1254,6 +1282,19 @@
     const falta = !primeiroNome();
     return `<h2>Meu perfil</h2>
       <div class="card">
+        <h3>📷 Foto de perfil</h3>
+        <div class="foto-wrap">
+          <div class="foto-preview" id="fotoPreview">${ME.avatar?`<img src="${esc(ME.avatar)}" alt="">`:"👤"}</div>
+          <div>
+            <input type="file" id="fotoInput" accept="image/*" style="display:none" onchange="uploadFoto(event)">
+            <button class="btn small" onclick="document.getElementById('fotoInput').click()">Escolher foto</button>
+            <button class="btn small ghost" id="fotoRem" onclick="removerFoto()" style="${ME.avatar?"":"display:none"}">Remover</button>
+            <div class="msg" id="fotoMsg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
         <h3>👤 Meus dados</h3>
         <p>${falta ? "Informe seu nome para personalizar a saudação." : "Altere seu nome se precisar."}</p>
         <div class="field" style="margin-top:12px">
@@ -1305,6 +1346,49 @@
     const pn = primeiroNome();
     if(h) h.innerHTML = pn ? "Olá, "+esc(pn)+" 👋" : "Olá! 👋";
   }
+
+  /* ---------- FOTO DE PERFIL ---------- */
+  function redimensionarImagem(file, max){
+    return new Promise((res, rej)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const escala = Math.min(1, max/Math.max(img.width, img.height));
+        const cw = Math.round(img.width*escala), ch = Math.round(img.height*escala);
+        const cv = document.createElement("canvas"); cv.width=cw; cv.height=ch;
+        cv.getContext("2d").drawImage(img, 0, 0, cw, ch);
+        res(cv.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = rej;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  async function uploadFoto(ev){
+    const file = ev.target.files && ev.target.files[0];
+    const msg = document.getElementById("fotoMsg");
+    if(!file) return;
+    if(msg){ msg.className="msg"; msg.textContent="Enviando…"; }
+    try{
+      const dataUrl = await redimensionarImagem(file, 256);
+      const { error } = await sb.from("profiles").update({ avatar:dataUrl }).eq("id", ME.id);
+      if(error){ if(msg){ msg.className="msg err"; msg.textContent="Erro ao salvar: "+error.message; } return; }
+      ME.avatar = dataUrl;
+      const pv = document.getElementById("fotoPreview"); if(pv) pv.innerHTML = `<img src="${esc(dataUrl)}" alt="">`;
+      const rem = document.getElementById("fotoRem"); if(rem) rem.style.display = "";
+      if(msg){ msg.className="msg ok"; msg.textContent="✅ Foto atualizada!"; }
+      renderTopo();
+    }catch(e){ if(msg){ msg.className="msg err"; msg.textContent="Não consegui processar a imagem."; } }
+  }
+  async function removerFoto(){
+    const msg = document.getElementById("fotoMsg");
+    const { error } = await sb.from("profiles").update({ avatar:null }).eq("id", ME.id);
+    if(error){ if(msg){ msg.className="msg err"; msg.textContent="Erro: "+error.message; } return; }
+    ME.avatar = null;
+    const pv = document.getElementById("fotoPreview"); if(pv) pv.innerHTML = "👤";
+    const rem = document.getElementById("fotoRem"); if(rem) rem.style.display = "none";
+    if(msg){ msg.className="msg ok"; msg.textContent="Foto removida."; }
+    renderTopo();
+  }
+  function assinaturaInfo(){ alert("Assinatura — em breve 🙂"); }
 
   function viewAdmin(){
     return `<h2>Painel do criador</h2>
