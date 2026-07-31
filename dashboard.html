@@ -221,10 +221,46 @@
   /* coluna de alunos (visão do profissional) */
   .alunos-col{background:#15171c!important;border-color:#262a33!important}
   .alunos-head{color:#fff!important}
+  /* tiles do topo (avatar/inicial, $, ?) */
+  .av-thumb{background:#1d2027!important;border-color:#2a2e37!important;color:#7fff00!important}
   /* menu de contexto (3 pontinhos) */
   .menu-drop{background:#15171c!important;border-color:#2a2e37!important}
   .menu-drop button{color:#e8eaee!important}
   .menu-drop button:hover{background:#1d2027!important}
+  /* financeiro */
+  .fin-mes{color:#fff!important}
+  .fin-kpi{background:#0f1116!important;border-color:#262a33!important}
+  .fin-kpi.ok b{color:#7fff00!important}
+  .fin-kpi.warn b{color:#ff9aa2!important}
+  .fin-in{background:#0f1116!important;color:#e8eaee!important;border-color:#2a2e37!important}
+  .fin-row{border-color:#262a33!important}
+  .fin-tag.pg{background:#12210f!important;color:#bff08a!important}
+  .fin-tag.pe{background:#2a2410!important;color:#ffd98a!important}
+  .fin-tag.at{background:#2a1416!important;color:#ff9aa2!important}
+  .fin-aluno{background:#0f1116!important;border-color:#262a33!important}
+  .fin-al-mesnome{color:#fff!important}
+  /* assinatura / planos */
+  .assin-tab{background:#15171c!important;border-color:#262a33!important;color:#e8eaee!important}
+  .assin-tab.active{background:rgba(127,255,0,.14)!important;border-color:#7fff00!important;color:#7fff00!important}
+  .plano-card{background:#15171c!important;border-color:#262a33!important}
+  .plano-card.destaque{border-color:#7fff00!important}
+  .pl-badge{background:#7fff00!important;color:#0a0b0d!important}
+  .pl-nome{color:#fff!important}
+  .pl-preco{color:#7fff00!important}
+  .pl-lista li{color:#e8eaee!important}
+  .pl-lista li.no{color:#9aa0ab!important}
+  .pl-lista li.ok .pl-ic{color:#7fff00!important}
+  .pl-lista li.no .pl-ic{color:#ff9aa2!important}
+  /* popover de ajuda */
+  .ajuda-pop{background:#15171c!important;border-color:#262a33!important}
+  .ajuda-pop h3{color:#7fff00!important}
+  /* "?" da RCQ */
+  .rcq-hint{border-color:#2a2e37!important;color:#9aa0ab!important}
+  .rcq-hint:hover,.rcq-hint:focus{border-color:#7fff00!important;color:#7fff00!important}
+  .rcq-hint-pop{background:#15171c!important;border-color:#2a2e37!important;color:#e8eaee!important;box-shadow:0 14px 40px rgba(0,0,0,.55)!important}
+  .rhp-tit{color:#7fff00!important}
+  .rhp-dot.baixo{background:#7fff00!important}
+  .rhp-dot.alto{background:#ff6b74!important}
 </style>
 
 </head>
@@ -613,8 +649,9 @@
       box.innerHTML = `<div class="empty">Nenhum comentário ainda. Escreva o primeiro abaixo. 💬</div>`;
       return;
     }
-    const topo = COMENTARIOS.filter(c=>!c.parent_id);
-    const respostasDe = id => COMENTARIOS.filter(c=>c.parent_id===id);
+    // comentários mais recentes no topo; respostas em ordem cronológica dentro de cada thread
+    const topo = COMENTARIOS.filter(c=>!c.parent_id).sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+    const respostasDe = id => COMENTARIOS.filter(c=>c.parent_id===id).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
     const bloco = (c, ehResposta) => {
       const aluno = c.author_role === "student";
       const meu = ME_USER && c.author_id === ME_USER.id;
