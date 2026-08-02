@@ -54,6 +54,23 @@
   .pl-lista li.no .pl-ic{color:#c2410c}
   .pl-btn{width:100%}
   @media(max-width:760px){ .assin-tabs,.plano-grid{grid-template-columns:1fr} }
+  /* assinatura atual + histórico */
+  .assin-atual{border:2px solid var(--pink);border-radius:16px;padding:18px 20px;background:linear-gradient(120deg,#0a0b0d,#15171c)}
+  .aa-tag{display:inline-block;background:var(--pink-deep);color:#fff;font-size:11px;font-weight:800;
+    padding:4px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.4px}
+  .aa-plano{font-size:22px;font-weight:800;margin-top:8px}
+  .aa-info{font-size:20px;font-weight:800;color:var(--pink-deep);margin-top:2px}
+  .aa-mes{font-size:13px;font-weight:600;color:var(--muted);margin-left:3px}
+  .aa-sub{font-size:13px;color:var(--muted);margin-top:6px}
+  .assin-nenhuma{border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted);font-size:14px}
+  .assin-hist{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .ah-tit{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+  .assin-hist-row{display:grid;grid-template-columns:1.3fr .9fr .7fr auto;align-items:center;gap:10px;
+    padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .assin-hist-row:last-child{border-bottom:none}
+  .ah-plano{font-weight:700}
+  .ah-data,.ah-valor{color:var(--muted)}
+  @media(max-width:760px){ .assin-hist-row{grid-template-columns:1fr auto;grid-auto-rows:auto} .ah-data{grid-column:1} }
   .av-cap{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.2px;white-space:nowrap}
   /* perfil resumido */
   .perfil-foto{text-align:center;margin:6px 0 20px}
@@ -573,6 +590,15 @@
   .pl-lista li.no{color:#9aa0ab!important}
   .pl-lista li.ok .pl-ic{color:#7fff00!important}
   .pl-lista li.no .pl-ic{color:#ff9aa2!important}
+  /* assinatura atual + histórico */
+  .assin-atual{background:linear-gradient(120deg,#12210f,#101317)!important;border-color:#7fff00!important}
+  .aa-tag{background:#7fff00!important;color:#0a0b0d!important}
+  .aa-plano{color:#fff!important}
+  .aa-info{color:#7fff00!important}
+  .assin-nenhuma{border-color:#2a2e37!important;color:#9aa0ab!important}
+  .assin-hist{background:#15171c!important;border-color:#262a33!important}
+  .assin-hist-row{border-color:#262a33!important}
+  .ah-plano{color:#e8eaee!important}
   /* popover de ajuda */
   .ajuda-pop{background:#15171c!important;border-color:#262a33!important}
   .ajuda-pop h3{color:#7fff00!important}
@@ -807,7 +833,7 @@
     else if(id === "meutreino"){  p.innerHTML = viewMeuTreino();  carregarMeuTreino(); }
     else if(id === "consultas"){  p.innerHTML = viewConsultas();  carregarMinhasConsultas(); }
     else if(id === "perfil"){ p.innerHTML = viewPerfil(); }
-    else if(id === "assinatura"){ p.innerHTML = viewAssinatura(); }
+    else if(id === "assinatura"){ p.innerHTML = viewAssinatura(); carregarMinhaAssinatura(); }
     else if(id === "admin")p.innerHTML = viewAdmin();
     else if(id === "alunos"){    p.innerHTML = viewAlunos();    loadStudents(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
@@ -1634,9 +1660,18 @@
     ]
   };
 
+  const PLANO_LABEL = { pro:"LEVO Pro", fit:"LEVO Fit", you_levo:"You LEVO", light:"LEVO Light" };
+  const ASSIN_STATUS = {
+    authorized:{txt:"Ativa",     cls:"pg"},
+    pending:   {txt:"Pendente",  cls:"pe"},
+    paused:    {txt:"Pausada",   cls:"pe"},
+    cancelled: {txt:"Cancelada", cls:"at"}
+  };
+
   function viewAssinatura(){
     return `<h2>Assinatura</h2>
-      <p class="meta-sm" style="margin:-4px 0 16px">Escolha para quem você quer ver os planos.</p>
+      <div id="minhaAssinatura" style="margin:2px 0 18px"><div class="empty">Carregando sua assinatura…</div></div>
+      <p class="meta-sm" style="margin:0 0 16px">Escolha para quem você quer ver os planos.</p>
       <div class="assin-tabs">
         <button class="assin-tab" id="assinTab_alunos" onclick="assinAba('alunos')">Alunos</button>
         <button class="assin-tab" id="assinTab_personal" onclick="assinAba('personal')">Personal Trainer</button>
@@ -1644,6 +1679,51 @@
       <div id="assinConteudo" style="margin-top:18px">
         <div class="empty">Selecione <b>Alunos</b> ou <b>Personal Trainer</b> acima para ver os planos.</div>
       </div>`;
+  }
+
+  async function carregarMinhaAssinatura(){
+    const box = document.getElementById("minhaAssinatura");
+    if(!box || !ME) return;
+    const fmtD = v => v ? new Date(v).toLocaleDateString("pt-BR") : "—";
+    let rows = [];
+    try{
+      const { data, error } = await sb.from("assinaturas").select("*")
+        .eq("user_id", ME.id).order("created_at",{ascending:false});
+      if(error) throw error;
+      rows = data || [];
+    }catch(e){ box.innerHTML = ""; return; }  // tabela indisponível: esconde a seção
+
+    const ativa = rows.find(r=>r.status==="authorized");
+    let html = "";
+    if(ativa){
+      const nome = PLANO_LABEL[ativa.plano] || ativa.plano;
+      html += `<div class="assin-atual">
+        <span class="aa-tag">Assinatura ativa</span>
+        <div class="aa-plano">${esc(nome)}</div>
+        <div class="aa-info">${fmtBRL(ativa.valor)}<span class="aa-mes">/mês</span></div>
+        <div class="aa-sub">Próxima renovação: <b>${fmtD(ativa.current_period_end)}</b></div>
+      </div>`;
+    } else {
+      html += `<div class="assin-nenhuma">Você ainda não tem uma assinatura ativa. Escolha um plano abaixo. 👇</div>`;
+    }
+
+    if(rows.length){
+      const hist = rows.map(r=>{
+        const nome = PLANO_LABEL[r.plano] || r.plano;
+        const st = ASSIN_STATUS[r.status] || {txt:r.status, cls:"pe"};
+        return `<div class="assin-hist-row">
+          <span class="ah-plano">${esc(nome)}</span>
+          <span class="ah-data">${fmtD(r.created_at)}</span>
+          <span class="ah-valor">${fmtBRL(r.valor)}</span>
+          <span class="fin-tag ${st.cls}">${st.txt}</span>
+        </div>`;
+      }).join("");
+      html += `<div class="assin-hist">
+        <div class="ah-tit">Histórico de assinaturas e pagamentos</div>
+        ${hist}
+      </div>`;
+    }
+    box.innerHTML = html;
   }
 
   function planoCard(p){
