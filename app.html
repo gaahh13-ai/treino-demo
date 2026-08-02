@@ -54,6 +54,16 @@
   .pl-lista li.no .pl-ic{color:#c2410c}
   .pl-btn{width:100%}
   @media(max-width:760px){ .assin-tabs,.plano-grid{grid-template-columns:1fr} }
+  /* assinatura: layout com menu à direita */
+  .assin-shell{display:grid;grid-template-columns:1fr 210px;gap:18px;align-items:start}
+  .assin-main{min-height:80px}
+  .assin-menu{display:flex;flex-direction:column;gap:8px}
+  .assin-mi{border:1.5px solid var(--line);background:#15171c;border-radius:12px;padding:12px 14px;
+    font-size:14px;font-weight:700;color:var(--txt);cursor:pointer;text-align:left;transition:.15s}
+  .assin-mi:hover{border-color:var(--pink)}
+  .assin-mi.active{border-color:var(--pink);background:linear-gradient(120deg,#1d2027,#262a33);color:var(--pink-deep)}
+  .assin-suporte{border:1px solid var(--line);border-radius:14px;padding:18px}
+  @media(max-width:760px){ .assin-shell{grid-template-columns:1fr} .assin-menu{flex-direction:row;flex-wrap:wrap;order:-1} .assin-mi{flex:1;text-align:center} }
   /* assinatura atual + histórico */
   .assin-atual{border:2px solid var(--pink);border-radius:16px;padding:18px 20px;background:linear-gradient(120deg,#0a0b0d,#15171c)}
   .aa-tag{display:inline-block;background:var(--pink-deep);color:#fff;font-size:11px;font-weight:800;
@@ -599,6 +609,10 @@
   .assin-hist{background:#15171c!important;border-color:#262a33!important}
   .assin-hist-row{border-color:#262a33!important}
   .ah-plano{color:#e8eaee!important}
+  .assin-mi{background:#15171c!important;border-color:#262a33!important;color:#e8eaee!important}
+  .assin-mi:hover{border-color:#7fff00!important}
+  .assin-mi.active{background:rgba(127,255,0,.14)!important;border-color:#7fff00!important;color:#7fff00!important}
+  .assin-suporte{background:#15171c!important;border-color:#262a33!important}
   /* popover de ajuda */
   .ajuda-pop{background:#15171c!important;border-color:#262a33!important}
   .ajuda-pop h3{color:#7fff00!important}
@@ -1668,62 +1682,95 @@
     cancelled: {txt:"Cancelada", cls:"at"}
   };
 
+  let ASSIN_ROWS = [];
+  const fmtDataCurta = v => v ? new Date(v).toLocaleDateString("pt-BR") : "—";
+
   function viewAssinatura(){
     return `<h2>Assinatura</h2>
-      <div id="minhaAssinatura" style="margin:2px 0 18px"><div class="empty">Carregando sua assinatura…</div></div>
-      <p class="meta-sm" style="margin:0 0 16px">Escolha para quem você quer ver os planos.</p>
-      <div class="assin-tabs">
-        <button class="assin-tab" id="assinTab_alunos" onclick="assinAba('alunos')">Alunos</button>
-        <button class="assin-tab" id="assinTab_personal" onclick="assinAba('personal')">Personal Trainer</button>
-      </div>
-      <div id="assinConteudo" style="margin-top:18px">
-        <div class="empty">Selecione <b>Alunos</b> ou <b>Personal Trainer</b> acima para ver os planos.</div>
+      <div class="assin-shell">
+        <section class="assin-main" id="assinMain"><div class="empty">Carregando…</div></section>
+        <aside class="assin-menu">
+          <button class="assin-mi" id="assinMi_historico" onclick="assinSec('historico')">Histórico</button>
+          <button class="assin-mi" id="assinMi_planos"    onclick="assinSec('planos')">Planos</button>
+          <button class="assin-mi" id="assinMi_suporte"   onclick="assinSec('suporte')">Suporte</button>
+        </aside>
       </div>`;
   }
 
   async function carregarMinhaAssinatura(){
-    const box = document.getElementById("minhaAssinatura");
-    if(!box || !ME) return;
-    const fmtD = v => v ? new Date(v).toLocaleDateString("pt-BR") : "—";
-    let rows = [];
+    ASSIN_ROWS = [];
     try{
       const { data, error } = await sb.from("assinaturas").select("*")
         .eq("user_id", ME.id).order("created_at",{ascending:false});
       if(error) throw error;
-      rows = data || [];
-    }catch(e){ box.innerHTML = ""; return; }  // tabela indisponível: esconde a seção
+      ASSIN_ROWS = data || [];
+    }catch(e){ ASSIN_ROWS = []; }
+    assinSec("atual");
+  }
 
-    const ativa = rows.find(r=>r.status==="authorized");
-    let html = "";
+  function assinSec(sec){
+    ["historico","planos","suporte"].forEach(s=>{
+      const b=document.getElementById("assinMi_"+s); if(b) b.classList.toggle("active", s===sec);
+    });
+    const main=document.getElementById("assinMain"); if(!main) return;
+    if(sec==="planos"){
+      main.innerHTML = renderAssinPlanos();
+      assinAba((ME && ME.role==="student") ? "alunos" : "personal");
+    }
+    else if(sec==="historico") main.innerHTML = renderAssinHistorico();
+    else if(sec==="suporte")   main.innerHTML = renderAssinSuporte();
+    else                       main.innerHTML = renderAssinAtual();
+  }
+
+  function renderAssinAtual(){
+    const ativa = ASSIN_ROWS.find(r=>r.status==="authorized");
     if(ativa){
       const nome = PLANO_LABEL[ativa.plano] || ativa.plano;
-      html += `<div class="assin-atual">
-        <span class="aa-tag">Assinatura ativa</span>
+      return `<div class="assin-atual">
+        <span class="aa-tag">Sua assinatura</span>
         <div class="aa-plano">${esc(nome)}</div>
-        <div class="aa-info">${fmtBRL(ativa.valor)}<span class="aa-mes">/mês</span></div>
-        <div class="aa-sub">Próxima renovação: <b>${fmtD(ativa.current_period_end)}</b></div>
       </div>`;
-    } else {
-      html += `<div class="assin-nenhuma">Você ainda não tem uma assinatura ativa. Escolha um plano abaixo. 👇</div>`;
     }
+    return `<div class="assin-nenhuma">Você não tem uma assinatura ativa.<br>Abra <b>Planos</b> no menu ao lado para assinar. 👉</div>`;
+  }
 
-    if(rows.length){
-      const hist = rows.map(r=>{
-        const nome = PLANO_LABEL[r.plano] || r.plano;
-        const st = ASSIN_STATUS[r.status] || {txt:r.status, cls:"pe"};
-        return `<div class="assin-hist-row">
-          <span class="ah-plano">${esc(nome)}</span>
-          <span class="ah-data">${fmtD(r.created_at)}</span>
-          <span class="ah-valor">${fmtBRL(r.valor)}</span>
-          <span class="fin-tag ${st.cls}">${st.txt}</span>
-        </div>`;
-      }).join("");
-      html += `<div class="assin-hist">
-        <div class="ah-tit">Histórico de assinaturas e pagamentos</div>
-        ${hist}
-      </div>`;
+  function renderAssinHistorico(){
+    if(!ASSIN_ROWS.length){
+      return `<div class="empty">Nenhum registro de assinatura ainda.</div>`;
     }
-    box.innerHTML = html;
+    const hist = ASSIN_ROWS.map(r=>{
+      const nome = PLANO_LABEL[r.plano] || r.plano;
+      const st = ASSIN_STATUS[r.status] || {txt:r.status, cls:"pe"};
+      return `<div class="assin-hist-row">
+        <span class="ah-plano">${esc(nome)}</span>
+        <span class="ah-data">${fmtDataCurta(r.created_at)}</span>
+        <span class="ah-valor">${fmtBRL(r.valor)}</span>
+        <span class="fin-tag ${st.cls}">${st.txt}</span>
+      </div>`;
+    }).join("");
+    return `<div class="assin-hist">
+      <div class="ah-tit">Histórico de assinaturas e pagamentos</div>
+      ${hist}
+    </div>`;
+  }
+
+  function renderAssinPlanos(){
+    return `<p class="meta-sm" style="margin:0 0 14px">Escolha para quem você quer ver os planos.</p>
+      <div class="assin-tabs">
+        <button class="assin-tab" id="assinTab_alunos" onclick="assinAba('alunos')">Alunos</button>
+        <button class="assin-tab" id="assinTab_personal" onclick="assinAba('personal')">Personal Trainer</button>
+      </div>
+      <div id="assinConteudo" style="margin-top:18px"></div>`;
+  }
+
+  function renderAssinSuporte(){
+    const msg = encodeURIComponent("Olá! Preciso de ajuda com a minha assinatura LEVO.");
+    return `<div class="assin-suporte">
+      <h3 style="margin:0 0 6px">Suporte</h3>
+      <p class="meta-sm" style="margin:0 0 14px">Dúvidas sobre sua assinatura, cobrança ou troca de plano? Fale com a gente.</p>
+      <a class="btn aj-wa" href="https://wa.me/${SUPORTE_WHATSAPP}?text=${msg}" target="_blank" rel="noopener">Falar com o suporte no WhatsApp</a>
+      <p class="meta-sm" style="text-align:center;margin:12px 0 0">Em breve: central de ajuda com FAQ. 🙂</p>
+    </div>`;
   }
 
   function planoCard(p){
