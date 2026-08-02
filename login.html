@@ -23,6 +23,7 @@
   .btn{width:100%;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:15px;color:#fff;cursor:pointer;
     background:linear-gradient(120deg,#7fff00,#5fbf00);box-shadow:0 8px 20px rgba(79,70,229,.22);margin-top:6px}
   .btn:disabled{opacity:.6;cursor:default}
+  .btn.alt{background:transparent;color:#7fff00;border:1.5px solid #34401f;box-shadow:none}
   .links{display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}
   .link{font-size:13px;color:var(--pink-deep);font-weight:600;text-decoration:none;cursor:pointer}
   .link.muted{color:var(--muted);font-weight:500}
@@ -63,6 +64,7 @@
   .navitem.active{background:#7fff00!important;color:#0a0b0d!important}
   /* botões */
   .btn{background:#7fff00!important;color:#0a0b0d!important;border:none!important;font-weight:800!important}
+  .btn.alt{background:transparent!important;color:#7fff00!important;border:1.5px solid #34401f!important}
   .btn.ghost,.nbtn,.logout,.ver-mais,.chev{background:transparent!important;color:#7fff00!important;border:1.5px solid #3a3f4a!important}
   .nbtn.solid{background:#7fff00!important;color:#0a0b0d!important;border:none!important}
   .dots,.close-x,.seta{color:#9aa0ab!important}
@@ -124,10 +126,22 @@
     <div class="field"><label>E-mail</label><input id="email" type="email" placeholder="voce@email.com" autocomplete="email"></div>
     <div class="field"><label>Senha</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn" id="loginBtn" onclick="entrar()">Entrar</button>
+    <button class="btn alt" id="goSignupBtn" onclick="showView('signup')">Criar conta</button>
     <div class="links">
       <a class="link" onclick="showView('first')">Primeiro acesso</a>
       <a class="link muted" onclick="irParaEsqueci()">Esqueci minha senha</a>
     </div>
+  </div>
+
+  <!-- CRIAR CONTA -->
+  <div id="viewSignup" style="display:none">
+    <h1>Criar conta</h1>
+    <div class="sub">Abra uma conta gratuita no LEVO (plano Light).</div>
+    <div class="field"><label>Nome completo</label><input id="suNome" type="text" placeholder="Seu nome" autocomplete="name"></div>
+    <div class="field"><label>E-mail</label><input id="suEmail" type="email" placeholder="voce@email.com" autocomplete="email"></div>
+    <div class="field"><label>Senha</label><input id="suPass" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
+    <button class="btn" id="suBtn" onclick="criarConta()">Criar conta</button>
+    <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
   </div>
 
   <!-- PRIMEIRO ACESSO -->
@@ -199,11 +213,40 @@
     document.getElementById("viewLogin").style.display  = v==="login"  ? "block" : "none";
     document.getElementById("viewFirst").style.display  = v==="first"  ? "block" : "none";
     document.getElementById("viewForgot").style.display = v==="forgot" ? "block" : "none";
+    const su = document.getElementById("viewSignup"); if(su) su.style.display = v==="signup" ? "block" : "none";
     showMsg("");
   }
   function irParaEsqueci(){
     document.getElementById("emailForgot").value = document.getElementById("email").value.trim();
     showView("forgot");
+  }
+
+  async function criarConta(){
+    const nome  = document.getElementById("suNome").value.trim();
+    const email = document.getElementById("suEmail").value.trim();
+    const pass  = document.getElementById("suPass").value;
+    const btn   = document.getElementById("suBtn");
+    if(!nome){ showMsg("Digite seu nome."); return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
+    if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
+    btn.disabled = true; showMsg("Criando conta…", "warn");
+    try{
+      const { data, error } = await sb.auth.signUp({
+        email, password: pass,
+        options: { data: { full_name: nome }, emailRedirectTo: APP_URL }
+      });
+      if(error) throw error;
+      if(data.session){
+        location.href = "app.html";
+      }else{
+        showMsg("Conta criada! Enviamos um e-mail de confirmação para " + email + ". Confirme (confira o spam) e depois entre.", "ok");
+        btn.disabled = false;
+      }
+    }catch(e){
+      const m = e.message || "";
+      showMsg(/already registered|exists/i.test(m) ? "Esse e-mail já tem conta. Use Entrar." : traduz(m));
+      btn.disabled = false;
+    }
   }
   function bloquear(email, aviso){
     document.getElementById("emailForgot").value = email;

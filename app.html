@@ -716,7 +716,18 @@
     if(await expirouSessao()) return;
     const user = session.user;
     let { data: profile } = await sb.from("profiles").select("*").eq("id", user.id).single();
-    if(!profile) profile = { id:user.id, role:"student", full_name:null, professional_id:null, status:"active" };
+    if(!profile){
+      // conta recém-criada (auto-cadastro): garante um perfil no banco (aluno, plano Light)
+      const novo = {
+        id:user.id, role:"student", status:"active", plano:"light",
+        full_name:(user.user_metadata && user.user_metadata.full_name) || null,
+        email:user.email
+      };
+      try{
+        const { data: ins } = await sb.from("profiles").insert(novo).select().single();
+        profile = ins || novo;
+      }catch(e){ profile = novo; }
+    }
     ME = { ...profile, email: user.email };
     // aluno: só mostra "Meu treino" se o profissional já montou algum treino
     if(ME.role === "student"){
