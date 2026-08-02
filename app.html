@@ -66,6 +66,7 @@
   @media(max-width:760px){ .assin-shell{grid-template-columns:1fr} .assin-menu{flex-direction:row;flex-wrap:wrap;order:-1} .assin-mi{flex:1;text-align:center} }
   /* assinatura atual + histórico */
   .assin-atual{border:2px solid var(--pink);border-radius:16px;padding:18px 20px;background:linear-gradient(120deg,#0a0b0d,#15171c)}
+  .assin-atual.light{border:1px solid var(--line);background:#faf8fb}
   .aa-tag{display:inline-block;background:var(--pink-deep);color:#fff;font-size:11px;font-weight:800;
     padding:4px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.4px}
   .aa-plano{font-size:22px;font-weight:800;margin-top:8px}
@@ -602,6 +603,8 @@
   .pl-lista li.no .pl-ic{color:#ff9aa2!important}
   /* assinatura atual + histórico */
   .assin-atual{background:linear-gradient(120deg,#12210f,#101317)!important;border-color:#7fff00!important}
+  .assin-atual.light{background:#15171c!important;border-color:#262a33!important}
+  .assin-atual.light .aa-tag{background:#262a33!important;color:#9aa0ab!important}
   .aa-tag{background:#7fff00!important;color:#0a0b0d!important}
   .aa-plano{color:#fff!important}
   .aa-info{color:#7fff00!important}
@@ -1723,15 +1726,18 @@
   }
 
   function renderAssinAtual(){
+    // toda conta é LEVO Light por padrão (gratuito); paga mostra o plano assinado
     const ativa = ASSIN_ROWS.find(r=>r.status==="authorized");
-    if(ativa){
-      const nome = PLANO_LABEL[ativa.plano] || ativa.plano;
-      return `<div class="assin-atual">
-        <span class="aa-tag">Sua assinatura</span>
-        <div class="aa-plano">${esc(nome)}</div>
-      </div>`;
-    }
-    return `<div class="assin-nenhuma">Você não tem uma assinatura ativa.<br>Abra <b>Planos</b> no menu ao lado para assinar. 👉</div>`;
+    const plano = ativa ? ativa.plano : "light";
+    const nome = PLANO_LABEL[plano] || plano;
+    const gratis = (plano === "light");
+    return `<div class="assin-atual${gratis?" light":""}">
+      <span class="aa-tag">Sua assinatura</span>
+      <div class="aa-plano">${esc(nome)}</div>
+      ${gratis
+        ? `<div class="aa-sub">Plano gratuito — abra <b>Planos</b> ao lado para fazer upgrade. 👉</div>`
+        : `<div class="aa-info">${fmtBRL(ativa.valor)}<span class="aa-mes">/mês</span></div>`}
+    </div>`;
   }
 
   function renderAssinHistorico(){
