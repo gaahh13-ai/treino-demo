@@ -135,37 +135,31 @@
     <div class="field"><label>E-mail</label><input id="email" type="email" placeholder="voce@email.com" autocomplete="email"></div>
     <div class="field"><label>Senha</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn" id="loginBtn" onclick="entrar()">Entrar</button>
-    <button class="btn alt" id="goSignupBtn" onclick="showView('planos')">Criar conta</button>
+    <button class="btn alt" id="goSignupBtn" onclick="showView('signup')">Criar conta</button>
     <div class="links">
       <a class="link" onclick="showView('first')">Primeiro acesso</a>
       <a class="link muted" onclick="irParaEsqueci()">Esqueci minha senha</a>
     </div>
   </div>
 
-  <!-- ESCOLHER PLANO -->
-  <div id="viewPlanos" style="display:none">
-    <h1>Escolha seu plano</h1>
-    <div class="sub">Comece grátis no Light ou assine um plano — a conta é criada e você conclui com o pagamento.</div>
-    <div class="plan-pick">
-      <div class="pp-grp">Para alunos</div>
-      <button class="pp-opt" onclick="escolherPlano('light')"><b>LEVO Light</b><span>Grátis</span></button>
-      <button class="pp-opt" onclick="escolherPlano('pro')"><b>LEVO Pro</b><span>R$ 39,90/mês</span></button>
-      <div class="pp-grp">Para personal trainers</div>
-      <button class="pp-opt" onclick="escolherPlano('fit')"><b>LEVO Fit</b><span>R$ 39,90/mês</span></button>
-      <button class="pp-opt" onclick="escolherPlano('you_levo')"><b>You LEVO</b><span>R$ 59,90/mês</span></button>
-    </div>
-    <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
-  </div>
-
   <!-- CRIAR CONTA -->
   <div id="viewSignup" style="display:none">
     <h1>Criar conta</h1>
-    <div class="su-plano">Plano escolhido: <b id="suPlanoLbl">LEVO Light · grátis</b> · <a class="link" onclick="showView('planos')" style="font-size:12px">trocar</a></div>
+    <div class="sub">Preencha seus dados. Enviaremos um e-mail para confirmar e continuar.</div>
     <div class="field"><label>Nome completo</label><input id="suNome" type="text" placeholder="Seu nome" autocomplete="name"></div>
     <div class="field"><label>E-mail</label><input id="suEmail" type="email" placeholder="voce@email.com" autocomplete="email"></div>
     <div class="field"><label>Senha</label><input id="suPass" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
     <button class="btn" id="suBtn" onclick="criarConta()">Criar conta</button>
     <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
+  </div>
+
+  <!-- CONFIRME O E-MAIL -->
+  <div id="viewConfirma" style="display:none">
+    <div style="font-size:40px;text-align:center;margin-bottom:6px">✉️</div>
+    <h1>Confirme seu e-mail</h1>
+    <div class="sub">Enviamos um link de confirmação para <b id="confEmail">seu e-mail</b>.
+      Abra a mensagem (confira o spam) e clique no link para continuar o cadastro e escolher seu plano.</div>
+    <div class="links" style="justify-content:center"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
   </div>
 
   <!-- PRIMEIRO ACESSO -->
@@ -238,23 +232,8 @@
     document.getElementById("viewFirst").style.display  = v==="first"  ? "block" : "none";
     document.getElementById("viewForgot").style.display = v==="forgot" ? "block" : "none";
     const su = document.getElementById("viewSignup"); if(su) su.style.display = v==="signup" ? "block" : "none";
-    const pl = document.getElementById("viewPlanos"); if(pl) pl.style.display = v==="planos" ? "block" : "none";
+    const cf = document.getElementById("viewConfirma"); if(cf) cf.style.display = v==="confirma" ? "block" : "none";
     showMsg("");
-  }
-
-  const SIGNUP_PLANOS = {
-    light:    { nome:"LEVO Light", preco:"grátis",       role:"student",      pago:false },
-    pro:      { nome:"LEVO Pro",   preco:"R$ 39,90/mês", role:"student",      pago:true  },
-    fit:      { nome:"LEVO Fit",   preco:"R$ 39,90/mês", role:"professional", pago:true  },
-    you_levo: { nome:"You LEVO",   preco:"R$ 59,90/mês", role:"professional", pago:true  }
-  };
-  let SIGNUP_ESC = "light";
-  function escolherPlano(key){
-    SIGNUP_ESC = key;
-    const p = SIGNUP_PLANOS[key] || SIGNUP_PLANOS.light;
-    const lbl = document.getElementById("suPlanoLbl");
-    if(lbl) lbl.textContent = p.nome + " · " + p.preco;
-    showView("signup");
   }
   function irParaEsqueci(){
     document.getElementById("emailForgot").value = document.getElementById("email").value.trim();
@@ -269,49 +248,28 @@
     if(!nome){ showMsg("Digite seu nome."); return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
     if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
-    const plano = SIGNUP_PLANOS[SIGNUP_ESC] || SIGNUP_PLANOS.light;
     btn.disabled = true; showMsg("Criando conta…", "warn");
     try{
       const { data, error } = await sb.auth.signUp({
         email, password: pass,
-        options: { data: { full_name: nome, role: plano.role, plano_desejado: SIGNUP_ESC }, emailRedirectTo: APP_URL }
+        // ao confirmar o e-mail, cai no app já na tela de planos
+        options: { data: { full_name: nome }, emailRedirectTo: APP_URL + "?planos=1" }
       });
       if(error) throw error;
+      btn.disabled = false;
       if(data.session){
-        // já logado
-        if(plano.pago){ await iniciarPagamento(SIGNUP_ESC, data.session.access_token); }
-        else { location.href = "app.html"; }
+        // sem confirmação de e-mail (já logado) → vai direto aos planos
+        location.href = "app.html?planos=1";
       }else{
-        // precisa confirmar o e-mail antes de entrar
-        if(plano.pago){
-          localStorage.setItem("levo_assinar", SIGNUP_ESC);
-          showMsg("Conta criada! Confirme seu e-mail (" + email + ") e faça login — aí concluímos o pagamento do " + plano.nome + ".", "ok");
-        }else{
-          showMsg("Conta criada! Enviamos um e-mail de confirmação para " + email + ". Confirme (confira o spam) e depois entre.", "ok");
-        }
-        btn.disabled = false;
+        // com confirmação → tela "confirme seu e-mail"
+        const ce = document.getElementById("confEmail"); if(ce) ce.textContent = email;
+        showView("confirma");
       }
     }catch(e){
       const m = e.message || "";
       showMsg(/already registered|exists/i.test(m) ? "Esse e-mail já tem conta. Use Entrar." : traduz(m));
       btn.disabled = false;
     }
-  }
-
-  async function iniciarPagamento(planoKey, token){
-    showMsg("Redirecionando para o pagamento…", "warn");
-    try{
-      const resp = await fetch(SUPABASE_URL + "/functions/v1/criar-assinatura", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + token },
-        body: JSON.stringify({ plano: planoKey })
-      });
-      const data = await resp.json().catch(()=>({}));
-      if(data.init_point){ location.href = data.init_point; return; }
-    }catch(e){}
-    // se algo falhar, entra no app (pode concluir o pagamento em Assinatura)
-    localStorage.setItem("levo_assinar", planoKey);
-    location.href = "app.html";
   }
   function bloquear(email, aviso){
     document.getElementById("emailForgot").value = email;
