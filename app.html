@@ -1677,7 +1677,6 @@
         method:"POST",
         headers:{
           "Content-Type":"application/json",
-          "apikey": SUPABASE_ANON,
           "Authorization": "Bearer " + session.access_token
         },
         body: JSON.stringify({ plano })
