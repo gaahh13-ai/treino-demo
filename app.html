@@ -1666,7 +1666,31 @@
     box.innerHTML = `<div class="plano-grid">${PLANOS[qual].map(planoCard).join("")}</div>`;
   }
 
-  function assinarPlano(nome){ alert(`Assinatura do plano "${nome}" — pagamento em breve. 🙂`); }
+  async function assinarPlano(nome){
+    const mapa = { "LEVO Pro":"pro", "LEVO Fit":"fit", "You LEVO":"you_levo" };
+    const plano = mapa[nome];
+    if(!plano){ alert("O LEVO Light é gratuito — não há o que pagar. 🙂"); return; }
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      if(!session){ alert("Faça login para assinar."); return; }
+      const resp = await fetch(SUPABASE_URL + "/functions/v1/criar-assinatura", {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "apikey": SUPABASE_ANON,
+          "Authorization": "Bearer " + session.access_token
+        },
+        body: JSON.stringify({ plano })
+      });
+      const data = await resp.json().catch(()=>({}));
+      if(!resp.ok || !data.init_point){
+        alert("Não consegui iniciar a assinatura: " + (data.error || ("erro "+resp.status)));
+        return;
+      }
+      // redireciona para o checkout do Mercado Pago
+      window.location.href = data.init_point;
+    }catch(e){ alert("Erro ao assinar: " + e.message); }
+  }
 
   // Número de suporte (formato internacional, só dígitos). Ex.: 55 + DDD + número.
   const SUPORTE_WHATSAPP = "5511999999999"; // TODO: trocar pelo número de suporte real
