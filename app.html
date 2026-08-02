@@ -122,6 +122,13 @@
            flex-direction:column;gap:2px}
   .navgroup.open .navsubs{display:flex}
   .navsub{padding:9px 12px;font-size:13px;font-weight:600;opacity:.92}
+  /* banner de pedido de vínculo (aluno) */
+  .vinc-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border:2px solid var(--pink);border-radius:16px;padding:16px 18px;margin:0 0 16px;
+    background:linear-gradient(120deg,#1d2027,#262a33)}
+  .vb-txt{font-size:14px;line-height:1.5;flex:1;min-width:240px}
+  .vb-acoes{display:flex;gap:8px;flex-wrap:wrap}
+  .vb-acoes .btn{white-space:nowrap}
   /* Financeiro */
   .fin-topo{display:flex;align-items:center;gap:12px}
   .fin-mes{font-weight:800;font-size:16px;min-width:150px;text-align:center}
@@ -616,6 +623,8 @@
   .assin-mi:hover{border-color:#7fff00!important}
   .assin-mi.active{background:rgba(127,255,0,.14)!important;border-color:#7fff00!important;color:#7fff00!important}
   .assin-suporte{background:#15171c!important;border-color:#262a33!important}
+  .vinc-banner{background:linear-gradient(120deg,#12210f,#101317)!important;border-color:#7fff00!important}
+  .vb-txt{color:#e8eaee!important}
   /* popover de ajuda */
   .ajuda-pop{background:#15171c!important;border-color:#262a33!important}
   .ajuda-pop h3{color:#7fff00!important}
@@ -783,6 +792,7 @@
     document.getElementById("content").innerHTML = `
       <div class="hello">${first ? "Olá, "+esc(first)+" 👋" : "Olá! 👋"}</div>
       <div class="role-chip chip-${role}">${rotulo}</div>
+      <div id="vinculoBanner"></div>
       <div class="shell">
         <aside class="sidebar">${itens}</aside>
         <section class="panel" id="panel"></section>
@@ -791,6 +801,53 @@
 
     const inicial = !first ? "perfil" : (role === "student" ? "dash" : "alunos");
     go(inicial);
+    carregarVinculoPendente();
+  }
+
+  async function carregarVinculoPendente(){
+    const box = document.getElementById("vinculoBanner");
+    if(!box || !ME) return;
+    let v = null;
+    try{
+      const { data } = await sb.from("vinculos").select("*")
+        .eq("student_id", ME.id).eq("status","pendente").order("created_at",{ascending:false}).limit(1);
+      v = data && data[0];
+    }catch(e){ return; }   // tabela ausente: ignora
+    if(!v){ box.innerHTML = ""; return; }
+    const prof = esc(v.professional_name || "Um profissional");
+    box.innerHTML = `<div class="vinc-banner">
+      <div class="vb-txt"><b>${prof}</b> quer te vincular como aluno. Ao aprovar, você passa a treinar
+        com ${prof} (deixando qualquer outro professor) e sua <b>assinatura paga é cancelada automaticamente</b> —
+        você não precisa mais pagar.</div>
+      <div class="vb-acoes">
+        <button class="btn" onclick="aprovarVinculo('${v.id}')">Aprovar vínculo</button>
+        <button class="btn ghost" onclick="recusarVinculo('${v.id}')">Recusar</button>
+      </div>
+    </div>`;
+  }
+
+  async function aprovarVinculo(id){
+    if(!confirm("Aprovar o vínculo?\n\nVocê passará a treinar com este profissional e, se tiver uma assinatura paga, ela será cancelada (você não precisa mais pagar).")) return;
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      if(!session){ alert("Faça login novamente."); return; }
+      const resp = await fetch(SUPABASE_URL + "/functions/v1/aprovar-vinculo", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+session.access_token },
+        body: JSON.stringify({ vinculo_id: id })
+      });
+      const data = await resp.json().catch(()=>({}));
+      if(!resp.ok || !data.ok){ alert("Não consegui aprovar: "+(data.error||("erro "+resp.status))); return; }
+      alert("Vínculo aprovado! Agora você treina com o seu novo profissional. 💪");
+      location.reload();
+    }catch(e){ alert("Erro ao aprovar: "+e.message); }
+  }
+
+  async function recusarVinculo(id){
+    if(!confirm("Recusar este pedido de vínculo?")) return;
+    const { error } = await sb.from("vinculos").update({ status:"recusado", updated_at:new Date().toISOString() }).eq("id", id);
+    if(error){ alert("Erro: "+error.message); return; }
+    const box=document.getElementById("vinculoBanner"); if(box) box.innerHTML="";
   }
 
   function mostrar(){
@@ -2772,6 +2829,22 @@
     if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do aluno."; return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
+
+    // 1) verifica se já existe conta com esse e-mail e, se sim, cria um pedido de vínculo
+    const { data: res, error: eRpc } = await sb.rpc("solicitar_vinculo", { p_email: email });
+    if(eRpc){ btn.disabled=false; msg.className="msg err"; msg.textContent = "Erro: "+eRpc.message; return; }
+    if(res === "ja_vinculado"){
+      btn.disabled=false; msg.className="msg warn"; msg.textContent = "Esse aluno já está vinculado a você.";
+      return;
+    }
+    if(res === "pendente"){
+      btn.disabled=false; msg.className="msg ok";
+      msg.textContent = "Esse e-mail já tem conta no LEVO. Enviamos um pedido de vínculo — ele precisa aprovar dentro do app dele. Assim que aprovar, aparece na sua lista.";
+      document.getElementById("inviteName").value=""; document.getElementById("inviteEmail").value="";
+      return;
+    }
+
+    // 2) 'sem_conta' → fluxo de convite (primeiro acesso), já vinculado
     const { error } = await sb.from("invites").insert({ email, full_name:nome, professional_id:ME.id });
     btn.disabled=false;
     if(error){
