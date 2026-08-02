@@ -718,9 +718,11 @@
     let { data: profile } = await sb.from("profiles").select("*").eq("id", user.id).single();
     if(!profile){
       // conta recém-criada (auto-cadastro): garante um perfil no banco (aluno, plano Light)
+      const meta = user.user_metadata || {};
       const novo = {
-        id:user.id, role:"student", status:"active", plano:"light",
-        full_name:(user.user_metadata && user.user_metadata.full_name) || null,
+        id:user.id, role:(meta.role === "professional" ? "professional" : "student"),
+        status:"active", plano:"light",
+        full_name: meta.full_name || null,
         email:user.email
       };
       try{
@@ -738,6 +740,25 @@
     const alunoParam = new URLSearchParams(location.search).get("aluno");
     if(ME.role !== "student" && alunoParam) PENDING_SELECT = alunoParam;
     montar();
+    checkPagamentoPendente();
+  }
+
+  // conta criada com plano pago: após confirmar o e-mail e logar, conclui a assinatura
+  async function checkPagamentoPendente(){
+    let plano; try{ plano = localStorage.getItem("levo_assinar"); }catch(e){ plano=null; }
+    if(!plano) return;
+    localStorage.removeItem("levo_assinar");
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      if(!session) return;
+      const resp = await fetch(SUPABASE_URL + "/functions/v1/criar-assinatura", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + session.access_token },
+        body: JSON.stringify({ plano })
+      });
+      const data = await resp.json().catch(()=>({}));
+      if(data.init_point) location.href = data.init_point;
+    }catch(e){}
   }
   let PENDING_SELECT = null;
   let ALUNO_TREINO = false;

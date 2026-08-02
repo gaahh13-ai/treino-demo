@@ -24,6 +24,15 @@
     background:linear-gradient(120deg,#7fff00,#5fbf00);box-shadow:0 8px 20px rgba(79,70,229,.22);margin-top:6px}
   .btn:disabled{opacity:.6;cursor:default}
   .btn.alt{background:transparent;color:#7fff00;border:1.5px solid #34401f;box-shadow:none}
+  .plan-pick{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .pp-grp{font-size:11px;font-weight:800;color:#8a9099;text-transform:uppercase;letter-spacing:.4px;margin-top:8px}
+  .pp-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+    border:1.5px solid #262a33;border-radius:12px;padding:13px 14px;background:#15171c;color:#e8eaee;cursor:pointer;text-align:left}
+  .pp-opt:hover{border-color:#7fff00}
+  .pp-opt b{font-size:14px}
+  .pp-opt span{font-size:13px;font-weight:700;color:#7fff00}
+  .su-plano{font-size:13px;color:#c7ccd6;background:#15171c;border:1px solid #262a33;border-radius:10px;padding:9px 12px;margin-bottom:12px}
+  .su-plano b{color:#7fff00}
   .links{display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}
   .link{font-size:13px;color:var(--pink-deep);font-weight:600;text-decoration:none;cursor:pointer}
   .link.muted{color:var(--muted);font-weight:500}
@@ -126,17 +135,32 @@
     <div class="field"><label>E-mail</label><input id="email" type="email" placeholder="voce@email.com" autocomplete="email"></div>
     <div class="field"><label>Senha</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn" id="loginBtn" onclick="entrar()">Entrar</button>
-    <button class="btn alt" id="goSignupBtn" onclick="showView('signup')">Criar conta</button>
+    <button class="btn alt" id="goSignupBtn" onclick="showView('planos')">Criar conta</button>
     <div class="links">
       <a class="link" onclick="showView('first')">Primeiro acesso</a>
       <a class="link muted" onclick="irParaEsqueci()">Esqueci minha senha</a>
     </div>
   </div>
 
+  <!-- ESCOLHER PLANO -->
+  <div id="viewPlanos" style="display:none">
+    <h1>Escolha seu plano</h1>
+    <div class="sub">Comece grátis no Light ou assine um plano — a conta é criada e você conclui com o pagamento.</div>
+    <div class="plan-pick">
+      <div class="pp-grp">Para alunos</div>
+      <button class="pp-opt" onclick="escolherPlano('light')"><b>LEVO Light</b><span>Grátis</span></button>
+      <button class="pp-opt" onclick="escolherPlano('pro')"><b>LEVO Pro</b><span>R$ 39,90/mês</span></button>
+      <div class="pp-grp">Para personal trainers</div>
+      <button class="pp-opt" onclick="escolherPlano('fit')"><b>LEVO Fit</b><span>R$ 39,90/mês</span></button>
+      <button class="pp-opt" onclick="escolherPlano('you_levo')"><b>You LEVO</b><span>R$ 59,90/mês</span></button>
+    </div>
+    <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
+  </div>
+
   <!-- CRIAR CONTA -->
   <div id="viewSignup" style="display:none">
     <h1>Criar conta</h1>
-    <div class="sub">Abra uma conta gratuita no LEVO (plano Light).</div>
+    <div class="su-plano">Plano escolhido: <b id="suPlanoLbl">LEVO Light · grátis</b> · <a class="link" onclick="showView('planos')" style="font-size:12px">trocar</a></div>
     <div class="field"><label>Nome completo</label><input id="suNome" type="text" placeholder="Seu nome" autocomplete="name"></div>
     <div class="field"><label>E-mail</label><input id="suEmail" type="email" placeholder="voce@email.com" autocomplete="email"></div>
     <div class="field"><label>Senha</label><input id="suPass" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
@@ -214,7 +238,23 @@
     document.getElementById("viewFirst").style.display  = v==="first"  ? "block" : "none";
     document.getElementById("viewForgot").style.display = v==="forgot" ? "block" : "none";
     const su = document.getElementById("viewSignup"); if(su) su.style.display = v==="signup" ? "block" : "none";
+    const pl = document.getElementById("viewPlanos"); if(pl) pl.style.display = v==="planos" ? "block" : "none";
     showMsg("");
+  }
+
+  const SIGNUP_PLANOS = {
+    light:    { nome:"LEVO Light", preco:"grátis",       role:"student",      pago:false },
+    pro:      { nome:"LEVO Pro",   preco:"R$ 39,90/mês", role:"student",      pago:true  },
+    fit:      { nome:"LEVO Fit",   preco:"R$ 39,90/mês", role:"professional", pago:true  },
+    you_levo: { nome:"You LEVO",   preco:"R$ 59,90/mês", role:"professional", pago:true  }
+  };
+  let SIGNUP_ESC = "light";
+  function escolherPlano(key){
+    SIGNUP_ESC = key;
+    const p = SIGNUP_PLANOS[key] || SIGNUP_PLANOS.light;
+    const lbl = document.getElementById("suPlanoLbl");
+    if(lbl) lbl.textContent = p.nome + " · " + p.preco;
+    showView("signup");
   }
   function irParaEsqueci(){
     document.getElementById("emailForgot").value = document.getElementById("email").value.trim();
@@ -229,17 +269,26 @@
     if(!nome){ showMsg("Digite seu nome."); return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
     if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
+    const plano = SIGNUP_PLANOS[SIGNUP_ESC] || SIGNUP_PLANOS.light;
     btn.disabled = true; showMsg("Criando conta…", "warn");
     try{
       const { data, error } = await sb.auth.signUp({
         email, password: pass,
-        options: { data: { full_name: nome }, emailRedirectTo: APP_URL }
+        options: { data: { full_name: nome, role: plano.role, plano_desejado: SIGNUP_ESC }, emailRedirectTo: APP_URL }
       });
       if(error) throw error;
       if(data.session){
-        location.href = "app.html";
+        // já logado
+        if(plano.pago){ await iniciarPagamento(SIGNUP_ESC, data.session.access_token); }
+        else { location.href = "app.html"; }
       }else{
-        showMsg("Conta criada! Enviamos um e-mail de confirmação para " + email + ". Confirme (confira o spam) e depois entre.", "ok");
+        // precisa confirmar o e-mail antes de entrar
+        if(plano.pago){
+          localStorage.setItem("levo_assinar", SIGNUP_ESC);
+          showMsg("Conta criada! Confirme seu e-mail (" + email + ") e faça login — aí concluímos o pagamento do " + plano.nome + ".", "ok");
+        }else{
+          showMsg("Conta criada! Enviamos um e-mail de confirmação para " + email + ". Confirme (confira o spam) e depois entre.", "ok");
+        }
         btn.disabled = false;
       }
     }catch(e){
@@ -247,6 +296,22 @@
       showMsg(/already registered|exists/i.test(m) ? "Esse e-mail já tem conta. Use Entrar." : traduz(m));
       btn.disabled = false;
     }
+  }
+
+  async function iniciarPagamento(planoKey, token){
+    showMsg("Redirecionando para o pagamento…", "warn");
+    try{
+      const resp = await fetch(SUPABASE_URL + "/functions/v1/criar-assinatura", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + token },
+        body: JSON.stringify({ plano: planoKey })
+      });
+      const data = await resp.json().catch(()=>({}));
+      if(data.init_point){ location.href = data.init_point; return; }
+    }catch(e){}
+    // se algo falhar, entra no app (pode concluir o pagamento em Assinatura)
+    localStorage.setItem("levo_assinar", planoKey);
+    location.href = "app.html";
   }
   function bloquear(email, aviso){
     document.getElementById("emailForgot").value = email;
