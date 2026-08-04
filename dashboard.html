@@ -251,6 +251,23 @@
   .pl-lista li.no{color:#9aa0ab!important}
   .pl-lista li.ok .pl-ic{color:#7fff00!important}
   .pl-lista li.no .pl-ic{color:#ff9aa2!important}
+  /* assinatura atual + histórico */
+  .assin-atual{background:linear-gradient(120deg,#12210f,#101317)!important;border-color:#7fff00!important}
+  .assin-atual.light{background:#15171c!important;border-color:#262a33!important}
+  .assin-atual.light .aa-tag{background:#262a33!important;color:#9aa0ab!important}
+  .aa-tag{background:#7fff00!important;color:#0a0b0d!important}
+  .aa-plano{color:#fff!important}
+  .aa-info{color:#7fff00!important}
+  .assin-nenhuma{border-color:#2a2e37!important;color:#9aa0ab!important}
+  .assin-hist{background:#15171c!important;border-color:#262a33!important}
+  .assin-hist-row{border-color:#262a33!important}
+  .ah-plano{color:#e8eaee!important}
+  .assin-mi{background:#15171c!important;border-color:#262a33!important;color:#e8eaee!important}
+  .assin-mi:hover{border-color:#7fff00!important}
+  .assin-mi.active{background:rgba(127,255,0,.14)!important;border-color:#7fff00!important;color:#7fff00!important}
+  .assin-suporte{background:#15171c!important;border-color:#262a33!important}
+  .vinc-banner{background:linear-gradient(120deg,#12210f,#101317)!important;border-color:#7fff00!important}
+  .vb-txt{color:#e8eaee!important}
   /* popover de ajuda */
   .ajuda-pop{background:#15171c!important;border-color:#262a33!important}
   .ajuda-pop h3{color:#7fff00!important}
@@ -354,8 +371,8 @@
 </div>
 
 <script>
-  const SUPABASE_URL = "https://qubjknesswejsddcapom.supabase.co";
-  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1YmprbmVzc3dlanNkZGNhcG9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNTYzNTYsImV4cCI6MjA5OTkzMjM1Nn0._nDLQ_Q5wN-4eNS0jf-lnyhGHixoZ5_SdXvTvBV_d3E";
+  const SUPABASE_URL = "https://qpsraxnzgybehbwrtqjd.supabase.co";
+  const SUPABASE_ANON = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
     auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
   });
