@@ -242,9 +242,10 @@
   .ex-meta{font-size:12px;color:var(--muted);margin-top:2px}
 
   /* montador de ficha (profissional) */
-  .fx-row{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--line)}
-  .fx-row:last-of-type{border-bottom:none}
-  .fx-topo{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  /* cada exercício num card bem demarcado (não confunde ao olhar rápido) */
+  /* cada exercício num card bem demarcado (não confunde ao olhar rápido) */
+  .fx-row{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(127,255,0,.02);margin-bottom:10px}
+  .fx-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
   .fx-nome{font-weight:700;font-size:13.5px}
   .fx-campos{display:flex;gap:8px;flex-wrap:wrap}
   .fx-campos label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
@@ -467,6 +468,18 @@
   .fx-grupos .chip-f{flex:0 0 auto;white-space:nowrap}
   .fx-pick-lista{display:flex;flex-wrap:wrap;gap:8px}
   .fx-added{margin-top:16px}
+  /* caixa de bi-set na montagem: os dois exercícios lado a lado, área bem destacada */
+  .biset-box{border:2px solid var(--pink);border-radius:14px;padding:10px;margin:0 0 12px;background:rgba(127,255,0,.05)}
+  .biset-box-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 2px 10px}
+  .biset-box-head span{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;line-height:1.2}
+  .biset-box-cards{display:flex;gap:10px;align-items:stretch}
+  .biset-box-cards .fx-row{flex:1 1 0;min-width:0;margin-bottom:0;background:rgba(0,0,0,.22)}
+  .biset-box-cards .fx-campos{flex-direction:column;gap:8px}
+  .biset-box-cards .fx-campos label{width:100%}
+  .biset-box-cards .fx-campos label.fx-series input,
+  .biset-box-cards .fx-campos label.fx-carga input,
+  .biset-box-cards .fx-campos label input{width:100%}
+  @media(max-width:560px){ .biset-box-cards{flex-direction:column} }
   .fx-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
   .fx-edit-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .fx-move{display:flex;gap:4px;align-items:center}
@@ -3750,13 +3763,11 @@
 
     // MODO EDIÇÃO: cards editáveis + reordenar + popup para adicionar
     window.FX_JATEM = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
-    const rows = lista.map((x,i)=>{
-      const ligaProx = !!x.biset && i<lista.length-1;
-      const vemDeCima = i>0 && !!lista[i-1].biset;
-      return `
-      <div class="fx-row ${vemDeCima?"biset-cont":""} ${ligaProx?"biset-top":""}">
+    // card de UM exercício (usado solto ou dentro de uma caixa de bi-set)
+    const cardEx = (x, i, dentroBiset)=>`
+      <div class="fx-row${dentroBiset?" fx-row-biset":""}">
         <div class="fx-topo">
-          <div class="fx-nome">${vemDeCima?'<span class="biset-ic">🔗</span> ':''}${esc(x.nome_cache || "Exercício")}</div>
+          <div class="fx-nome">${esc(x.nome_cache || "Exercício")}</div>
           <div class="fx-move">
             <button class="btn small ghost" title="Subir" ${i===0?"disabled":""} onclick="moverEx('${x.id}',-1)">▲</button>
             <button class="btn small ghost" title="Descer" ${i===lista.length-1?"disabled":""} onclick="moverEx('${x.id}',1)">▼</button>
@@ -3770,9 +3781,28 @@
         </div>
         <input class="fx-obs" type="text" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
                value="${esc(x.obs??"")}" onchange="updEx('${x.id}','obs',this.value)">
-        ${i < lista.length-1 ? `<button class="fx-biset-btn ${x.biset?"on":""}" onclick="toggleBiset('${x.id}', ${x.biset?0:1})">🔗 ${x.biset?"Em bi-set com o próximo — clique para desfazer":"Fazer em bi-set com o próximo"}</button>` : ""}
+        ${(!dentroBiset && i < lista.length-1) ? `<button class="fx-biset-btn" onclick="toggleBiset('${x.id}', 1)">🔗 Fazer em bi-set com o próximo</button>` : ""}
       </div>`;
-    }).join("");
+    // agrupa bi-sets: pares/trios aparecem lado a lado numa caixa destacada
+    let rows = "";
+    let gi = 0;
+    agruparBiset(lista).forEach(g=>{
+      const inicio = gi;
+      if(g.length > 1){
+        const cards = g.map((x, idx)=>cardEx(x, inicio+idx, true)).join("");
+        const idsInternos = g.slice(0, -1).map(x=>x.id).join(",");
+        rows += `<div class="biset-box">
+          <div class="biset-box-head">
+            <span>🔗 Bi-set — feitos em sequência, sem descanso entre eles</span>
+            <button class="btn small ghost" onclick="desfazerBiset('${idsInternos}')">Desfazer</button>
+          </div>
+          <div class="biset-box-cards">${cards}</div>
+        </div>`;
+      } else {
+        rows += cardEx(g[0], inicio, false);
+      }
+      gi += g.length;
+    });
     box.innerHTML = `
       <div class="fx-edit-top">
         <button class="btn small" onclick="abrirPickerPopup()">＋ Adicionar exercícios</button>
@@ -3801,6 +3831,15 @@
   async function toggleBiset(id, val){
     const y = window.scrollY;
     await sb.from("ficha_exercicios").update({ biset: !!val }).eq("id", id);
+    await renderConteudoDia();
+    window.scrollTo(0, y);
+  }
+  // desfaz um bi-set inteiro (desliga todos os elos internos do grupo)
+  async function desfazerBiset(idsCsv){
+    const ids = (idsCsv||"").split(",").filter(Boolean);
+    if(!ids.length) return;
+    const y = window.scrollY;
+    await sb.from("ficha_exercicios").update({ biset: false }).in("id", ids);
     await renderConteudoDia();
     window.scrollTo(0, y);
   }
