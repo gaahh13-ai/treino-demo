@@ -246,13 +246,8 @@
   /* cada exercício num card bem demarcado (não confunde ao olhar rápido) */
   .fx-row{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(127,255,0,.02);margin-bottom:10px}
   .fx-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-  /* flash rápido ao reordenar (deixa claro o que foi trocado) */
-  @keyframes fxMoved{
-    0%{box-shadow:0 0 0 3px var(--pink);transform:scale(1.025)}
-    70%{box-shadow:0 0 0 3px var(--pink)}
-    100%{box-shadow:0 0 0 0 rgba(127,255,0,0);transform:scale(1)}
-  }
-  .fx-row.fx-moved{animation:fxMoved .6s ease-out;position:relative;z-index:2}
+  /* reordenar: card que se move fica elevado e passa por cima do outro */
+  .fx-row.fx-lift{box-shadow:0 10px 26px rgba(0,0,0,.4);border-color:var(--pink)}
   .fx-nome{font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:8px}
   .fx-campos{display:flex;gap:8px;flex-wrap:wrap}
   .fx-campos label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
@@ -3842,6 +3837,10 @@
     const arr = exs || [];
     const i = arr.findIndex(e=>e.id===id); const j = i + dir;
     if(i<0 || j<0 || j>=arr.length) return;
+    const vizinhoId = arr[j].id;
+    // FLIP — 1) mede a posição atual dos dois cards antes de re-renderizar
+    const antes = {};
+    [id, vizinhoId].forEach(exid=>{ const el=document.querySelector('[data-exid="'+exid+'"]'); if(el) antes[exid]=el.getBoundingClientRect().top; });
     // troca as posições no array e regrava a ordem como 0,1,2,3… para todos
     const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
     const y = window.scrollY;
@@ -3851,11 +3850,23 @@
     await Promise.all(updates);
     await renderConteudoDia();
     window.scrollTo(0, y);
-    // flash rápido no exercício que acabou de mudar de lugar (e no vizinho trocado)
-    [id, (arr[i]&&arr[i].id)].filter(Boolean).forEach(exid=>{
-      const el = document.querySelector('[data-exid="'+exid+'"]');
-      if(el){ el.classList.remove("fx-moved"); void el.offsetWidth; el.classList.add("fx-moved");
-              setTimeout(()=>el.classList.remove("fx-moved"), 650); }
+    // FLIP — 2) coloca cada card na posição antiga e 3) anima até a nova (o movido passa por cima)
+    requestAnimationFrame(()=>{
+      [id, vizinhoId].forEach(exid=>{
+        const el = document.querySelector('[data-exid="'+exid+'"]');
+        if(!el || antes[exid]==null) return;
+        const delta = antes[exid] - el.getBoundingClientRect().top;
+        if(!delta) return;
+        el.style.transition = "none";
+        el.style.position = "relative";
+        el.style.zIndex = (exid===id) ? "6" : "1";
+        if(exid===id) el.classList.add("fx-lift");
+        el.style.transform = "translateY(" + delta + "px)";
+        void el.offsetWidth;                       // aplica a posição antiga imediatamente
+        el.style.transition = "transform .2s ease";
+        el.style.transform = "translateY(0)";
+        setTimeout(()=>{ el.style.transition=""; el.style.transform=""; el.style.zIndex=""; el.style.position=""; el.classList.remove("fx-lift"); }, 230);
+      });
     });
   }
   // conecta/desconecta este exercício com o próximo em bi-set (sem descanso entre eles)
