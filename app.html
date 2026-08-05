@@ -263,6 +263,8 @@
   .biset-grupo{border:1px solid var(--pink);border-radius:14px;padding:8px;margin:12px 0;background:rgba(127,255,0,.05)}
   .biset-grupo .tr-ex,.biset-grupo .ex-card{margin:6px 0}
   .biset-tag{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;padding:4px 6px 8px}
+  .ex-add-cta{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  #exForm{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
   .star-btn{background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 6px;transition:.12s;flex:0 0 auto}
   .star-btn:hover{color:#ffcc00;transform:scale(1.15)}
   .star-btn.on{color:#ffcc00}
@@ -2330,30 +2332,47 @@
   function viewExercicios(){
     return `<h2>Exercícios</h2>
       <div class="card">
-        <h3>➕ Adicionar exercício</h3>
-        <p>A biblioteca já vem com exercícios prontos. Aqui você adiciona os seus — e pode
-           colar um link de GIF ou vídeo (YouTube) para demonstração.</p>
-        <div class="form-grid2" style="margin-top:12px">
-          <div class="field"><label>Nome</label><input id="ex_nome" type="text" placeholder="ex: Supino declinado"></div>
-          <div class="field"><label>Grupo muscular</label>
-            <select id="ex_grupo">${GRUPOS.map(g=>`<option value="${g}">${g}</option>`).join("")}</select>
-          </div>
-          <div class="field"><label>Equipamento</label><input id="ex_equip" type="text" placeholder="ex: Barra, Halter, Máquina…"></div>
-          <div class="field"><label>Link de GIF/vídeo (opcional)</label><input id="ex_media" type="text" placeholder="cole aqui"></div>
-        </div>
-        <div class="field"><label>Instrução (opcional)</label><textarea id="ex_instr" rows="2" placeholder="dica de execução"></textarea></div>
-        <button class="btn small" id="exBtn" onclick="salvarExercicio()">Adicionar</button>
-        <div class="msg" id="exMsg"></div>
-      </div>
-
-      <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
           <h3 style="margin:0">📚 Biblioteca</h3>
           <input id="exBusca" class="aluno-search" style="max-width:220px;margin:0" placeholder="Buscar exercício…" oninput="renderExercicios()">
         </div>
         <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:4px"></div>
         <div id="exLista"><div class="empty">Carregando…</div></div>
+
+        <div class="ex-add-cta" id="exAddCta">
+          <span>Não achou o exercício?</span>
+          <button class="btn small" onclick="toggleFormEx()">➕ Crie aqui</button>
+        </div>
+
+        <div id="exForm" style="display:none">
+          <h3 style="margin:0 0 4px">➕ Adicionar exercício</h3>
+          <p class="meta-sm" style="margin:0 0 6px">Cole um link de GIF ou vídeo (YouTube) para demonstração, se quiser.</p>
+          <div class="form-grid2" style="margin-top:12px">
+            <div class="field"><label>Nome</label><input id="ex_nome" type="text" placeholder="ex: Supino declinado"></div>
+            <div class="field"><label>Grupo muscular</label>
+              <select id="ex_grupo">${GRUPOS.map(g=>`<option value="${g}">${g}</option>`).join("")}</select>
+            </div>
+            <div class="field"><label>Equipamento</label><input id="ex_equip" type="text" placeholder="ex: Barra, Halter, Máquina…"></div>
+            <div class="field"><label>Link de GIF/vídeo (opcional)</label><input id="ex_media" type="text" placeholder="cole aqui"></div>
+          </div>
+          <div class="field"><label>Instrução (opcional)</label><textarea id="ex_instr" rows="2" placeholder="dica de execução"></textarea></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn small" id="exBtn" onclick="salvarExercicio()">Adicionar</button>
+            <button class="btn small ghost" onclick="toggleFormEx(false)">Cancelar</button>
+          </div>
+          <div class="msg" id="exMsg"></div>
+        </div>
       </div>`;
+  }
+
+  function toggleFormEx(forcar){
+    const form = document.getElementById("exForm");
+    const cta  = document.getElementById("exAddCta");
+    if(!form) return;
+    const abrir = (forcar === undefined) ? (form.style.display === "none") : !!forcar;
+    form.style.display = abrir ? "block" : "none";
+    if(cta) cta.style.display = abrir ? "none" : "flex";
+    if(abrir){ const n=document.getElementById("ex_nome"); if(n){ n.focus(); n.scrollIntoView({behavior:"smooth",block:"center"}); } }
   }
 
   async function loadExercicios(){
