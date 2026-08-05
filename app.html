@@ -263,7 +263,7 @@
   .biset-tag{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;padding:4px 6px 8px}
   .al-carga{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
   .al-carga input{width:84px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--txt);background:transparent}
-  .fx-obs{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px}
+  .fx-obs{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;font-family:inherit;color:var(--txt);background:transparent;resize:vertical;min-height:40px;line-height:1.45}
   .fx-obs:focus{outline:2px solid #5fbf00;border-color:#5fbf00}
   .fx-add{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
   .fx-add select{flex:1;min-width:160px;padding:9px;border:1px solid var(--line);border-radius:10px;font-size:13px}
@@ -3777,10 +3777,10 @@
         <div class="fx-campos">
           <label class="fx-series">Séries<input type="text" placeholder="ex: 12 / 12 / 08 / 08" value="${esc(x.reps??"")}" onchange="updEx('${x.id}','reps',this.value)"></label>
           <label class="fx-carga">Carga<input type="number" step="0.5" value="${x.carga_alvo??""}" onchange="updEx('${x.id}','carga_alvo',this.value)"></label>
-          <label>Desc(s)<input type="number" value="${x.descanso_seg??""}" onchange="updEx('${x.id}','descanso_seg',this.value)"></label>
+          <label>Desc(s)<input type="text" inputmode="numeric" placeholder="ex: 60" value="${x.descanso_seg??""}" onchange="updEx('${x.id}','descanso_seg',this.value)"></label>
         </div>
-        <input class="fx-obs" type="text" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
-               value="${esc(x.obs??"")}" onchange="updEx('${x.id}','obs',this.value)">
+        <textarea class="fx-obs" rows="2" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
+               onchange="updEx('${x.id}','obs',this.value)">${esc(x.obs??"")}</textarea>
         ${(!dentroBiset && i < lista.length-1) ? `<button class="fx-biset-btn" onclick="toggleBiset('${x.id}', 1)">🔗 Fazer em bi-set com o próximo</button>` : ""}
       </div>`;
     // agrupa bi-sets: pares/trios aparecem lado a lado numa caixa destacada
@@ -3940,7 +3940,9 @@
 
   async function updEx(id, campo, valor){
     const textFields = ["reps","obs"];
-    const v = textFields.includes(campo) ? (valor.trim()||null) : (valor===""?null:Number(valor));
+    let v;
+    if(textFields.includes(campo)){ v = valor.trim() || null; }
+    else { const n = Number(valor); v = (String(valor).trim()==="" || isNaN(n)) ? null : n; }
     await sb.from("ficha_exercicios").update({ [campo]: v }).eq("id", id);
   }
 
