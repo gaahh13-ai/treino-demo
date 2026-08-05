@@ -443,6 +443,20 @@
 
   /* formulário de avaliação */
   .form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  /* biblioteca de exercícios: filtros numa linha só (rola na horizontal) */
+  #exFiltros{ -ms-overflow-style:none; scrollbar-width:thin }
+  #exFiltros .chip-f{ flex:0 0 auto; white-space:nowrap }
+  /* montagem do treino: seletor de exercícios por grupo muscular */
+  .fx-picker{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .fx-pick-tit{font-size:13px;font-weight:800;margin:0 0 8px}
+  .fx-pick-busca{width:100%;max-width:280px;margin-bottom:10px}
+  .fx-grupos{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
+  .fx-grupos .chip-f{flex:0 0 auto;white-space:nowrap}
+  .fx-pick-lista{display:flex;flex-wrap:wrap;gap:8px}
+  .fx-pick-item{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--txt);cursor:pointer;text-align:left;transition:.12s}
+  .fx-pick-item:hover{border-color:var(--pink);color:var(--pink)}
+  .fpi-nome{font-weight:700;font-size:13px}
+  .fpi-grp{font-size:11px;color:var(--muted)}
   .grupo{margin-top:16px}
   .grupo-tit{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;
     padding-bottom:6px;border-bottom:1px solid var(--line);margin-bottom:12px}
@@ -2241,7 +2255,7 @@
           <h3 style="margin:0">📚 Biblioteca</h3>
           <input id="exBusca" class="aluno-search" style="max-width:220px;margin:0" placeholder="Buscar exercício…" oninput="renderExercicios()">
         </div>
-        <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px"></div>
         <div id="exLista"><div class="empty">Carregando…</div></div>
       </div>`;
   }
@@ -3636,17 +3650,56 @@
                value="${esc(x.obs??"")}" onchange="updEx('${x.id}','obs',this.value)">
       </div>`).join("");
 
-    // não repetir na busca os exercícios já adicionados neste dia
-    const jaTem = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
-    const disponiveis = EXERCICIOS.filter(e=>!jaTem.has(e.id));
-    const opcoes = disponiveis.map(e=>`<option value="${e.id}">${esc(e.nome)}${e.grupo?" · "+esc(e.grupo):""}</option>`).join("");
+    // exercícios já adicionados neste dia (para não repetir no seletor)
+    window.FX_JATEM = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
     box.innerHTML = `
       ${lista.length ? rows : `<div class="empty">Nenhum exercício neste dia ainda.</div>`}
-      <div class="fx-add">
-        <select id="fxAdd"><option value="">${disponiveis.length?"+ escolher exercício…":"todos os exercícios já foram adicionados"}</option>${opcoes}</select>
-        <button class="btn small" onclick="addEx()">Adicionar</button>
-        <button class="btn small ghost" onclick="removerDia()" style="margin-left:auto">Remover dia</button>
-      </div>`;
+      <div class="fx-picker">
+        <div class="fx-pick-tit">Adicionar exercícios <span class="meta-sm">— toque para incluir no treino</span></div>
+        <input id="fxBusca" class="fx-pick-busca aluno-search" placeholder="Buscar exercício…" oninput="renderPicker()">
+        <div id="fxGrupos" class="fx-grupos"></div>
+        <div id="fxPickLista" class="fx-pick-lista"></div>
+      </div>
+      <div style="margin-top:12px"><button class="btn small ghost" onclick="removerDia()">Remover dia</button></div>`;
+    renderPicker();
+  }
+
+  let FX_GRUPO = "";
+  function setFxGrupo(g){ FX_GRUPO = g; renderPicker(); }
+  function renderPicker(){
+    const gbox = document.getElementById("fxGrupos");
+    const lbox = document.getElementById("fxPickLista");
+    if(!gbox || !lbox) return;
+    const jaTem = window.FX_JATEM || new Set();
+    const disp = EXERCICIOS.filter(e=>!jaTem.has(e.id));
+    // chips de grupo (só os que têm exercícios disponíveis)
+    const grupos = [...new Set(disp.map(e=>e.grupo).filter(Boolean))].sort();
+    gbox.innerHTML = [`<button class="chip-f ${FX_GRUPO===""?"sel":""}" onclick="setFxGrupo('')">Todos</button>`]
+      .concat(grupos.map(g=>`<button class="chip-f ${FX_GRUPO===g?"sel":""}" onclick="setFxGrupo('${esc(g)}')">${esc(g)}</button>`)).join("");
+    // lista filtrada por grupo + busca
+    const q = (document.getElementById("fxBusca")||{}).value?.toLowerCase().trim() || "";
+    let lista = disp;
+    if(FX_GRUPO) lista = lista.filter(e=>e.grupo===FX_GRUPO);
+    if(q) lista = lista.filter(e=>(e.nome||"").toLowerCase().includes(q));
+    if(!lista.length){ lbox.innerHTML = `<div class="empty">Nenhum exercício disponível${FX_GRUPO?" em "+esc(FX_GRUPO):""}.</div>`; return; }
+    lbox.innerHTML = lista.map(e=>
+      `<button class="fx-pick-item" onclick="addExDireto('${e.id}')">
+         <span class="fpi-nome">${esc(e.nome)}</span>
+         <span class="fpi-grp">${esc(e.grupo||"")}${e.equipamento?" · "+esc(e.equipamento):""}</span>
+       </button>`).join("");
+  }
+
+  async function addExDireto(exId){
+    if(!exId || !FICHA_DIA) return;
+    const ex = EXERCICIOS.find(e=>e.id===exId);
+    const { data: exs } = await sb.from("ficha_exercicios").select("id").eq("dia_id", FICHA_DIA);
+    const { error } = await sb.from("ficha_exercicios").insert({
+      dia_id:FICHA_DIA, ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id,
+      exercicio_id:exId, nome_cache: ex?ex.nome:null,
+      series:3, reps:"12", descanso_seg:60, ordem:(exs?exs.length:0)
+    });
+    if(error){ levoAlert("Erro: "+error.message); return; }
+    renderConteudoDia();
   }
 
   async function addEx(){
