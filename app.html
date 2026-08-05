@@ -873,28 +873,45 @@
     });
   }
 
+  // Aviso (um botão) com a cara da LEVO — substitui o alert nativo
+  function levoAlert(opts){
+    return new Promise(res=>{
+      const o=document.createElement("div"); o.className="modal-ov";
+      o.innerHTML=`<div class="modal-cx" style="max-width:380px">
+        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">L<span style="color:#7fff00">E</span>VO</div>
+        ${opts.emoji?`<div style="text-align:center;font-size:34px;line-height:1;margin:0 0 8px">${opts.emoji}</div>`:""}
+        <h3 style="margin:0 0 8px;text-align:center">${opts.titulo||""}</h3>
+        ${opts.msg?`<p class="meta-sm" style="margin:0 0 18px;text-align:center">${opts.msg}</p>`:`<div style="height:10px"></div>`}
+        <button class="btn" style="width:100%" id="laOk">${opts.ok||"Ok"}</button>
+      </div>`;
+      document.body.appendChild(o);
+      o.querySelector("#laOk").onclick=()=>{ o.remove(); res(true); };
+    });
+  }
+
   async function aprovarVinculo(id){
     if(!(await levoConfirm({ titulo:"Aprovar vínculo?", msg:"Tem certeza que deseja aprovar este vínculo?", ok:"Sim, aprovar", cancel:"Cancelar" }))) return;
     try{
       const { data:{ session } } = await sb.auth.getSession();
-      if(!session){ alert("Faça login novamente."); return; }
+      if(!session){ await levoAlert({ titulo:"Sessão expirada", msg:"Faça login novamente para continuar." }); return; }
       const resp = await fetch(SUPABASE_URL + "/functions/v1/aprovar-vinculo", {
         method:"POST",
         headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+session.access_token },
         body: JSON.stringify({ vinculo_id: id })
       });
       const data = await resp.json().catch(()=>({}));
-      if(!resp.ok || !data.ok){ alert("Não consegui aprovar: "+(data.error||("erro "+resp.status))); return; }
-      alert("Vínculo aprovado! Agora você treina com o seu novo profissional. 💪");
+      if(!resp.ok || !data.ok){ await levoAlert({ titulo:"Não consegui aprovar", msg:(data.error||("erro "+resp.status)) }); return; }
+      await levoAlert({ emoji:"💪", titulo:"Vínculo aprovado!", msg:"Agora você treina com o seu novo profissional." });
       location.reload();
-    }catch(e){ alert("Erro ao aprovar: "+e.message); }
+    }catch(e){ await levoAlert({ titulo:"Erro ao aprovar", msg:e.message }); }
   }
 
   async function recusarVinculo(id){
     if(!(await levoConfirm({ titulo:"Recusar pedido?", msg:"Tem certeza que deseja recusar este pedido de vínculo? O profissional não será conectado a você.", ok:"Sim, recusar", cancel:"Voltar" }))) return;
     const { error } = await sb.from("vinculos").update({ status:"recusado", updated_at:new Date().toISOString() }).eq("id", id);
-    if(error){ alert("Erro: "+error.message); return; }
+    if(error){ await levoAlert({ titulo:"Erro ao recusar", msg:error.message }); return; }
     const box=document.getElementById("vinculoBanner"); if(box) box.innerHTML="";
+    await levoAlert({ titulo:"Pedido recusado", msg:"O pedido de vínculo foi recusado. O profissional não será conectado a você." });
   }
 
   function mostrar(){
