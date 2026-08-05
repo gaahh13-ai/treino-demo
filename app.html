@@ -246,6 +246,13 @@
   /* cada exercício num card bem demarcado (não confunde ao olhar rápido) */
   .fx-row{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(127,255,0,.02);margin-bottom:10px}
   .fx-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  /* flash rápido ao reordenar (deixa claro o que foi trocado) */
+  @keyframes fxMoved{
+    0%{box-shadow:0 0 0 3px var(--pink);transform:scale(1.025)}
+    70%{box-shadow:0 0 0 3px var(--pink)}
+    100%{box-shadow:0 0 0 0 rgba(127,255,0,0);transform:scale(1)}
+  }
+  .fx-row.fx-moved{animation:fxMoved .6s ease-out;position:relative;z-index:2}
   .fx-nome{font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:8px}
   .fx-campos{display:flex;gap:8px;flex-wrap:wrap}
   .fx-campos label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
@@ -3776,7 +3783,7 @@
     window.FX_JATEM = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
     // card de UM exercício (usado solto ou dentro de uma caixa de bi-set)
     const cardEx = (x, i, dentroBiset)=>`
-      <div class="fx-row${dentroBiset?" fx-row-biset":""}">
+      <div class="fx-row${dentroBiset?" fx-row-biset":""}" data-exid="${x.id}">
         <div class="fx-topo">
           <div class="fx-nome"><span class="ex-num">${i+1}</span>${esc(x.nome_cache || "Exercício")}</div>
           <div class="fx-move">
@@ -3844,6 +3851,12 @@
     await Promise.all(updates);
     await renderConteudoDia();
     window.scrollTo(0, y);
+    // flash rápido no exercício que acabou de mudar de lugar (e no vizinho trocado)
+    [id, (arr[i]&&arr[i].id)].filter(Boolean).forEach(exid=>{
+      const el = document.querySelector('[data-exid="'+exid+'"]');
+      if(el){ el.classList.remove("fx-moved"); void el.offsetWidth; el.classList.add("fx-moved");
+              setTimeout(()=>el.classList.remove("fx-moved"), 650); }
+    });
   }
   // conecta/desconecta este exercício com o próximo em bi-set (sem descanso entre eles)
   async function toggleBiset(id, val){
