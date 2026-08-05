@@ -251,6 +251,15 @@
   .fx-campos input{width:64px;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:13px}
   .fx-campos label.fx-series input{width:168px}
   .fx-campos label.fx-carga input{width:96px}
+  .fx-biset-btn{margin-top:10px;width:100%;background:transparent;border:1px dashed var(--line);color:var(--muted);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
+  .fx-biset-btn:hover{border-color:var(--pink);color:var(--pink)}
+  .fx-biset-btn.on{background:rgba(127,255,0,.10);border:1px solid var(--pink);border-style:solid;color:var(--pink)}
+  .fx-row.biset-top{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none;margin-bottom:0}
+  .fx-row.biset-cont{border-top-left-radius:0;border-top-right-radius:0;border-left:3px solid var(--pink);margin-top:0}
+  .biset-ic{color:var(--pink)}
+  .biset-grupo{border:1px solid var(--pink);border-radius:14px;padding:8px;margin:12px 0;background:rgba(127,255,0,.05)}
+  .biset-grupo .tr-ex,.biset-grupo .ex-card{margin:6px 0}
+  .biset-tag{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;padding:4px 6px 8px}
   .al-carga{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
   .al-carga input{width:84px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--txt);background:transparent}
   .fx-obs{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px}
@@ -1289,6 +1298,13 @@
     if(x.series!=null) return `${x.series} séries`;
     return "";
   }
+  // agrupa exercícios em bi-set: um exercício com biset=true segue ligado ao próximo
+  function agruparBiset(lista){
+    const grupos=[]; let atual=[];
+    lista.forEach((x,i)=>{ atual.push(x); if(!x.biset || i===lista.length-1){ grupos.push(atual); atual=[]; } });
+    if(atual.length) grupos.push(atual);
+    return grupos;
+  }
   // o aluno pode ajustar a carga do próprio treino (via função segura no banco)
   async function alunoSetCarga(exId, valor){
     const v = (valor==="" || valor==null) ? null : Number(valor);
@@ -1310,23 +1326,27 @@
     const btnIniciar = podeMarcar
       ? `<button class="btn" style="margin:6px 0 14px" onclick="iniciarTreino('${ALUNO_DIA}')">▶ Iniciar este treino</button>`
       : `<div class="tr-obs" style="margin:6px 0 14px">📍 Treino presencial — a presença é registrada pelo seu personal.</div>`;
-    box.innerHTML = titulo + btnIniciar + lista.map(x=>{
-      const esq = esquemaPresc(x);
-      const img = x.media_url ? `<img src="${esc(x.media_url)}" alt="">` : iconeExercicio(x);
-      return `<div class="tr-ex">
-        <div class="tr-ex-row">
-          <div class="ex-thumb-al">${img}</div>
-          <div class="tr-ex-body">
-            <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
-            <div class="tr-presc" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-              ${esq?`<b>${esc(esq)}</b>`:""}
-              <label class="al-carga">Carga <input type="number" step="0.5" value="${x.carga_alvo??""}" placeholder="kg" onchange="alunoSetCarga('${x.id}',this.value)"> kg</label>
-              ${x.descanso_seg!=null?`<span class="meta-sm">descanso ${x.descanso_seg}s</span>`:""}
+    box.innerHTML = titulo + btnIniciar + agruparBiset(lista).map(g=>{
+      const inner = g.map((x,idx)=>{
+        const esq = esquemaPresc(x);
+        const img = x.media_url ? `<img src="${esc(x.media_url)}" alt="">` : iconeExercicio(x);
+        const ultimo = idx === g.length-1;
+        return `<div class="tr-ex">
+          <div class="tr-ex-row">
+            <div class="ex-thumb-al">${img}</div>
+            <div class="tr-ex-body">
+              <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
+              <div class="tr-presc" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                ${esq?`<b>${esc(esq)}</b>`:""}
+                <label class="al-carga">Carga <input type="number" step="0.5" value="${x.carga_alvo??""}" placeholder="kg" onchange="alunoSetCarga('${x.id}',this.value)"> kg</label>
+                ${(ultimo && x.descanso_seg!=null)?`<span class="meta-sm">descanso ${x.descanso_seg}s</span>`:""}
+              </div>
+              ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
             </div>
-            ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
           </div>
-        </div>
-      </div>`;
+        </div>`;
+      }).join("");
+      return g.length>1 ? `<div class="biset-grupo"><div class="biset-tag">🔗 Bi-set — faça em sequência, sem descanso entre eles</div>${inner}</div>` : inner;
     }).join("");
   }
 
@@ -1392,30 +1412,34 @@
 
   function renderExecucao(dia, exs){
     const p = document.getElementById("panel");
-    const cards = exs.map((x,i)=>{
-      const ult = ULTIMAS[x.exercicio_id];
-      const alvo = [];
-      { const esq=esquemaPresc(x); if(esq) alvo.push(esc(esq)); }
-      if(x.carga_alvo!=null) alvo.push(`alvo ${x.carga_alvo} kg`);
-      const descBtn = (x.descanso_seg!=null) ?
-        `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
-      return `<div class="ex-card${EXEC_FEITOS.has(x.id)?" done":""}" id="exc_${x.id}">
-        <div class="ex-card-top">
-          <div class="ex-card-nome">${esc(x.nome_cache||"Exercício")}</div>
-          <button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>
-        </div>
-        <div class="ex-detalhe">
-          <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${ult} kg`:""}</div>
-          ${x.obs?`<div class="tr-obs" style="margin-top:8px">📝 ${esc(x.obs)}</div>`:""}
-          <div class="carga-linha">
-            <label>Carga usada</label>
-            <input class="carga-in" type="number" step="0.5" placeholder="${ult!=null?ult:"kg"}" value="${(EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].carga!=null)?EXEC_LOGS[x.id].carga:(ult??"")}"
-                   onchange="salvarCarga('${x.id}','${x.exercicio_id||""}',this.value)">
-            <span class="carga-un">kg</span>
-            ${descBtn}
+    const cards = agruparBiset(exs).map(g=>{
+      const inner = g.map((x,idx)=>{
+        const ult = ULTIMAS[x.exercicio_id];
+        const alvo = [];
+        { const esq=esquemaPresc(x); if(esq) alvo.push(esc(esq)); }
+        if(x.carga_alvo!=null) alvo.push(`alvo ${x.carga_alvo} kg`);
+        const ultimo = idx === g.length-1;
+        const descBtn = (ultimo && x.descanso_seg!=null) ?
+          `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
+        return `<div class="ex-card${EXEC_FEITOS.has(x.id)?" done":""}" id="exc_${x.id}">
+          <div class="ex-card-top">
+            <div class="ex-card-nome">${esc(x.nome_cache||"Exercício")}</div>
+            <button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>
           </div>
-        </div>
-      </div>`;
+          <div class="ex-detalhe">
+            <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${ult} kg`:""}</div>
+            ${x.obs?`<div class="tr-obs" style="margin-top:8px">📝 ${esc(x.obs)}</div>`:""}
+            <div class="carga-linha">
+              <label>Carga usada</label>
+              <input class="carga-in" type="number" step="0.5" placeholder="${ult!=null?ult:"kg"}" value="${(EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].carga!=null)?EXEC_LOGS[x.id].carga:(ult??"")}"
+                     onchange="salvarCarga('${x.id}','${x.exercicio_id||""}',this.value)">
+              <span class="carga-un">kg</span>
+              ${descBtn}
+            </div>
+          </div>
+        </div>`;
+      }).join("");
+      return g.length>1 ? `<div class="biset-grupo"><div class="biset-tag">🔗 Bi-set — faça em sequência, sem descanso entre eles</div>${inner}</div>` : inner;
     }).join("");
 
     p.innerHTML = `
@@ -3667,14 +3691,18 @@
 
     // MODO VISUALIZAÇÃO: lista limpa + botão de editar
     if(!MODO_EDICAO){
-      const rowsView = lista.map(x=>{
-        const esq = esquemaPresc(x);
-        const info = [esq, (x.carga_alvo!=null?`${x.carga_alvo} kg`:""), (x.descanso_seg!=null?`descanso ${x.descanso_seg}s`:"")].filter(Boolean).join(" · ");
-        return `<div class="tr-ex">
-            <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
-            <div class="tr-presc">${esc(info)||"—"}</div>
-            ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
-          </div>`;
+      const rowsView = agruparBiset(lista).map(g=>{
+        const inner = g.map((x,idx)=>{
+          const esq = esquemaPresc(x);
+          const ultimoGrupo = idx === g.length-1;
+          const info = [esq, (x.carga_alvo!=null?`${x.carga_alvo} kg`:""), (ultimoGrupo && x.descanso_seg!=null?`descanso ${x.descanso_seg}s`:"")].filter(Boolean).join(" · ");
+          return `<div class="tr-ex">
+              <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
+              <div class="tr-presc">${esc(info)||"—"}</div>
+              ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
+            </div>`;
+        }).join("");
+        return g.length>1 ? `<div class="biset-grupo"><div class="biset-tag">🔗 Bi-set — faça em sequência</div>${inner}</div>` : inner;
       }).join("");
       box.innerHTML = `
         ${lista.length ? rowsView : `<div class="empty">Nenhum exercício em ${esc(nomeDia)} ainda.</div>`}
@@ -3687,10 +3715,13 @@
 
     // MODO EDIÇÃO: cards editáveis + reordenar + popup para adicionar
     window.FX_JATEM = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
-    const rows = lista.map((x,i)=>`
-      <div class="fx-row">
+    const rows = lista.map((x,i)=>{
+      const ligaProx = !!x.biset && i<lista.length-1;
+      const vemDeCima = i>0 && !!lista[i-1].biset;
+      return `
+      <div class="fx-row ${vemDeCima?"biset-cont":""} ${ligaProx?"biset-top":""}">
         <div class="fx-topo">
-          <div class="fx-nome">${esc(x.nome_cache || "Exercício")}</div>
+          <div class="fx-nome">${vemDeCima?'<span class="biset-ic">🔗</span> ':''}${esc(x.nome_cache || "Exercício")}</div>
           <div class="fx-move">
             <button class="btn small ghost" title="Subir" ${i===0?"disabled":""} onclick="moverEx('${x.id}',-1)">▲</button>
             <button class="btn small ghost" title="Descer" ${i===lista.length-1?"disabled":""} onclick="moverEx('${x.id}',1)">▼</button>
@@ -3704,7 +3735,9 @@
         </div>
         <input class="fx-obs" type="text" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
                value="${esc(x.obs??"")}" onchange="updEx('${x.id}','obs',this.value)">
-      </div>`).join("");
+        ${i < lista.length-1 ? `<button class="fx-biset-btn ${x.biset?"on":""}" onclick="toggleBiset('${x.id}', ${x.biset?0:1})">🔗 ${x.biset?"Em bi-set com o próximo — clique para desfazer":"Fazer em bi-set com o próximo"}</button>` : ""}
+      </div>`;
+    }).join("");
     box.innerHTML = `
       <div class="fx-edit-top">
         <button class="btn small" onclick="abrirPickerPopup()">＋ Adicionar exercícios</button>
@@ -3726,6 +3759,13 @@
     const y = window.scrollY;
     await sb.from("ficha_exercicios").update({ ordem: b.ordem }).eq("id", a.id);
     await sb.from("ficha_exercicios").update({ ordem: a.ordem }).eq("id", b.id);
+    await renderConteudoDia();
+    window.scrollTo(0, y);
+  }
+  // conecta/desconecta este exercício com o próximo em bi-set (sem descanso entre eles)
+  async function toggleBiset(id, val){
+    const y = window.scrollY;
+    await sb.from("ficha_exercicios").update({ biset: !!val }).eq("id", id);
     await renderConteudoDia();
     window.scrollTo(0, y);
   }
