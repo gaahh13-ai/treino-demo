@@ -859,6 +859,7 @@
 
   // Modal de confirmação com a cara da LEVO (substitui o confirm nativo)
   function levoConfirm(opts){
+    if(typeof opts === "string") opts = { msg: opts };
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
       o.innerHTML=`<div class="modal-cx" style="max-width:380px">
@@ -878,6 +879,7 @@
 
   // Aviso (um botão) com a cara da LEVO — substitui o alert nativo
   function levoAlert(opts){
+    if(typeof opts === "string") opts = { msg: opts };
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
       o.innerHTML=`<div class="modal-cx" style="max-width:380px">
@@ -1005,7 +1007,7 @@
     renderExecucao(EXEC_DIA, EXEC_EXS);
   }
   async function descartarDoPill(){
-    if(!confirm("Descartar este treino em andamento? Nada será registrado.")) return;
+    if(!(await levoConfirm("Descartar este treino em andamento? Nada será registrado."))) return;
     await descartarTreino();
   }
 
@@ -1285,14 +1287,14 @@
   async function iniciarTreino(diaId){
     const dia = ALUNO_DIAS.find(d=>d.id===diaId);
     const exs = ALUNO_EXS.filter(x=>x.dia_id===diaId);
-    if(!exs.length){ alert("Este treino não tem exercícios."); return; }
+    if(!exs.length){ levoAlert("Este treino não tem exercícios."); return; }
 
     // cria a sessão
     const { data: sess, error } = await sb.from("sessoes").insert({
       student_id: ME.id, professional_id: dia.professional_id,
       dia_id: diaId, ficha_id: dia.ficha_id, finalizada: false
     }).select().single();
-    if(error){ alert("Erro ao iniciar: "+error.message); return; }
+    if(error){ levoAlert("Erro ao iniciar: "+error.message); return; }
     EXEC_SESSAO = sess;
     EXEC_LOGS = {};
 
@@ -1959,10 +1961,10 @@
   async function assinarPlano(nome){
     const mapa = { "LEVO Pro":"pro", "LEVO Fit":"fit", "You LEVO":"you_levo" };
     const plano = mapa[nome];
-    if(!plano){ alert("O LEVO Light é gratuito — não há o que pagar. 🙂"); return; }
+    if(!plano){ levoAlert("O LEVO Light é gratuito — não há o que pagar. 🙂"); return; }
     try{
       const { data:{ session } } = await sb.auth.getSession();
-      if(!session){ alert("Faça login para assinar."); return; }
+      if(!session){ levoAlert("Faça login para assinar."); return; }
       // planos de personal tornam a conta profissional
       if((plano==="fit" || plano==="you_levo") && ME && ME.role!=="professional"){
         try{ await sb.from("profiles").update({ role:"professional" }).eq("id", ME.id); ME.role="professional"; }catch(e){}
@@ -1977,12 +1979,12 @@
       });
       const data = await resp.json().catch(()=>({}));
       if(!resp.ok || !data.init_point){
-        alert("Não consegui iniciar a assinatura: " + (data.error || ("erro "+resp.status)));
+        levoAlert("Não consegui iniciar a assinatura: " + (data.error || ("erro "+resp.status)));
         return;
       }
       // redireciona para o checkout do Mercado Pago
       window.location.href = data.init_point;
-    }catch(e){ alert("Erro ao assinar: " + e.message); }
+    }catch(e){ levoAlert("Erro ao assinar: " + e.message); }
   }
 
   // Número de suporte (formato internacional, só dígitos). Ex.: 55 + DDD + número.
@@ -2301,9 +2303,9 @@
   }
 
   async function excluirExercicio(id){
-    if(!confirm("Excluir este exercício da sua biblioteca?")) return;
+    if(!(await levoConfirm("Excluir este exercício da sua biblioteca?"))) return;
     const { error } = await sb.from("exercicios").delete().eq("id", id);
-    if(error){ alert("Erro: "+error.message); return; }
+    if(error){ levoAlert("Erro: "+error.message); return; }
     loadExercicios();
   }
 
@@ -2458,7 +2460,7 @@
     let dia = Math.round(Number(dEl && dEl.value)||5); dia = Math.min(28, Math.max(1, dia));
     const { error } = await sb.from("mensalidades")
       .upsert({ student_id:sid, professional_id:ME.id, valor, dia_venc:dia }, { onConflict:"student_id" });
-    if(error){ alert("Não consegui salvar: "+error.message); return; }
+    if(error){ levoAlert("Não consegui salvar: "+error.message); return; }
     FIN_MENS[sid] = { student_id:sid, valor, dia_venc:dia };
     renderFinanceiro();
   }
@@ -2470,14 +2472,14 @@
       .upsert({ student_id:sid, professional_id:ME.id, competencia:FIN_COMP, valor, pago_em:new Date().toISOString() },
               { onConflict:"student_id,competencia" })
       .select().single();
-    if(error){ alert("Não consegui registrar: "+error.message); return; }
+    if(error){ levoAlert("Não consegui registrar: "+error.message); return; }
     FIN_PAGS[sid] = data;
     renderFinanceiro();
   }
 
   async function desfazerPagamento(sid){
     const { error } = await sb.from("pagamentos").delete().eq("student_id", sid).eq("competencia", FIN_COMP);
-    if(error){ alert("Não consegui desfazer: "+error.message); return; }
+    if(error){ levoAlert("Não consegui desfazer: "+error.message); return; }
     delete FIN_PAGS[sid];
     renderFinanceiro();
   }
@@ -2548,7 +2550,7 @@
     let d = Math.round(Number((document.getElementById("finAlDia_"+id)||{}).value)||5); d = Math.min(28, Math.max(1, d));
     const { error } = await sb.from("mensalidades")
       .upsert({ student_id:id, professional_id:ME.id, valor:v, dia_venc:d }, { onConflict:"student_id" });
-    if(error){ alert("Não consegui salvar: "+error.message); return; }
+    if(error){ levoAlert("Não consegui salvar: "+error.message); return; }
     FIN_AL.mens = { student_id:id, valor:v, dia_venc:d };
     renderFinAluno(id);
   }
@@ -2558,12 +2560,12 @@
       const { data, error } = await sb.from("pagamentos")
         .upsert({ student_id:id, professional_id:ME.id, competencia:FIN_AL.comp, valor, pago_em:new Date().toISOString() },
                 { onConflict:"student_id,competencia" }).select().single();
-      if(error){ alert("Não consegui registrar: "+error.message); return; }
+      if(error){ levoAlert("Não consegui registrar: "+error.message); return; }
       FIN_AL.pags = FIN_AL.pags.filter(p=>p.competencia!==FIN_AL.comp); FIN_AL.pags.unshift(data);
       FIN_AL.pags.sort((a,b)=>b.competencia.localeCompare(a.competencia));
     }else{
       const { error } = await sb.from("pagamentos").delete().eq("student_id", id).eq("competencia", FIN_AL.comp);
-      if(error){ alert("Não consegui desfazer: "+error.message); return; }
+      if(error){ levoAlert("Não consegui desfazer: "+error.message); return; }
       FIN_AL.pags = FIN_AL.pags.filter(p=>p.competencia!==FIN_AL.comp);
     }
     renderFinAluno(id);
@@ -2831,7 +2833,7 @@
   }
 
   function alunoEhDemo(id){ const s = STUDENTS.find(x=>x.id===(id||SELECTED_STUDENT)); return !!(s && (s.demo || s.is_demo)); }
-  function bloqueiaDemo(id){ if(alunoEhDemo(id)){ alert("Este é o aluno demo (somente leitura). Use um aluno real para editar."); return true; } return false; }
+  function bloqueiaDemo(id){ if(alunoEhDemo(id)){ levoAlert("Este é o aluno demo (somente leitura). Use um aluno real para editar."); return true; } return false; }
   function selecionarAluno(id){
     if(id !== SELECTED_STUDENT) fecharTodasJanelas();  // troca de aluno fecha janelas antigas
     SELECTED_STUDENT = id;
@@ -2975,9 +2977,9 @@
   }
 
   async function removerConvite(email){
-    if(!confirm("Remover o cadastro de "+email+"?\n\n(não apaga a conta já criada, apenas o cadastro do e-mail)")) return;
+    if(!(await levoConfirm("Remover o cadastro de "+email+"?<br><br>(não apaga a conta já criada, apenas o cadastro do e-mail)"))) return;
     const { error } = await sb.from("invites").delete().eq("email", email).eq("professional_id", ME.id);
-    if(error){ alert("Erro ao remover: "+error.message); return; }
+    if(error){ levoAlert("Erro ao remover: "+error.message); return; }
     loadInvites();
   }
 
@@ -3028,16 +3030,16 @@
   async function arquivarAluno(id){
     if(bloqueiaDemo(id)) return;
     const s = STUDENTS.find(x=>x.id===id);
-    if(!confirm(`Arquivar ${nomeAluno(s)}?\n\nEle perde o acesso ao painel, mas todo o histórico fica guardado e você pode reativar depois.`)) return;
+    if(!(await levoConfirm(`Arquivar ${nomeAluno(s)}?<br><br>Ele perde o acesso ao painel, mas todo o histórico fica guardado e você pode reativar depois.`))) return;
     const { error } = await sb.from("profiles")
       .update({ status:"archived", archived_at:new Date().toISOString() }).eq("id", id);
-    if(error){ alert("Erro ao arquivar: "+error.message); return; }
+    if(error){ levoAlert("Erro ao arquivar: "+error.message); return; }
     loadStudents();
   }
 
   async function reativarAluno(id){
     const { error } = await sb.from("profiles").update({ status:"active", archived_at:null }).eq("id", id);
-    if(error){ alert("Erro ao reativar: "+error.message); return; }
+    if(error){ levoAlert("Erro ao reativar: "+error.message); return; }
     loadStudents();
   }
 
@@ -3313,9 +3315,9 @@
   }
 
   async function excluirAvaliacao(avalId, studentId){
-    if(!confirm("Excluir esta avaliação?\n\nTodos os dados dela serão apagados. Não dá para desfazer.")) return;
+    if(!(await levoConfirm("Excluir esta avaliação?<br><br>Todos os dados dela serão apagados. Não dá para desfazer."))) return;
     const { error } = await sb.from("assessments").delete().eq("id", avalId);
-    if(error){ alert("Erro ao excluir: "+error.message); return; }
+    if(error){ levoAlert("Erro ao excluir: "+error.message); return; }
     await loadStudents();
     const lista = document.getElementById("assessList_"+studentId);
     if(lista){ lista.innerHTML=""; verAvaliacoes(studentId); }
@@ -3323,7 +3325,7 @@
 
   async function editarAvaliacao(avalId, studentId){
     const { data: a, error } = await sb.from("assessments").select("*").eq("id", avalId).single();
-    if(error || !a){ alert("Não consegui carregar esta avaliação."+(error?" "+error.message:"")); return; }
+    if(error || !a){ levoAlert("Não consegui carregar esta avaliação."+(error?" "+error.message:"")); return; }
     montarCamposMedidas();
     EDIT_ID = avalId;
     const s = STUDENTS.find(x=>x.id===studentId);
@@ -3476,13 +3478,13 @@
 
   async function marcarPresenca(diaId){
     const dia = FICHA_DIAS.find(d=>d.id===diaId); if(!dia) return;
-    if(!confirm(`Marcar "${dia.label}" como treinado hoje?`)) return;
+    if(!(await levoConfirm(`Marcar "${dia.label}" como treinado hoje?`))) return;
     const { error } = await sb.from("sessoes").insert({
       student_id: FICHA.student_id, professional_id: ME.id,
       dia_id: diaId, ficha_id: FICHA.id, finalizada: true, data: new Date().toISOString()
     });
-    if(error){ alert("Erro ao registrar: "+error.message); return; }
-    alert(`Presença de "${dia.label}" registrada para hoje! ✅`);
+    if(error){ levoAlert("Erro ao registrar: "+error.message); return; }
+    levoAlert(`Presença de "${dia.label}" registrada para hoje! ✅`);
   }
 
   function novoTreino(){
@@ -3512,7 +3514,7 @@
     await sb.from("fichas").update({ ativa:false }).eq("id", origem.id);
     const { data: nova, error } = await sb.from("fichas")
       .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true }).select().single();
-    if(error){ alert("Erro: "+error.message); return; }
+    if(error){ levoAlert("Erro: "+error.message); return; }
     if(duplicar){
       const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", origem.id).order("ordem");
       for(const d of (dias||[])){
@@ -3571,7 +3573,7 @@
     const { data, error } = await sb.from("ficha_dias").insert({
       ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id, label, ordem:FICHA_DIAS.length
     }).select().single();
-    if(error){ alert("Erro: "+error.message); return; }
+    if(error){ levoAlert("Erro: "+error.message); return; }
     FICHA_DIAS.push(data); FICHA_DIA = data.id;
     renderDias();
   }
@@ -3579,7 +3581,7 @@
   async function removerDia(){
     if(!FICHA_DIA) return;
     const d = FICHA_DIAS.find(x=>x.id===FICHA_DIA);
-    if(!confirm(`Remover ${d?d.label:"este dia"} e seus exercícios?`)) return;
+    if(!(await levoConfirm(`Remover ${d?d.label:"este dia"} e seus exercícios?`))) return;
     await sb.from("ficha_dias").delete().eq("id", FICHA_DIA);
     FICHA_DIAS = FICHA_DIAS.filter(x=>x.id!==FICHA_DIA);
     FICHA_DIA = FICHA_DIAS.length ? FICHA_DIAS[0].id : null;
@@ -3650,7 +3652,7 @@
       exercicio_id:exId, nome_cache: ex?ex.nome:null,
       series:3, reps:"12", descanso_seg:60, ordem:(exs?exs.length:0)
     });
-    if(error){ alert("Erro: "+error.message); return; }
+    if(error){ levoAlert("Erro: "+error.message); return; }
     renderConteudoDia();
   }
 
@@ -3776,9 +3778,9 @@
   }
 
   async function excluirConsulta(id, studentId){
-    if(!confirm("Remover esta consulta?")) return;
+    if(!(await levoConfirm("Remover esta consulta?"))) return;
     const { error } = await sb.from("consultations").delete().eq("id", id);
-    if(error){ alert("Erro ao remover: "+error.message); return; }
+    if(error){ levoAlert("Erro ao remover: "+error.message); return; }
     listarConsultas(studentId);
   }
 
