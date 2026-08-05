@@ -246,7 +246,7 @@
   /* cada exercício num card bem demarcado (não confunde ao olhar rápido) */
   .fx-row{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(127,255,0,.02);margin-bottom:10px}
   .fx-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-  .fx-nome{font-weight:700;font-size:13.5px}
+  .fx-nome{font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:8px}
   .fx-campos{display:flex;gap:8px;flex-wrap:wrap}
   .fx-campos label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
   .fx-campos input{width:64px;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:13px}
@@ -268,9 +268,14 @@
   .fx-add{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
   .fx-add select{flex:1;min-width:160px;padding:9px;border:1px solid var(--line);border-radius:10px;font-size:13px}
   /* treino (aluno) */
-  .tr-ex{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#15171c}
+  .tr-ex{border:1px solid var(--line);border-left:3px solid var(--pink);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#15171c}
   .tr-nome{font-weight:800;font-size:14.5px}
   .tr-presc{font-size:13px;color:var(--txt);margin-top:3px}
+  /* cabeçalho com a contagem de exercícios */
+  .tr-head{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 12px}
+  /* selo com o número do exercício */
+  .ex-num{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:6px;background:var(--pink);color:#0a0b0d;font-weight:800;font-size:12px;flex:0 0 auto}
+  .tr-ex-top{display:flex;align-items:center;gap:10px}
   .tr-presc b{color:var(--pink-deep)}
   .ficha-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
     padding:10px 12px;background:#1d2027;border:1px solid var(--line);border-radius:12px}
@@ -489,7 +494,8 @@
   .fpi-nome{font-weight:700;font-size:13px}
   .fpi-grp{font-size:11px;color:var(--muted)}
   /* popup "Adicionar exercícios" — lista vertical limpa, sem bagunça */
-  #pickerOv .modal-cx{padding:18px}
+  /* altura fixa: a modal não "recentraliza" a cada clique — cabeçalho fica estático */
+  #pickerOv .modal-cx{padding:18px;height:min(82vh,640px)}
   /* só a lista cresce/rola; cabeçalho, busca e chips mantêm a altura (não encolhem "pela metade") */
   #pickerOv .modal-cx > *{flex:0 0 auto}
   #pickerOv .fx-pick-busca{width:100%;max-width:none;margin:0 0 10px}
@@ -3739,20 +3745,24 @@
 
     // MODO VISUALIZAÇÃO: lista limpa + botão de editar
     if(!MODO_EDICAO){
+      let vN = 0;
       const rowsView = agruparBiset(lista).map(g=>{
         const inner = g.map((x,idx)=>{
+          vN++;
           const esq = esquemaPresc(x);
           const ultimoGrupo = idx === g.length-1;
           const info = [esq, (x.carga_alvo!=null?`${x.carga_alvo} kg`:""), (ultimoGrupo && x.descanso_seg!=null?`descanso ${x.descanso_seg}s`:"")].filter(Boolean).join(" · ");
           return `<div class="tr-ex">
-              <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
+              <div class="tr-ex-top"><span class="ex-num">${vN}</span><div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div></div>
               <div class="tr-presc">${esc(info)||"—"}</div>
               ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
             </div>`;
         }).join("");
         return g.length>1 ? `<div class="biset-grupo"><div class="biset-tag">🔗 Bi-set — faça em sequência</div>${inner}</div>` : inner;
       }).join("");
+      const cabecalho = lista.length ? `<div class="tr-head">${esc(nomeDia)} · ${lista.length} exercício${lista.length===1?"":"s"}</div>` : "";
       box.innerHTML = `
+        ${cabecalho}
         ${lista.length ? rowsView : `<div class="empty">Nenhum exercício em ${esc(nomeDia)} ainda.</div>`}
         <div class="fx-acoes">
           <button class="btn small" onclick="editarDia()">✏️ ${lista.length?"Editar treino":"Montar treino"}</button>
@@ -3767,7 +3777,7 @@
     const cardEx = (x, i, dentroBiset)=>`
       <div class="fx-row${dentroBiset?" fx-row-biset":""}">
         <div class="fx-topo">
-          <div class="fx-nome">${esc(x.nome_cache || "Exercício")}</div>
+          <div class="fx-nome"><span class="ex-num">${i+1}</span>${esc(x.nome_cache || "Exercício")}</div>
           <div class="fx-move">
             <button class="btn small ghost" title="Subir" ${i===0?"disabled":""} onclick="moverEx('${x.id}',-1)">▲</button>
             <button class="btn small ghost" title="Descer" ${i===lista.length-1?"disabled":""} onclick="moverEx('${x.id}',1)">▼</button>
@@ -3808,6 +3818,7 @@
         <button class="btn small" onclick="abrirPickerPopup()">＋ Adicionar exercícios</button>
         <button class="btn small ghost" onclick="concluirDia()">✓ Concluir ${esc(nomeDia)}</button>
       </div>
+      ${lista.length?`<div class="tr-head">${esc(nomeDia)} · ${lista.length} exercício${lista.length===1?"":"s"}</div>`:""}
       <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício ainda. Toque em “Adicionar exercícios”.</div>`}</div>
       <div style="margin-top:12px"><button class="btn small ghost" onclick="removerDia()">Remover dia</button></div>`;
   }
