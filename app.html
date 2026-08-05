@@ -3485,6 +3485,8 @@
 
   function novoTreino(){
     if(document.getElementById("novoTreinoModal")) return;
+    // primeiro treino (ainda sem dias): não há o que duplicar — vai direto pra montagem
+    if(!FICHA_DIAS || FICHA_DIAS.length === 0){ addDia(); return; }
     const ov = document.createElement("div");
     ov.id = "novoTreinoModal"; ov.className = "modal-ov";
     ov.onclick = (e)=>{ if(e.target===ov) fecharNovoTreino(); };
