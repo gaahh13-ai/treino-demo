@@ -2175,8 +2175,8 @@
           <div class="grupo-tit">Dados gerais</div>
           <div class="form-grid2">
             <div class="field"><label>Data</label><input id="a_date" type="date"></div>
-            <div class="field"><label>Peso (kg)</label><input id="a_weight" type="number" step="0.1" placeholder="ex: 68,5"></div>
-            <div class="field"><label>Altura (cm)</label><input id="a_height" type="number" step="0.1" placeholder="ex: 175"></div>
+            <div class="field"><label>Peso (kg)</label><input id="a_weight" type="text" inputmode="decimal" placeholder="ex: 68,5"></div>
+            <div class="field"><label>Altura (cm)</label><input id="a_height" type="text" inputmode="decimal" placeholder="ex: 175"></div>
           </div>
           <div class="meta-cliente" id="assessCliente"></div>
         </div>
@@ -2216,9 +2216,9 @@
             Calculada a partir das 7 dobras, do peso, do sexo e da idade (Jackson &amp; Pollock).
             Preencha as 7 dobras e os dados gerais para os valores aparecerem.</p>
           <div class="form-grid2">
-            <div class="field"><label>% Gordura</label><input id="a_bf" type="number" step="0.1" readonly placeholder="—"></div>
-            <div class="field"><label>Massa gorda (kg)</label><input id="a_fat" type="number" step="0.1" readonly placeholder="—"></div>
-            <div class="field"><label>Massa magra (kg)</label><input id="a_lean" type="number" step="0.1" readonly placeholder="—"></div>
+            <div class="field"><label>% Gordura</label><input id="a_bf" type="text" inputmode="decimal" readonly placeholder="—"></div>
+            <div class="field"><label>Massa gorda (kg)</label><input id="a_fat" type="text" inputmode="decimal" readonly placeholder="—"></div>
+            <div class="field"><label>Massa magra (kg)</label><input id="a_lean" type="text" inputmode="decimal" readonly placeholder="—"></div>
           </div>
           <div class="msg" id="calcMsg"></div>
         </div>
@@ -2269,8 +2269,8 @@
         <input type="hidden" id="goalsStudentId">
         <input type="hidden" id="goalsId">
         <div class="form-grid2" style="margin-top:14px">
-          <div class="field"><label>Peso ideal (kg)</label><input id="g_peso" type="number" step="0.1" placeholder="ex: 65"></div>
-          <div class="field"><label>% de gordura alvo</label><input id="g_bf" type="number" step="0.1" placeholder="ex: 20"></div>
+          <div class="field"><label>Peso ideal (kg)</label><input id="g_peso" type="text" inputmode="decimal" placeholder="ex: 65"></div>
+          <div class="field"><label>% de gordura alvo</label><input id="g_bf" type="text" inputmode="decimal" placeholder="ex: 20"></div>
           <div class="field"><label>Data alvo</label><input id="g_data" type="date"></div>
           <div class="field"><label>Treinos por semana</label><input id="g_treinos" type="number" step="1" min="0" max="7" placeholder="ex: 5"></div>
         </div>
@@ -3279,9 +3279,9 @@
   function montarCamposMedidas(){
     const g1 = document.getElementById("gridDobras"), g2 = document.getElementById("gridPerimetros");
     if(g1 && !g1.innerHTML) g1.innerHTML = DOBRAS.map(([k,r])=>
-      `<div class="field"><label>${r}</label><input id="dob_${k}" type="number" step="0.1"></div>`).join("");
+      `<div class="field"><label>${r}</label><input id="dob_${k}" type="text" inputmode="decimal"></div>`).join("");
     if(g2 && !g2.innerHTML) g2.innerHTML = PERIMETROS.map(([k,r])=>
-      `<div class="field"><label>${r}</label><input id="per_${k}" type="number" step="0.1"></div>`).join("");
+      `<div class="field"><label>${r}</label><input id="per_${k}" type="text" inputmode="decimal"></div>`).join("");
   }
 
   /* ---------- CÁLCULO DE COMPOSIÇÃO CORPORAL ----------
@@ -3297,12 +3297,19 @@
     return a;
   }
 
+  // aceita vírgula OU ponto como separador decimal (ex.: "68,5" ou "68.5")
+  function toNum(v){
+    if(v==null) return NaN;
+    const s = String(v).trim().replace(/\s/g,"").replace(",", ".");
+    if(s === "") return NaN;
+    return Number(s);
+  }
   function somaSeteDobras(){
     let soma = 0;
     for(const [k] of DOBRAS){
       const e = document.getElementById("dob_"+k);
       if(!e || e.value === "") return null;   // exige as 7 dobras
-      const v = Number(e.value);
+      const v = toNum(e.value);
       if(isNaN(v)) return null;
       soma += v;
     }
@@ -3357,8 +3364,8 @@
   function recalcularRcq(){
     const el = document.getElementById("rcqVal");
     if(!el) return;
-    const c = Number((document.getElementById("per_cintura")||{}).value) || null;
-    const q = Number((document.getElementById("per_quadril")||{}).value) || null;
+    const c = toNum((document.getElementById("per_cintura")||{}).value) || null;
+    const q = toNum((document.getElementById("per_quadril")||{}).value) || null;
     if(!c || !q){ el.innerHTML = `<span class="rcq-num">—</span>`; return; }
     const r = c / q;
     const sexo = (ASSESS_S && ASSESS_S.sex) || "";
@@ -3393,7 +3400,7 @@
     const s = ASSESS_S || {};
     const sexo  = s.sex || "";
     const idade = idadeAnos(s.birth_date);
-    const peso  = Number((document.getElementById("a_weight")||{}).value) || null;
+    const peso  = toNum((document.getElementById("a_weight")||{}).value) || null;
     const sigma = somaSeteDobras();
 
     const r = calcComposicao(sexo, idade, sigma, peso);
@@ -4027,7 +4034,7 @@
     const student_id=document.getElementById("goalsStudentId").value;
     if(bloqueiaDemo(student_id)) return;
     const gid=document.getElementById("goalsId").value;
-    const num = id => { const e=document.getElementById(id); return (!e || e.value==="") ? null : Number(e.value); };
+    const num = id => { const e=document.getElementById(id); if(!e || e.value==="") return null; const n=toNum(e.value); return isNaN(n)?null:n; };
     const data = document.getElementById("g_data").value || null;
     const campos = {
       ideal_weight:     num("g_peso"),
@@ -4120,7 +4127,7 @@
     if(bloqueiaDemo(student_id)) return;
     const date=document.getElementById("a_date").value;
     if(!student_id || !date){ msg.className="msg err"; msg.textContent="Escolha aluno e data."; return; }
-    const val = id => { const e=document.getElementById(id); return (!e || e.value==="") ? null : Number(e.value); };
+    const val = id => { const e=document.getElementById(id); if(!e || e.value==="") return null; const n=toNum(e.value); return isNaN(n)?null:n; };
     const juntar = (pref, lista) => {
       const o = {};
       lista.forEach(([k])=>{ const v = val(pref+k); if(v!=null) o[k]=v; });
