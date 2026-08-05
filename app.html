@@ -2808,6 +2808,7 @@
              <button onclick="dadosCliente('${s.id}')">Dados do cliente</button>
              <button onclick="abrirMetas('${s.id}')">Definir metas</button>
              <button onclick="arquivarAluno('${s.id}')">Arquivar</button>
+             <button onclick="desvincularAluno('${s.id}')">Desvincular aluno</button>
            </span>
          </span>`;
     return `<div class="student-row">
@@ -2931,6 +2932,7 @@
             <button onclick="abrirMetas('${id}')">Metas</button>
             <button onclick="dadosCliente('${id}')">Dados do cliente</button>
             ${demo?"":`<button onclick="arquivarAluno('${id}')">Arquivar</button>`}
+            ${demo?"":`<button onclick="desvincularAluno('${id}')">Desvincular aluno</button>`}
           </span>
         </span>
       </div>
@@ -3106,11 +3108,21 @@
   async function arquivarAluno(id){
     if(bloqueiaDemo(id)) return;
     const s = STUDENTS.find(x=>x.id===id);
-    if(!(await levoConfirm(`Arquivar ${nomeAluno(s)}?<br><br>Ele perde o acesso ao painel, mas todo o histórico fica guardado e você pode reativar depois.`))) return;
-    const { error } = await sb.from("profiles")
-      .update({ status:"archived", archived_at:new Date().toISOString() }).eq("id", id);
-    if(error){ levoAlert("Erro ao arquivar: "+error.message); return; }
+    if(!(await levoConfirm({ titulo:"Arquivar aluno?", msg:`Certeza que deseja arquivar <b>${esc(nomeAluno(s))}</b>?<br><br>Ao arquivar, o aluno é <b>desvinculado automaticamente</b> — o acompanhamento é encerrado e ele perde o acesso ao painel. Todo o histórico fica guardado e você pode reativar depois.`, ok:"Sim, arquivar", cancel:"Cancelar" }))) return;
+    const { error } = await sb.rpc("arquivar_aluno", { p_student: id });
+    if(error){ await levoAlert({ titulo:"Erro ao arquivar", msg:error.message }); return; }
     loadStudents();
+  }
+
+  async function desvincularAluno(id){
+    if(bloqueiaDemo(id)) return;
+    const s = STUDENTS.find(x=>x.id===id);
+    if(!(await levoConfirm({ titulo:"Desvincular aluno?", msg:`Deseja desvincular <b>${esc(nomeAluno(s))}</b>?<br><br>O acompanhamento é encerrado e o aluno volta a ser uma <b>conta livre</b>, podendo buscar outro professor. O histórico dele fica guardado.`, ok:"Sim, desvincular", cancel:"Cancelar" }))) return;
+    const { error } = await sb.rpc("desvincular_aluno", { p_student: id });
+    if(error){ await levoAlert({ titulo:"Erro ao desvincular", msg:error.message }); return; }
+    await levoAlert({ titulo:"Aluno desvinculado", msg:`O vínculo com <b>${esc(nomeAluno(s))}</b> foi encerrado.` });
+    await loadStudents();
+    go("alunos");
   }
 
   async function reativarAluno(id){
