@@ -475,6 +475,15 @@
   .fx-pick-item:hover{border-color:var(--pink);color:var(--pink)}
   .fpi-nome{font-weight:700;font-size:13px}
   .fpi-grp{font-size:11px;color:var(--muted)}
+  /* popup "Adicionar exercícios" — lista vertical limpa, sem bagunça */
+  #pickerOv .modal-cx{padding:18px}
+  #pickerOv .fx-pick-busca{width:100%;max-width:none;margin:0 0 10px}
+  #pickerOv .fx-grupos{margin:0 0 10px}
+  #pickerOv .fx-pick-lista{display:flex;flex-direction:column;flex-wrap:nowrap;gap:6px;flex:1 1 auto;min-height:0;overflow-y:auto;padding-right:4px}
+  #pickerOv .fx-pick-item{flex-direction:row;align-items:center;justify-content:space-between;width:100%;gap:12px;padding:11px 14px}
+  #pickerOv .fx-pick-item::after{content:"＋";font-size:16px;font-weight:800;color:var(--pink);flex:0 0 auto}
+  #pickerOv .fpi-nome{font-size:14px;flex:1 1 auto;min-width:0}
+  #pickerOv .fpi-grp{text-align:right;flex:0 0 auto;white-space:nowrap;margin-left:auto}
   .grupo{margin-top:16px}
   .grupo-tit{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;
     padding-bottom:6px;border-bottom:1px solid var(--line);margin-bottom:12px}
@@ -1920,6 +1929,16 @@
     assinSec(inicial);
   }
 
+  // aluno encerra o próprio vínculo com o professor (volta a ser conta livre)
+  async function sairDoProfessor(){
+    const prof = esc((window.MEU_PROF && window.MEU_PROF.nome) || "seu professor");
+    if(!(await levoConfirm({ titulo:"Sair deste professor?", msg:`Deseja encerrar seu acompanhamento com <b>${prof}</b>?<br><br>Você volta a ter uma conta livre e pode montar seu próprio treino ou buscar outro professor. Seu histórico fica guardado.`, ok:"Sim, sair", cancel:"Cancelar" }))) return;
+    const { error } = await sb.rpc("sair_do_professor");
+    if(error){ await levoAlert({ titulo:"Erro ao sair", msg:error.message }); return; }
+    await levoAlert({ titulo:"Acompanhamento encerrado", msg:`Você saiu de <b>${prof}</b>. Agora sua conta está livre.` });
+    location.reload();
+  }
+
   function assinSec(sec){
     ["historico","planos","suporte"].forEach(s=>{
       const b=document.getElementById("assinMi_"+s); if(b) b.classList.toggle("active", s===sec);
@@ -1943,6 +1962,7 @@
         <span class="aa-tag">Sua assinatura</span>
         <div class="aa-plano">Acompanhamento com ${prof}</div>
         <div class="aa-info">Vinculado${desde?` desde ${desde}`:""} · sem custo pra você</div>
+        <button class="btn small ghost" style="margin-top:14px" onclick="sairDoProfessor()">Sair deste professor</button>
       </div>`;
     }
     // toda conta é LEVO Light por padrão (gratuito); paga mostra o plano assinado
