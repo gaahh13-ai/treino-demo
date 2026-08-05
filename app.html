@@ -3841,7 +3841,9 @@
   // conecta/desconecta este exercício com o próximo em bi-set (sem descanso entre eles)
   async function toggleBiset(id, val){
     const y = window.scrollY;
-    await sb.from("ficha_exercicios").update({ biset: !!val }).eq("id", id);
+    const patch = { biset: !!val };
+    if(val) patch.descanso_seg = 0;   // bi-set: sem descanso entre este e o próximo
+    await sb.from("ficha_exercicios").update(patch).eq("id", id);
     await renderConteudoDia();
     window.scrollTo(0, y);
   }
