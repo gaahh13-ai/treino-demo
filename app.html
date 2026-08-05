@@ -249,6 +249,10 @@
   .fx-campos{display:flex;gap:8px;flex-wrap:wrap}
   .fx-campos label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
   .fx-campos input{width:64px;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+  .fx-campos label.fx-series input{width:168px}
+  .fx-campos label.fx-carga input{width:96px}
+  .al-carga{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .al-carga input{width:84px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--txt);background:transparent}
   .fx-obs{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px}
   .fx-obs:focus{outline:2px solid #5fbf00;border-color:#5fbf00}
   .fx-add{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
@@ -453,6 +457,7 @@
   .fx-grupos{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-bottom:10px}
   .fx-grupos .chip-f{flex:0 0 auto;white-space:nowrap}
   .fx-pick-lista{display:flex;flex-wrap:wrap;gap:8px}
+  .fx-added{margin-top:16px}
   .fx-pick-item{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--txt);cursor:pointer;text-align:left;transition:.12s}
   .fx-pick-item:hover{border-color:var(--pink);color:var(--pink)}
   .fpi-nome{font-weight:700;font-size:13px}
@@ -1273,6 +1278,22 @@
     return "🏋️";
   }
 
+  // texto do esquema de séries/reps (novo: só texto em x.reps; legado: "3x12")
+  function esquemaPresc(x){
+    if(x.series!=null && x.reps) return `${x.series}x${x.reps}`;
+    if(x.reps) return String(x.reps);
+    if(x.series!=null) return `${x.series} séries`;
+    return "";
+  }
+  // o aluno pode ajustar a carga do próprio treino (via função segura no banco)
+  async function alunoSetCarga(exId, valor){
+    const v = (valor==="" || valor==null) ? null : Number(valor);
+    try{
+      const { error } = await sb.rpc("aluno_set_carga", { p_ex: exId, p_carga: v });
+      if(error) throw error;
+      const x = (ALUNO_EXS||[]).find(e=>e.id===exId); if(x) x.carga_alvo = v;
+    }catch(e){ levoAlert("Não consegui salvar a carga: " + (e.message||e)); }
+  }
   function renderAlunoExs(){
     const box = document.getElementById("treinoBoxAluno");
     if(!box) return;
@@ -1286,18 +1307,18 @@
       ? `<button class="btn" style="margin:6px 0 14px" onclick="iniciarTreino('${ALUNO_DIA}')">▶ Iniciar este treino</button>`
       : `<div class="tr-obs" style="margin:6px 0 14px">📍 Treino presencial — a presença é registrada pelo seu personal.</div>`;
     box.innerHTML = titulo + btnIniciar + lista.map(x=>{
-      const partes = [];
-      if(x.series!=null && x.reps) partes.push(`<b>${x.series}x${esc(x.reps)}</b>`);
-      else if(x.series!=null) partes.push(`<b>${x.series} séries</b>`);
-      if(x.carga_alvo!=null) partes.push(`${x.carga_alvo} kg`);
-      if(x.descanso_seg!=null) partes.push(`descanso ${x.descanso_seg}s`);
+      const esq = esquemaPresc(x);
       const img = x.media_url ? `<img src="${esc(x.media_url)}" alt="">` : iconeExercicio(x);
       return `<div class="tr-ex">
         <div class="tr-ex-row">
           <div class="ex-thumb-al">${img}</div>
           <div class="tr-ex-body">
             <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
-            <div class="tr-presc">${partes.join(" · ")||"—"}</div>
+            <div class="tr-presc" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              ${esq?`<b>${esc(esq)}</b>`:""}
+              <label class="al-carga">Carga <input type="number" step="0.5" value="${x.carga_alvo??""}" placeholder="kg" onchange="alunoSetCarga('${x.id}',this.value)"> kg</label>
+              ${x.descanso_seg!=null?`<span class="meta-sm">descanso ${x.descanso_seg}s</span>`:""}
+            </div>
             ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
           </div>
         </div>
@@ -1370,7 +1391,7 @@
     const cards = exs.map((x,i)=>{
       const ult = ULTIMAS[x.exercicio_id];
       const alvo = [];
-      if(x.series!=null && x.reps) alvo.push(`${x.series}x${esc(x.reps)}`);
+      { const esq=esquemaPresc(x); if(esq) alvo.push(esc(esq)); }
       if(x.carga_alvo!=null) alvo.push(`alvo ${x.carga_alvo} kg`);
       const descBtn = (x.descanso_seg!=null) ?
         `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
@@ -3617,7 +3638,6 @@
       box.innerHTML = `<div class="empty">Crie um dia de treino (A, B, C…) para começar a adicionar exercícios.</div>`;
       return;
     }
-    box.innerHTML = `<div class="empty">Carregando…</div>`;
     const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("dia_id", FICHA_DIA).order("ordem");
     const lista = exs || [];
 
@@ -3625,8 +3645,7 @@
     if(FICHA_READONLY){
       box.innerHTML = lista.length ? lista.map(x=>{
         const partes=[];
-        if(x.series!=null && x.reps) partes.push(`<b>${x.series}x${esc(x.reps)}</b>`);
-        else if(x.series!=null) partes.push(`<b>${x.series} séries</b>`);
+        { const esq=esquemaPresc(x); if(esq) partes.push(`<b>${esc(esq)}</b>`); }
         if(x.carga_alvo!=null) partes.push(`${x.carga_alvo} kg`);
         if(x.descanso_seg!=null) partes.push(`descanso ${x.descanso_seg}s`);
         return `<div class="tr-ex"><div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div><div class="tr-presc">${partes.join(" · ")}</div></div>`;
@@ -3641,9 +3660,8 @@
           <button class="btn small ghost" title="Remover" onclick="removerEx('${x.id}')">🗑</button>
         </div>
         <div class="fx-campos">
-          <label>Séries<input type="number" value="${x.series??""}" onchange="updEx('${x.id}','series',this.value)"></label>
-          <label>Reps<input type="text" value="${esc(x.reps??"")}" onchange="updEx('${x.id}','reps',this.value)"></label>
-          <label>Carga<input type="number" step="0.5" value="${x.carga_alvo??""}" onchange="updEx('${x.id}','carga_alvo',this.value)"></label>
+          <label class="fx-series">Séries<input type="text" placeholder="ex: 12 / 12 / 08 / 08" value="${esc(x.reps??"")}" onchange="updEx('${x.id}','reps',this.value)"></label>
+          <label class="fx-carga">Carga<input type="number" step="0.5" value="${x.carga_alvo??""}" onchange="updEx('${x.id}','carga_alvo',this.value)"></label>
           <label>Desc(s)<input type="number" value="${x.descanso_seg??""}" onchange="updEx('${x.id}','descanso_seg',this.value)"></label>
         </div>
         <input class="fx-obs" type="text" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
@@ -3653,13 +3671,13 @@
     // exercícios já adicionados neste dia (para não repetir no seletor)
     window.FX_JATEM = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
     box.innerHTML = `
-      ${lista.length ? rows : `<div class="empty">Nenhum exercício neste dia ainda.</div>`}
       <div class="fx-picker">
         <div class="fx-pick-tit">Adicionar exercícios <span class="meta-sm">— toque para incluir no treino</span></div>
         <input id="fxBusca" class="fx-pick-busca aluno-search" placeholder="Buscar exercício…" oninput="renderPicker()">
         <div id="fxGrupos" class="fx-grupos"></div>
         <div id="fxPickLista" class="fx-pick-lista"></div>
       </div>
+      <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício adicionado ainda. Toque nos exercícios acima para incluir.</div>`}</div>
       <div style="margin-top:12px"><button class="btn small ghost" onclick="removerDia()">Remover dia</button></div>`;
     renderPicker();
   }
@@ -3691,15 +3709,17 @@
 
   async function addExDireto(exId){
     if(!exId || !FICHA_DIA) return;
+    const y = window.scrollY;                 // guarda a posição da tela
     const ex = EXERCICIOS.find(e=>e.id===exId);
     const { data: exs } = await sb.from("ficha_exercicios").select("id").eq("dia_id", FICHA_DIA);
     const { error } = await sb.from("ficha_exercicios").insert({
       dia_id:FICHA_DIA, ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id,
       exercicio_id:exId, nome_cache: ex?ex.nome:null,
-      series:3, reps:"12", descanso_seg:60, ordem:(exs?exs.length:0)
+      series:null, reps:"3 x 12", descanso_seg:60, ordem:(exs?exs.length:0)
     });
     if(error){ levoAlert("Erro: "+error.message); return; }
-    renderConteudoDia();
+    await renderConteudoDia();
+    window.scrollTo(0, y);                     // mantém a tela na mesma posição
   }
 
   async function addEx(){
@@ -3711,7 +3731,7 @@
     const { error } = await sb.from("ficha_exercicios").insert({
       dia_id:FICHA_DIA, ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id,
       exercicio_id:exId, nome_cache: ex?ex.nome:null,
-      series:3, reps:"12", descanso_seg:60, ordem:(exs?exs.length:0)
+      series:null, reps:"3 x 12", descanso_seg:60, ordem:(exs?exs.length:0)
     });
     if(error){ levoAlert("Erro: "+error.message); return; }
     renderConteudoDia();
@@ -3724,8 +3744,10 @@
   }
 
   async function removerEx(id){
+    const y = window.scrollY;
     await sb.from("ficha_exercicios").delete().eq("id", id);
-    renderConteudoDia();
+    await renderConteudoDia();
+    window.scrollTo(0, y);
   }
 
   /* ---------- PROFISSIONAL: METAS ---------- */
