@@ -122,6 +122,9 @@
            flex-direction:column;gap:2px}
   .navgroup.open .navsubs{display:flex}
   .navsub{padding:9px 12px;font-size:13px;font-weight:600;opacity:.92}
+  .navhead{display:flex;align-items:center;justify-content:space-between}
+  .navchev{font-size:11px;opacity:.6;transition:transform .15s;margin-left:8px}
+  .navgroup.open .navchev{transform:rotate(180deg)}
   /* banner de pedido de vínculo (aluno) */
   .vinc-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
     border:2px solid var(--pink);border-radius:16px;padding:16px 18px;margin:0 0 16px;
@@ -778,7 +781,8 @@
       return menu;
     }
     const m = [
-      {id:"alunos", label:"Meus alunos", sub:[
+      {id:"alunosgrp", label:"Alunos", grupo:true, sub:[
+        {id:"alunos",    label:"Meus alunos"},
         {id:"cadastrar", label:"Cadastrar aluno"},
         {id:"inativos",  label:"Alunos inativos"}
       ]}
@@ -810,13 +814,14 @@
     }
 
     const itens = menuFor(role).map(i=>{
-      const main = `<button class="navitem" id="nav_${i.id}" onclick="go('${i.id}')"><span class="lbl">${i.label}</span></button>`;
       if(i.sub && i.sub.length){
+        // grupo: o botão principal só abre/fecha os subitens (não navega)
+        const head = `<button class="navitem navhead" id="nav_${i.id}" onclick="toggleGrupo('${i.id}')"><span class="lbl">${i.label}</span><span class="navchev">▾</span></button>`;
         const subs = i.sub.map(s=>
           `<button class="navitem navsub" id="nav_${s.id}" onclick="go('${s.id}')"><span class="lbl">${s.label}</span></button>`).join("");
-        return `<div class="navgroup" id="grp_${i.id}">${main}<div class="navsubs">${subs}</div></div>`;
+        return `<div class="navgroup" id="grp_${i.id}">${head}<div class="navsubs">${subs}</div></div>`;
       }
-      return main;
+      return `<button class="navitem" id="nav_${i.id}" onclick="go('${i.id}')"><span class="lbl">${i.label}</span></button>`;
     }).join("");
 
     document.getElementById("content").innerHTML = `
@@ -958,6 +963,10 @@
          </div>`;
   }
 
+  function toggleGrupo(id){
+    const g = document.getElementById("grp_"+id);
+    if(g) g.classList.toggle("open");
+  }
   function go(id){
     VIEW = id;
     if(typeof pararDescanso==="function") pararDescanso();
@@ -966,10 +975,9 @@
     if(!EXEC_SESSAO && typeof pararCronoTreino==="function") pararCronoTreino();
     document.querySelectorAll(".navitem").forEach(b=>b.classList.remove("active"));
     const nav = document.getElementById("nav_"+id); if(nav) nav.classList.add("active");
-    // expande o grupo "Meus alunos" quando estiver em qualquer subitem
-    document.querySelectorAll(".navgroup").forEach(g=>g.classList.remove("open"));
+    // mantém o grupo "Alunos" aberto quando estiver em qualquer subitem
     if(["alunos","cadastrar","inativos"].includes(id)){
-      const grp = document.getElementById("grp_alunos"); if(grp) grp.classList.add("open");
+      const grp = document.getElementById("grp_alunosgrp"); if(grp) grp.classList.add("open");
     }
     const p = document.getElementById("panel"); if(!p) return;
 
