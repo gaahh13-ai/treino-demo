@@ -756,8 +756,12 @@
 
   /* profissionais com o módulo de treino habilitado (por enquanto por e-mail).
      Depois vira uma configuração por profissional no banco. */
-  const TREINO_ATIVO = ["teste@profissional.com.br","prof@profissional.com.br"];
-  function temTreino(){ return TREINO_ATIVO.includes((ME.email||"").toLowerCase()); }
+  const IS_LEVO = true; // build_levo.sh liga para true na geração do demo LEVO
+  // Exercícios: todo profissional LEVO vê (biblioteca). Não aparece p/ seu profissional (nutri).
+  function mostrarExercicios(){ return IS_LEVO && (ME.role === "professional" || ME.role === "creator"); }
+  // Desempenho + montagem de treino no aluno: só com plano pago (LEVO Fit / You LEVO).
+  function temPlanoTreino(){ const p=(ME.plano||"").toLowerCase(); return IS_LEVO && (ME.role === "creator" || p === "fit" || p === "you_levo"); }
+  function temTreino(){ return temPlanoTreino(); } // compat com chamadas existentes
 
   /* ================= MENU / LAYOUT ================= */
   function menuFor(role){
@@ -774,11 +778,10 @@
         {id:"inativos",  label:"Alunos inativos"}
       ]}
     ];
-    // módulo de treino só para profissionais habilitados (personal). Nutri (LEVO) não vê.
-    if(temTreino()){
-      m.push({id:"exercicios", label:"Exercícios"});
-      m.push({id:"desempenho", label:"Desempenho"});
-    }
+    // Exercícios: todo profissional LEVO vê a biblioteca desde a criação da conta.
+    if(mostrarExercicios()) m.push({id:"exercicios", label:"Exercícios"});
+    // Desempenho: só depois que o profissional adquire um plano pago.
+    if(temPlanoTreino())    m.push({id:"desempenho", label:"Desempenho"});
     m.push({id:"financeiro", label:"Financeiro"});
     if(role === "creator") m.push({id:"admin", label:"Painel do criador"});
     return m;
