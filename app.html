@@ -2351,7 +2351,7 @@
           <h3 style="margin:0">📚 Biblioteca</h3>
           <input id="exBusca" class="aluno-search" style="max-width:220px;margin:0" placeholder="Buscar exercício…" oninput="renderExercicios()">
         </div>
-        <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px"></div>
+        <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:4px"></div>
         <div id="exLista"><div class="empty">Carregando…</div></div>
       </div>`;
   }
@@ -2402,8 +2402,8 @@
           <div class="ex-nome">${esc(e.nome)}</div>
           <div class="ex-meta">${esc(e.grupo||"")}${e.equipamento?" · "+esc(e.equipamento):""}${meu?' · <span class="tag">meu</span>':""}</div>
         </div>
-        <button class="star-btn ${fav?"on":""}" onclick="toggleFavorito('${e.id}')" title="${fav?"Remover dos favoritos":"Favoritar"}">${fav?"★":"☆"}</button>
         ${meu?`<button class="btn small ghost" onclick="excluirExercicio('${e.id}')" title="Excluir">🗑</button>`:""}
+        <button class="star-btn ${fav?"on":""}" onclick="toggleFavorito('${e.id}')" title="${fav?"Remover dos favoritos":"Favoritar"}">${fav?"★":"☆"}</button>
       </div>`;
     }).join("");
   }
