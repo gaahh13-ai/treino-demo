@@ -263,6 +263,9 @@
   .biset-grupo{border:1px solid var(--pink);border-radius:14px;padding:8px;margin:12px 0;background:rgba(127,255,0,.05)}
   .biset-grupo .tr-ex,.biset-grupo .ex-card{margin:6px 0}
   .biset-tag{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;padding:4px 6px 8px}
+  .star-btn{background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 6px;transition:.12s;flex:0 0 auto}
+  .star-btn:hover{color:#ffcc00;transform:scale(1.15)}
+  .star-btn.on{color:#ffcc00}
   .al-carga{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
   .al-carga input{width:84px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--txt);background:transparent}
   .fx-obs{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;font-family:inherit;color:var(--txt);background:transparent;resize:vertical;min-height:40px;line-height:1.45}
@@ -727,7 +730,7 @@
 
   let ME = null, STUDENTS = [], INVITES = [], ASSESS = [], VIEW = null, EDIT_ID = null, ASSESS_S = null, MANUAL_CALC = false;
   let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
-  let EXERCICIOS = [], EX_FILTRO = "";
+  let EXERCICIOS = [], EX_FILTRO = "", FAVORITOS = new Set();
   let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false, MONTAGEM_LIBERADA = false, MODO_EDICAO = false;
   // primeiro treino do aluno: sem dias e sem treinos passados
   function ehPrimeiroTreino(){ return FICHA && FICHA_DIAS.length === 0 && FICHAS_TODAS.filter(f=>!f.ativa).length === 0; }
@@ -2358,12 +2361,14 @@
     if(error){ const b=document.getElementById("exLista"); if(b) b.innerHTML=`<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
     EXERCICIOS = data || [];
     EX_FILTRO = "";
+    await loadFavoritos();
     const f = document.getElementById("exFiltros");
     if(f){
       const gset = [...new Set(EXERCICIOS.map(e=>e.grupo).filter(Boolean))]
         .sort((a,b)=>a.localeCompare(b, "pt", {sensitivity:"base"}));
       const grupos = gset.filter(g=>g!=="Outro").concat(gset.includes("Outro") ? ["Outro"] : []);
-      f.innerHTML = [`<button class="chip-f sel" data-g="" onclick="filtrarGrupo('')">Todos</button>`]
+      f.innerHTML = [`<button class="chip-f sel" data-g="" onclick="filtrarGrupo('')">Todos</button>`,
+        `<button class="chip-f" data-g="__fav__" onclick="filtrarGrupo('__fav__')">★ Favoritos</button>`]
         .concat(grupos.map(g=>`<button class="chip-f" data-g="${esc(g)}" onclick="filtrarGrupo('${esc(g)}')">${g==="Outro"?"Outros":esc(g)}</button>`)).join("");
     }
     renderExercicios();
@@ -2380,12 +2385,14 @@
     if(!box) return;
     const q = (document.getElementById("exBusca")||{}).value?.toLowerCase().trim() || "";
     let lista = EXERCICIOS;
-    if(EX_FILTRO) lista = lista.filter(e=>e.grupo===EX_FILTRO);
+    if(EX_FILTRO === "__fav__") lista = lista.filter(e=>FAVORITOS.has(e.id));
+    else if(EX_FILTRO) lista = lista.filter(e=>e.grupo===EX_FILTRO);
     if(q) lista = lista.filter(e=>(e.nome||"").toLowerCase().includes(q));
     lista = [...lista].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"", "pt", {sensitivity:"base"}));
-    if(!lista.length){ box.innerHTML = `<div class="empty">Nenhum exercício encontrado.</div>`; return; }
+    if(!lista.length){ box.innerHTML = `<div class="empty">${EX_FILTRO==="__fav__"?"Você ainda não favoritou nenhum exercício. Toque na ☆ para favoritar.":"Nenhum exercício encontrado."}</div>`; return; }
     box.innerHTML = lista.map(e=>{
       const meu = e.professional_id === ME.id;
+      const fav = FAVORITOS.has(e.id);
       const thumb = e.media_url
         ? `<img class="ex-thumb" src="${esc(e.media_url)}" alt="" onerror="this.style.display='none'">`
         : `<div class="ex-thumb ph">🏋️</div>`;
@@ -2395,9 +2402,28 @@
           <div class="ex-nome">${esc(e.nome)}</div>
           <div class="ex-meta">${esc(e.grupo||"")}${e.equipamento?" · "+esc(e.equipamento):""}${meu?' · <span class="tag">meu</span>':""}</div>
         </div>
+        <button class="star-btn ${fav?"on":""}" onclick="toggleFavorito('${e.id}')" title="${fav?"Remover dos favoritos":"Favoritar"}">${fav?"★":"☆"}</button>
         ${meu?`<button class="btn small ghost" onclick="excluirExercicio('${e.id}')" title="Excluir">🗑</button>`:""}
       </div>`;
     }).join("");
+  }
+
+  async function loadFavoritos(){
+    FAVORITOS = new Set();
+    try{
+      const { data } = await sb.from("exercicio_favoritos").select("exercicio_id").eq("professional_id", ME.id);
+      (data||[]).forEach(r=>FAVORITOS.add(r.exercicio_id));
+    }catch(e){}
+  }
+  async function toggleFavorito(id){
+    if(FAVORITOS.has(id)){
+      FAVORITOS.delete(id); renderExercicios();
+      await sb.from("exercicio_favoritos").delete().eq("professional_id", ME.id).eq("exercicio_id", id);
+    } else {
+      FAVORITOS.add(id); renderExercicios();
+      const { error } = await sb.from("exercicio_favoritos").insert({ professional_id: ME.id, exercicio_id: id });
+      if(error){ FAVORITOS.delete(id); renderExercicios(); levoAlert("Não consegui favoritar agora. Tente novamente."); }
+    }
   }
 
   async function salvarExercicio(){
