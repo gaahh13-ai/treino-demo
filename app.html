@@ -2883,6 +2883,8 @@
   function selecionarAluno(id){
     if(id !== SELECTED_STUDENT) fecharTodasJanelas();  // troca de aluno fecha janelas antigas
     SELECTED_STUDENT = id;
+    // registra o aluno na URL: assim, ao voltar do dashboard (inclusive pelo "voltar" do navegador), reabre o mesmo aluno
+    try{ history.replaceState(null, "", location.pathname + "?aluno=" + id); }catch(e){}
     const s = STUDENTS.find(x=>x.id===id);
     desenharListaAlunos(filtrar(ATIVOS_CACHE, (document.getElementById("alunoSearch")||{}).value));
     const det = document.getElementById("alunoDetalhe");
