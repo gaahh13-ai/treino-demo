@@ -2288,9 +2288,11 @@
     EX_FILTRO = "";
     const f = document.getElementById("exFiltros");
     if(f){
-      const grupos = [...new Set(EXERCICIOS.map(e=>e.grupo).filter(Boolean))].sort();
+      const gset = [...new Set(EXERCICIOS.map(e=>e.grupo).filter(Boolean))]
+        .sort((a,b)=>a.localeCompare(b, "pt", {sensitivity:"base"}));
+      const grupos = gset.filter(g=>g!=="Outro").concat(gset.includes("Outro") ? ["Outro"] : []);
       f.innerHTML = [`<button class="chip-f sel" data-g="" onclick="filtrarGrupo('')">Todos</button>`]
-        .concat(grupos.map(g=>`<button class="chip-f" data-g="${esc(g)}" onclick="filtrarGrupo('${esc(g)}')">${esc(g)}</button>`)).join("");
+        .concat(grupos.map(g=>`<button class="chip-f" data-g="${esc(g)}" onclick="filtrarGrupo('${esc(g)}')">${g==="Outro"?"Outros":esc(g)}</button>`)).join("");
     }
     renderExercicios();
   }
@@ -3691,10 +3693,12 @@
     if(!gbox || !lbox) return;
     const jaTem = window.FX_JATEM || new Set();
     const disp = EXERCICIOS.filter(e=>!jaTem.has(e.id));
-    // chips de grupo (só os que têm exercícios disponíveis)
-    const grupos = [...new Set(disp.map(e=>e.grupo).filter(Boolean))].sort();
+    // chips de grupo (só os que têm exercícios disponíveis): alfabético, com "Outros" por último
+    const gset = [...new Set(disp.map(e=>e.grupo).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b, "pt", {sensitivity:"base"}));
+    const grupos = gset.filter(g=>g!=="Outro").concat(gset.includes("Outro") ? ["Outro"] : []);
     gbox.innerHTML = [`<button class="chip-f ${FX_GRUPO===""?"sel":""}" onclick="setFxGrupo('')">Todos</button>`]
-      .concat(grupos.map(g=>`<button class="chip-f ${FX_GRUPO===g?"sel":""}" onclick="setFxGrupo('${esc(g)}')">${esc(g)}</button>`)).join("");
+      .concat(grupos.map(g=>`<button class="chip-f ${FX_GRUPO===g?"sel":""}" onclick="setFxGrupo('${esc(g)}')">${g==="Outro"?"Outros":esc(g)}</button>`)).join("");
     // lista filtrada por grupo + busca
     const q = (document.getElementById("fxBusca")||{}).value?.toLowerCase().trim() || "";
     let lista = disp;
