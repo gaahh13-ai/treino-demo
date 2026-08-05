@@ -2854,7 +2854,7 @@
   function registrarJanela(cardId){
     JANELAS = JANELAS.filter(x=>x!==cardId);
     JANELAS.push(cardId);
-    while(JANELAS.length > 2){                 // fecha a mais antiga
+    while(JANELAS.length > 1){                 // mantém só 1 aberta: fecha a anterior
       const antigo = JANELAS.shift();
       const c = document.getElementById(antigo); if(c) c.style.display = "none";
     }
