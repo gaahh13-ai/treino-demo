@@ -210,6 +210,7 @@
   .det-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
   .det-nome{font-size:18px;font-weight:800}
   .det-sub{font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:16px}
+  .demo-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:#7fff00;color:#0a0b0d;vertical-align:middle}
   .det-acoes{display:flex;flex-direction:column;gap:8px;max-width:280px}
   .det-acoes .btn{width:100%;text-align:center}
   .det-acoes .btn.ativo{border-color:var(--pink-deep);color:var(--pink-deep);background:#0a0b0d;font-weight:800}
@@ -757,11 +758,13 @@
   /* profissionais com o módulo de treino habilitado (por enquanto por e-mail).
      Depois vira uma configuração por profissional no banco. */
   const IS_LEVO = true; // build_levo.sh liga para true na geração do demo LEVO
-  // Exercícios: todo profissional LEVO vê (biblioteca). Não aparece p/ seu profissional (nutri).
-  function mostrarExercicios(){ return IS_LEVO && (ME.role === "professional" || ME.role === "creator"); }
-  // Desempenho + montagem de treino no aluno: só com plano pago (LEVO Fit / You LEVO).
-  function temPlanoTreino(){ const p=(ME.plano||"").toLowerCase(); return IS_LEVO && (ME.role === "creator" || p === "fit" || p === "you_levo"); }
-  function temTreino(){ return temPlanoTreino(); } // compat com chamadas existentes
+  function ehProfLevo(){ return IS_LEVO && (ME.role === "professional" || ME.role === "creator"); }
+  // Exercícios, Desempenho e Treino: liberados p/ todo profissional LEVO conhecer a ferramenta antes de assinar.
+  function mostrarExercicios(){ return ehProfLevo(); }
+  function temPlanoTreino(){ return ehProfLevo(); }
+  function temTreino(){ return ehProfLevo(); } // compat com chamadas existentes
+  // Conectar alunos reais (enviar convite / vincular) é a trava: exige plano pago (LEVO Fit / You LEVO).
+  function podeVincular(){ const p=(ME.plano||"").toLowerCase(); return IS_LEVO && (ME.role === "creator" || p === "fit" || p === "you_levo"); }
 
   /* ================= MENU / LAYOUT ================= */
   function menuFor(role){
@@ -2250,7 +2253,16 @@
       if(b) b.innerHTML = `<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`;
       return;
     }
-    STUDENTS = studs || [];
+    let lista = studs || [];
+    // aluno(s) demo — visíveis a todo profissional só para leitura (conhecer o app completo)
+    if(ehProfLevo()){
+      const { data: demo } = await sb.from("profiles").select("*").eq("is_demo", true);
+      if(demo && demo.length){
+        const ids = new Set(lista.map(s => s.id));
+        demo.forEach(d => { if(!ids.has(d.id)){ d.demo = true; lista.push(d); } });
+      }
+    }
+    STUDENTS = lista;
     const { data: ast } = await sb.from("assessments")
       .select("id,student_id,date,weight,body_fat").order("date",{ascending:false});
     ASSESS = ast || [];
@@ -2747,6 +2759,8 @@
     return true;
   }
 
+  function alunoEhDemo(id){ const s = STUDENTS.find(x=>x.id===(id||SELECTED_STUDENT)); return !!(s && (s.demo || s.is_demo)); }
+  function bloqueiaDemo(id){ if(alunoEhDemo(id)){ alert("Este é o aluno demo (somente leitura). Use um aluno real para editar."); return true; } return false; }
   function selecionarAluno(id){
     if(id !== SELECTED_STUDENT) fecharTodasJanelas();  // troca de aluno fecha janelas antigas
     SELECTED_STUDENT = id;
@@ -2754,19 +2768,20 @@
     desenharListaAlunos(filtrar(ATIVOS_CACHE, (document.getElementById("alunoSearch")||{}).value));
     const det = document.getElementById("alunoDetalhe");
     if(!det || !s) return;
+    const demo = !!(s.demo || s.is_demo);
     const n = ASSESS.filter(a=>a.student_id===id).length;
     det.innerHTML = `
       <div class="det-head">
         <div>
-          <div class="det-nome">${esc(nomeAluno(s))}</div>
-          <div class="det-sub">${s.email?esc(s.email)+" · ":""}${n} avaliação(ões)</div>
+          <div class="det-nome">${esc(nomeAluno(s))}${demo?` <span class="demo-tag">demo</span>`:""}</div>
+          <div class="det-sub">${demo?"somente leitura · ":""}${s.email?esc(s.email)+" · ":""}${n} avaliação(ões)</div>
         </div>
         <span class="menu-wrap">
           <button class="btn small ghost dots" title="Mais opções" onclick="abrirMenu(event,'detmenu_${id}')">⋮</button>
           <span class="menu-drop" id="detmenu_${id}">
             <button onclick="abrirMetas('${id}')">Metas</button>
             <button onclick="dadosCliente('${id}')">Dados do cliente</button>
-            <button onclick="arquivarAluno('${id}')">Arquivar</button>
+            ${demo?"":`<button onclick="arquivarAluno('${id}')">Arquivar</button>`}
           </span>
         </span>
       </div>
@@ -2775,7 +2790,7 @@
         <a class="btn small ghost" href="dashboard.html?aluno=${id}">Dashboard</a>
         ${temTreino()?`<button class="btn small ghost" id="btnTreinos" onclick="abrirTreino('${id}')">Treinos</button>`:""}
         <button class="btn small ghost" id="btnAvals" onclick="verAvaliacoes('${id}')">Avaliações</button>
-        <button class="btn small ghost" id="btnFin" onclick="verFinanceiroAluno('${id}')">Financeiro</button>
+        ${demo?"":`<button class="btn small ghost" id="btnFin" onclick="verFinanceiroAluno('${id}')">Financeiro</button>`}
       </div>
       <div id="assessList_${id}" style="margin-top:6px"></div>
       <div id="finList_${id}" style="margin-top:6px"></div>`;
@@ -2856,6 +2871,7 @@
     const nome  = document.getElementById("inviteName").value.trim();
     const email = document.getElementById("inviteEmail").value.trim().toLowerCase();
     const msg = document.getElementById("inviteMsg"), btn = document.getElementById("inviteBtn");
+    if(!podeVincular()){ msg.className="msg warn"; msg.textContent="Conectar alunos é um recurso dos planos pagos. Assine o LEVO Fit ou You LEVO para cadastrar e vincular seus alunos."; return; }
     if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do aluno."; return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
@@ -2922,6 +2938,7 @@
 
   async function salvarDados(){
     const id = document.getElementById("cliId").value;
+    if(bloqueiaDemo(id)) return;
     const msg = document.getElementById("cliMsg"), btn = document.getElementById("cliBtn");
     const nome  = document.getElementById("cli_nome").value.trim() || null;
     const sex   = document.getElementById("cli_sex").value || null;
@@ -2938,6 +2955,7 @@
   }
 
   async function arquivarAluno(id){
+    if(bloqueiaDemo(id)) return;
     const s = STUDENTS.find(x=>x.id===id);
     if(!confirm(`Arquivar ${nomeAluno(s)}?\n\nEle perde o acesso ao painel, mas todo o histórico fica guardado e você pode reativar depois.`)) return;
     const { error } = await sb.from("profiles")
@@ -3259,6 +3277,7 @@
   }
 
   async function novaAvaliacao(id){
+    if(bloqueiaDemo(id)) return;
     if(cardAberto("assessCard")){ fecharJanela("assessCard"); return; }
     const s = STUDENTS.find(x=>x.id===id);
     // barra se faltar sexo ou data de nascimento (usados no cálculo)
@@ -3319,16 +3338,23 @@
   function fecharTreino(){ fecharJanela("fichaCard"); FICHA=null; FICHA_DIA=null; }
 
   async function carregarFicha(studentId){
+    const demo = alunoEhDemo(studentId);
     const { data: todas } = await sb.from("fichas").select("*")
       .eq("student_id", studentId).order("created_at", { ascending:false });
     FICHAS_TODAS = todas || [];
-    let ativa = FICHAS_TODAS.find(f=>f.ativa);
-    if(!ativa){
+    let ativa = FICHAS_TODAS.find(f=>f.ativa) || FICHAS_TODAS[0];
+    if(!ativa && !demo){
       const { data: nova } = await sb.from("fichas")
         .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true }).select().single();
       ativa = nova; FICHAS_TODAS.unshift(nova);
     }
-    FICHA = ativa; FICHA_READONLY = false;
+    if(!ativa){
+      FICHA = null;
+      document.getElementById("fichaDias").innerHTML = "";
+      document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Este aluno demo ainda não tem treino montado.</div>`;
+      return;
+    }
+    FICHA = ativa; FICHA_READONLY = demo;
     await abrirFichaDias();
   }
 
@@ -3587,6 +3613,7 @@
   async function salvarMetas(){
     const msg=document.getElementById("goalsMsg"), btn=document.getElementById("goalsSaveBtn");
     const student_id=document.getElementById("goalsStudentId").value;
+    if(bloqueiaDemo(student_id)) return;
     const gid=document.getElementById("goalsId").value;
     const num = id => { const e=document.getElementById(id); return (!e || e.value==="") ? null : Number(e.value); };
     const data = document.getElementById("g_data").value || null;
@@ -3678,6 +3705,7 @@
   async function salvarAvaliacao(){
     const msg=document.getElementById("assessMsg"), btn=document.getElementById("assessSaveBtn");
     const student_id=document.getElementById("assessStudentId").value;
+    if(bloqueiaDemo(student_id)) return;
     const date=document.getElementById("a_date").value;
     if(!student_id || !date){ msg.className="msg err"; msg.textContent="Escolha aluno e data."; return; }
     const val = id => { const e=document.getElementById(id); return (!e || e.value==="") ? null : Number(e.value); };

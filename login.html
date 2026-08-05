@@ -84,6 +84,12 @@
   /* chips e etiquetas */
   .role-chip,.chip-student,.chip-professional,.chip-creator,.tag{background:#1d2027!important;color:#7fff00!important;border-color:#2a2e37!important}
   .chip-f{background:#0f1116!important;color:#c7ccd6!important;border-color:#2a2e37!important}
+  /* seletor de papel no cadastro */
+  .role-pick{display:flex;gap:8px}
+  .role-opt{flex:1;padding:11px 8px;border-radius:12px;border:1.5px solid #2a2e37;background:#0f1116;color:#c7ccd6;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+  .role-opt:hover{border-color:#3a3f4a}
+  .role-opt.sel{background:rgba(127,255,0,.14);border-color:#7fff00;color:#7fff00}
+  .role-hint{font-size:12px;color:#9aa0ab;margin-top:8px;line-height:1.5}
   .chip-f.sel,.treino-linha.sel{background:#7fff00!important;color:#0a0b0d!important;border-color:transparent!important}
   .treino-linha{background:#0f1116!important;border-color:#2a2e37!important}
   .treino-linha .tl-nome,.aluno-item{color:#e8eaee!important}
@@ -146,6 +152,13 @@
   <div id="viewSignup" style="display:none">
     <h1>Criar conta</h1>
     <div class="sub">Preencha seus dados. Enviaremos um e-mail para confirmar e continuar.</div>
+    <div class="field"><label>Você é</label>
+      <div class="role-pick">
+        <button type="button" class="role-opt sel" id="roleAluno" onclick="pickRole('student')">Aluno</button>
+        <button type="button" class="role-opt" id="rolePersonal" onclick="pickRole('professional')">Personal Trainer</button>
+      </div>
+      <div class="role-hint" id="roleHint">Como aluno você entra no plano gratuito e pode se vincular ao seu personal.</div>
+    </div>
     <div class="field"><label>Nome completo</label><input id="suNome" type="text" placeholder="Seu nome" autocomplete="name"></div>
     <div class="field"><label>E-mail</label><input id="suEmail" type="email" placeholder="voce@email.com" autocomplete="email"></div>
     <div class="field"><label>Senha</label><input id="suPass" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
@@ -227,6 +240,17 @@
     el.className = "msg" + (text ? " " + (tipo||"err") : "");
     el.textContent = text;
   }
+  let SIGNUP_ROLE = "student";
+  function pickRole(r){
+    SIGNUP_ROLE = r;
+    const al = document.getElementById("roleAluno"), pe = document.getElementById("rolePersonal");
+    if(al) al.classList.toggle("sel", r === "student");
+    if(pe) pe.classList.toggle("sel", r === "professional");
+    const h = document.getElementById("roleHint");
+    if(h) h.textContent = r === "professional"
+      ? "Como personal você conhece a ferramenta inteira de graça. Para conectar seus alunos, é só assinar um plano."
+      : "Como aluno você entra no plano gratuito e pode se vincular ao seu personal.";
+  }
   function showView(v){
     document.getElementById("viewLogin").style.display  = v==="login"  ? "block" : "none";
     document.getElementById("viewFirst").style.display  = v==="first"  ? "block" : "none";
@@ -253,7 +277,7 @@
       const { data, error } = await sb.auth.signUp({
         email, password: pass,
         // ao confirmar o e-mail, cai no app já na tela de planos
-        options: { data: { full_name: nome }, emailRedirectTo: APP_URL + "?planos=1" }
+        options: { data: { full_name: nome, role: SIGNUP_ROLE }, emailRedirectTo: APP_URL + "?planos=1" }
       });
       if(error) throw error;
       btn.disabled = false;
