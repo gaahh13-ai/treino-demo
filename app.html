@@ -3127,7 +3127,8 @@
     const m = document.getElementById("cliMsg"); m.className="msg"; m.textContent="";
     const card = document.getElementById("clienteCard");
     card.style.display = "block"; registrarJanela("clienteCard");
-    card.scrollIntoView({behavior:"smooth",block:"center"});
+    { const topo = card.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top: Math.max(0, topo), behavior:"smooth" }); }
   }
   function fecharDados(){ fecharJanela("clienteCard"); }
 
@@ -3485,7 +3486,8 @@
     const card = document.getElementById("assessCard");
     card.style.display = "block"; registrarJanela("assessCard");
     const m = document.getElementById("assessMsg"); m.className="msg"; m.textContent="";
-    card.scrollIntoView({behavior:"smooth",block:"center"});
+    { const topo = card.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top: Math.max(0, topo), behavior:"smooth" }); }
   }
 
   async function novaAvaliacao(id){
@@ -3513,7 +3515,8 @@
     const card = document.getElementById("assessCard");
     card.style.display="block"; registrarJanela("assessCard");
     const m=document.getElementById("assessMsg"); m.className="msg"; m.textContent="";
-    card.scrollIntoView({behavior:"smooth",block:"center"});
+    { const topo = card.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top: Math.max(0, topo), behavior:"smooth" }); }
 
     // pré-preenche peso e altura com a última avaliação (a nutri pode alterar)
     const { data } = await sb.from("assessments").select("weight,height")
@@ -3543,7 +3546,8 @@
     document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Carregando…</div>`;
     const card = document.getElementById("fichaCard");
     card.style.display = "block"; registrarJanela("fichaCard");
-    card.scrollIntoView({behavior:"smooth",block:"center"});
+    { const topo = card.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top: Math.max(0, topo), behavior:"smooth" }); }
     await garantirExercicios();
     await carregarFicha(studentId);
   }
@@ -4025,7 +4029,8 @@
     }
     const card = document.getElementById("goalsCard");
     card.style.display = "block"; registrarJanela("goalsCard");
-    card.scrollIntoView({behavior:"smooth",block:"center"});
+    { const topo = card.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top: Math.max(0, topo), behavior:"smooth" }); }
   }
   function fecharMetas(){ fecharJanela("goalsCard"); }
 
@@ -4071,7 +4076,8 @@
     card.style.display = "block"; registrarJanela("consultCard");
     const m = document.getElementById("consultMsg"); m.className="msg"; m.textContent="";
     listarConsultas(id);
-    card.scrollIntoView({behavior:"smooth",block:"center"});
+    { const topo = card.getBoundingClientRect().top + window.scrollY - 76;
+      window.scrollTo({ top: Math.max(0, topo), behavior:"smooth" }); }
   }
   function fecharConsulta(){ fecharJanela("consultCard"); }
 

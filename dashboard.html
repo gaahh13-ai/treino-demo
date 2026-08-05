@@ -420,6 +420,8 @@
   async function sair(){ localStorage.removeItem("sessao_inicio"); await sb.auth.signOut(); location.href = "login.html"; }
   function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
   function fmtDate(d){ if(!d) return "—"; const p=String(d).slice(0,10).split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; }
+  function fmtMesAno(d){ if(!d) return "—"; const p=String(d).slice(0,10).split("-"); return p.length===3?`${p[1]}/${p[0].slice(2)}`:d; }      // mm/aa
+  function fmtDiaMesAno(d){ if(!d) return "—"; const p=String(d).slice(0,10).split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0].slice(2)}`:d; } // dd/mm/aa
   function n1(v){ return (v==null||v==="") ? null : Number(v); }
   function kg(v){ return v==null ? "—" : Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+" kg"; }
   function pct(v){ return v==null ? "—" : Number(v).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"; }
@@ -954,9 +956,12 @@
     document.getElementById("d_meta").textContent = falta>0.05 ? "para o peso ideal" : "parabéns!";
   }
 
-  const opcoes = (titulo) => ({
+  const opcoes = (titulo, datas) => ({
     responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ display:titulo, labels:{ color:CORES.txt, font:{size:11} } } },
+    plugins:{
+      legend:{ display:titulo, labels:{ color:CORES.txt, font:{size:11} } },
+      tooltip:{ callbacks:{ title:(items)=> (datas && items.length) ? datas[items[0].dataIndex] : "" } }
+    },
     scales:{
       x:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} } },
       y:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} } }
@@ -964,25 +969,26 @@
   });
 
   function desenharGraficos(avals){
-    const labels = avals.map(a=>fmtDate(a.date).slice(0,5));
+    const labels = avals.map(a=>fmtMesAno(a.date));       // eixo: mm/aa
+    const datasFull = avals.map(a=>fmtDiaMesAno(a.date));  // tooltip: dd/mm/aa
     const linha = (cor) => ({ borderColor:cor, backgroundColor:cor+"22", borderWidth:2.5,
       pointBackgroundColor:cor, pointRadius:3, tension:.35, fill:true });
 
     const bf = avals.map(a=>n1(a.body_fat));
     if(bf.some(v=>v!=null)) new Chart(document.getElementById("c_bf"),
-      { type:"line", data:{ labels, datasets:[{ label:"% gordura", data:bf, ...linha(CORES.pink) }] }, options:opcoes(false) });
+      { type:"line", data:{ labels, datasets:[{ label:"% gordura", data:bf, ...linha(CORES.pink) }] }, options:opcoes(false, datasFull) });
     else vazio("box_bf");
 
     const peso = avals.map(a=>n1(a.weight));
     if(peso.some(v=>v!=null)) new Chart(document.getElementById("c_peso"),
-      { type:"line", data:{ labels, datasets:[{ label:"peso", data:peso, ...linha(CORES.lilac) }] }, options:opcoes(false) });
+      { type:"line", data:{ labels, datasets:[{ label:"peso", data:peso, ...linha(CORES.lilac) }] }, options:opcoes(false, datasFull) });
     else vazio("box_peso");
 
     const magra = avals.map(a=>n1(a.lean_mass)), gorda = avals.map(a=>n1(a.fat_mass));
     if(magra.some(v=>v!=null) || gorda.some(v=>v!=null)) new Chart(document.getElementById("c_mass"),
       { type:"line", data:{ labels, datasets:[
         { label:"massa magra", data:magra, ...linha(CORES.blue) },
-        { label:"massa gorda", data:gorda, ...linha(CORES.pink) }] }, options:opcoes(true) });
+        { label:"massa gorda", data:gorda, ...linha(CORES.pink) }] }, options:opcoes(true, datasFull) });
     else vazio("box_mass");
 
     // soma das 7 dobras cutâneas — um ponto por avaliação
@@ -994,7 +1000,7 @@
     });
     if(somas.some(v=>v!=null)) new Chart(document.getElementById("c_folds"),
       { type:"line", data:{ labels, datasets:[{ label:"soma das dobras", data:somas, ...linha(CORES.green) }] },
-        options:opcoes(false) });
+        options:opcoes(false, datasFull) });
     else vazio("box_folds");
 
     // perímetros — uma linha por circunferência
@@ -1012,7 +1018,10 @@
         options:{
           responsive:true, maintainAspectRatio:false,
           interaction:{ mode:"index", intersect:false },
-          plugins:{ legend:{ position:"top", labels:{ color:CORES.txt, usePointStyle:true, pointStyle:"rectRounded", boxWidth:10, font:{size:11} } } },
+          plugins:{
+            legend:{ position:"top", labels:{ color:CORES.txt, usePointStyle:true, pointStyle:"rectRounded", boxWidth:10, font:{size:11} } },
+            tooltip:{ callbacks:{ title:(items)=> items.length ? datasFull[items[0].dataIndex] : "" } }
+          },
           scales:{
             x:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} } },
             y:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} },
