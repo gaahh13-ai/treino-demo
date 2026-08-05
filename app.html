@@ -477,8 +477,11 @@
   .fpi-grp{font-size:11px;color:var(--muted)}
   /* popup "Adicionar exercícios" — lista vertical limpa, sem bagunça */
   #pickerOv .modal-cx{padding:18px}
+  /* só a lista cresce/rola; cabeçalho, busca e chips mantêm a altura (não encolhem "pela metade") */
+  #pickerOv .modal-cx > *{flex:0 0 auto}
   #pickerOv .fx-pick-busca{width:100%;max-width:none;margin:0 0 10px}
-  #pickerOv .fx-grupos{margin:0 0 10px}
+  #pickerOv .fx-grupos{flex:0 0 auto;align-items:center;min-height:38px;margin:0 0 10px}
+  #pickerOv .fx-grupos .chip-f{align-self:center}
   #pickerOv .fx-pick-lista{display:flex;flex-direction:column;flex-wrap:nowrap;gap:6px;flex:1 1 auto;min-height:0;overflow-y:auto;padding-right:4px}
   #pickerOv .fx-pick-item{flex-direction:row;align-items:center;justify-content:space-between;width:100%;gap:12px;padding:11px 14px}
   #pickerOv .fx-pick-item::after{content:"＋";font-size:16px;font-weight:800;color:var(--pink);flex:0 0 auto}
