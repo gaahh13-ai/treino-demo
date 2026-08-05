@@ -3725,7 +3725,8 @@
       box.innerHTML = `<div class="empty">Crie um dia de treino (A, B, C…) para começar a adicionar exercícios.</div>`;
       return;
     }
-    const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("dia_id", FICHA_DIA).order("ordem");
+    const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("dia_id", FICHA_DIA)
+      .order("ordem", { ascending: true, nullsFirst: false }).order("id", { ascending: true });
     const lista = exs || [];
 
     // modo leitura (treino passado): só mostra, sem editar
@@ -3826,15 +3827,21 @@
   async function editarDia(){ MODO_EDICAO = true; const y=window.scrollY; await renderConteudoDia(); window.scrollTo(0,y); }
   function concluirDia(){ MODO_EDICAO = false; renderConteudoDia(); }
 
-  // reordenar exercícios (troca a ordem com o vizinho)
+  // reordenar exercícios: reindexa a lista inteira (robusto a ordem duplicada/nula)
   async function moverEx(id, dir){
-    const { data: exs } = await sb.from("ficha_exercicios").select("id,ordem").eq("dia_id", FICHA_DIA).order("ordem");
-    const arr = exs || []; const i = arr.findIndex(e=>e.id===id); const j = i + dir;
+    const { data: exs } = await sb.from("ficha_exercicios")
+      .select("id,ordem").eq("dia_id", FICHA_DIA)
+      .order("ordem", { ascending: true, nullsFirst: false }).order("id", { ascending: true });
+    const arr = exs || [];
+    const i = arr.findIndex(e=>e.id===id); const j = i + dir;
     if(i<0 || j<0 || j>=arr.length) return;
-    const a = arr[i], b = arr[j];
+    // troca as posições no array e regrava a ordem como 0,1,2,3… para todos
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
     const y = window.scrollY;
-    await sb.from("ficha_exercicios").update({ ordem: b.ordem }).eq("id", a.id);
-    await sb.from("ficha_exercicios").update({ ordem: a.ordem }).eq("id", b.id);
+    const updates = arr
+      .map((e, idx)=> (e.ordem !== idx) ? sb.from("ficha_exercicios").update({ ordem: idx }).eq("id", e.id) : null)
+      .filter(Boolean);
+    await Promise.all(updates);
     await renderConteudoDia();
     window.scrollTo(0, y);
   }
