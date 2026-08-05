@@ -458,6 +458,10 @@
   .fx-grupos .chip-f{flex:0 0 auto;white-space:nowrap}
   .fx-pick-lista{display:flex;flex-wrap:wrap;gap:8px}
   .fx-added{margin-top:16px}
+  .fx-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .fx-edit-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .fx-move{display:flex;gap:4px;align-items:center}
+  .fx-move .btn{padding:5px 8px;font-size:12px}
   .fx-pick-item{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--txt);cursor:pointer;text-align:left;transition:.12s}
   .fx-pick-item:hover{border-color:var(--pink);color:var(--pink)}
   .fpi-nome{font-weight:700;font-size:13px}
@@ -682,7 +686,7 @@
   let ME = null, STUDENTS = [], INVITES = [], ASSESS = [], VIEW = null, EDIT_ID = null, ASSESS_S = null, MANUAL_CALC = false;
   let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
   let EXERCICIOS = [], EX_FILTRO = "";
-  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false, MONTAGEM_LIBERADA = false;
+  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false, MONTAGEM_LIBERADA = false, MODO_EDICAO = false;
   // primeiro treino do aluno: sem dias e sem treinos passados
   function ehPrimeiroTreino(){ return FICHA && FICHA_DIAS.length === 0 && FICHAS_TODAS.filter(f=>!f.ativa).length === 0; }
   let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [], ULTIMO_POR_DIA = {};
@@ -3475,7 +3479,7 @@
       document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Este aluno demo ainda não tem treino montado.</div>`;
       return;
     }
-    FICHA = ativa; FICHA_READONLY = demo; MONTAGEM_LIBERADA = false;
+    FICHA = ativa; FICHA_READONLY = demo; MONTAGEM_LIBERADA = false; MODO_EDICAO = false;
     await abrirFichaDias();
   }
 
@@ -3613,7 +3617,7 @@
     renderConteudoDia();
   }
 
-  function selDia(id){ FICHA_DIA = id; renderDias(); }
+  function selDia(id){ FICHA_DIA = id; MODO_EDICAO = false; renderDias(); }
 
   async function addDia(){
     const letras = "ABCDEFGH";
@@ -3658,11 +3662,40 @@
       return;
     }
 
-    const rows = lista.map(x=>`
+    const dia = FICHA_DIAS.find(d=>d.id===FICHA_DIA);
+    const nomeDia = dia ? dia.label : "Treino";
+
+    // MODO VISUALIZAÇÃO: lista limpa + botão de editar
+    if(!MODO_EDICAO){
+      const rowsView = lista.map(x=>{
+        const esq = esquemaPresc(x);
+        const info = [esq, (x.carga_alvo!=null?`${x.carga_alvo} kg`:""), (x.descanso_seg!=null?`descanso ${x.descanso_seg}s`:"")].filter(Boolean).join(" · ");
+        return `<div class="tr-ex">
+            <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
+            <div class="tr-presc">${esc(info)||"—"}</div>
+            ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
+          </div>`;
+      }).join("");
+      box.innerHTML = `
+        ${lista.length ? rowsView : `<div class="empty">Nenhum exercício em ${esc(nomeDia)} ainda.</div>`}
+        <div class="fx-acoes">
+          <button class="btn small" onclick="editarDia()">✏️ ${lista.length?"Editar treino":"Montar treino"}</button>
+          <button class="btn small ghost" onclick="removerDia()">Remover dia</button>
+        </div>`;
+      return;
+    }
+
+    // MODO EDIÇÃO: cards editáveis + reordenar + popup para adicionar
+    window.FX_JATEM = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
+    const rows = lista.map((x,i)=>`
       <div class="fx-row">
         <div class="fx-topo">
           <div class="fx-nome">${esc(x.nome_cache || "Exercício")}</div>
-          <button class="btn small ghost" title="Remover" onclick="removerEx('${x.id}')">🗑</button>
+          <div class="fx-move">
+            <button class="btn small ghost" title="Subir" ${i===0?"disabled":""} onclick="moverEx('${x.id}',-1)">▲</button>
+            <button class="btn small ghost" title="Descer" ${i===lista.length-1?"disabled":""} onclick="moverEx('${x.id}',1)">▼</button>
+            <button class="btn small ghost" title="Remover" onclick="removerEx('${x.id}')">🗑</button>
+          </div>
         </div>
         <div class="fx-campos">
           <label class="fx-series">Séries<input type="text" placeholder="ex: 12 / 12 / 08 / 08" value="${esc(x.reps??"")}" onchange="updEx('${x.id}','reps',this.value)"></label>
@@ -3672,19 +3705,65 @@
         <input class="fx-obs" type="text" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
                value="${esc(x.obs??"")}" onchange="updEx('${x.id}','obs',this.value)">
       </div>`).join("");
-
-    // exercícios já adicionados neste dia (para não repetir no seletor)
-    window.FX_JATEM = new Set(lista.map(x=>x.exercicio_id).filter(Boolean));
     box.innerHTML = `
-      <div class="fx-picker">
-        <div class="fx-pick-tit">Adicionar exercícios <span class="meta-sm">— toque para incluir no treino</span></div>
-        <input id="fxBusca" class="fx-pick-busca aluno-search" placeholder="Buscar exercício…" oninput="renderPicker()">
-        <div id="fxGrupos" class="fx-grupos"></div>
-        <div id="fxPickLista" class="fx-pick-lista"></div>
+      <div class="fx-edit-top">
+        <button class="btn small" onclick="abrirPickerPopup()">＋ Adicionar exercícios</button>
+        <button class="btn small ghost" onclick="concluirDia()">✓ Concluir ${esc(nomeDia)}</button>
       </div>
-      <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício adicionado ainda. Toque nos exercícios acima para incluir.</div>`}</div>
+      <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício ainda. Toque em “Adicionar exercícios”.</div>`}</div>
       <div style="margin-top:12px"><button class="btn small ghost" onclick="removerDia()">Remover dia</button></div>`;
+  }
+
+  async function editarDia(){ MODO_EDICAO = true; const y=window.scrollY; await renderConteudoDia(); window.scrollTo(0,y); }
+  function concluirDia(){ MODO_EDICAO = false; renderConteudoDia(); }
+
+  // reordenar exercícios (troca a ordem com o vizinho)
+  async function moverEx(id, dir){
+    const { data: exs } = await sb.from("ficha_exercicios").select("id,ordem").eq("dia_id", FICHA_DIA).order("ordem");
+    const arr = exs || []; const i = arr.findIndex(e=>e.id===id); const j = i + dir;
+    if(i<0 || j<0 || j>=arr.length) return;
+    const a = arr[i], b = arr[j];
+    const y = window.scrollY;
+    await sb.from("ficha_exercicios").update({ ordem: b.ordem }).eq("id", a.id);
+    await sb.from("ficha_exercicios").update({ ordem: a.ordem }).eq("id", b.id);
+    await renderConteudoDia();
+    window.scrollTo(0, y);
+  }
+
+  // popup para escolher exercícios (menos poluído; dá pra escolher vários e depois fechar)
+  function abrirPickerPopup(){
+    if(document.getElementById("pickerOv")) return;
+    const ov = document.createElement("div"); ov.id = "pickerOv"; ov.className = "modal-ov";
+    ov.onclick = (e)=>{ if(e.target===ov) fecharPickerPopup(); };
+    ov.innerHTML = `
+      <div class="modal-cx" style="max-width:520px;width:92%;max-height:82vh;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px">
+          <h3 style="margin:0">Adicionar exercícios</h3>
+          <button class="btn small" onclick="fecharPickerPopup()">Concluir</button>
+        </div>
+        <input id="fxBusca" class="fx-pick-busca aluno-search" placeholder="Buscar exercício…" style="max-width:none" oninput="renderPicker()">
+        <div id="fxGrupos" class="fx-grupos"></div>
+        <div id="fxPickLista" class="fx-pick-lista" style="overflow-y:auto"></div>
+      </div>`;
+    document.body.appendChild(ov);
     renderPicker();
+  }
+  function fecharPickerPopup(){
+    const ov = document.getElementById("pickerOv"); if(ov) ov.remove();
+    renderConteudoDia();  // atualiza o dia com o que foi adicionado
+  }
+  async function addExPopup(exId){
+    if(!exId || !FICHA_DIA) return;
+    const ex = EXERCICIOS.find(e=>e.id===exId);
+    const { data: exs } = await sb.from("ficha_exercicios").select("id").eq("dia_id", FICHA_DIA);
+    const { error } = await sb.from("ficha_exercicios").insert({
+      dia_id:FICHA_DIA, ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id,
+      exercicio_id:exId, nome_cache: ex?ex.nome:null,
+      series:null, reps:"3 x 12", descanso_seg:60, ordem:(exs?exs.length:0)
+    });
+    if(error){ levoAlert("Erro: "+error.message); return; }
+    (window.FX_JATEM = window.FX_JATEM || new Set()).add(exId);
+    renderPicker();  // remove o adicionado da lista do popup
   }
 
   let FX_GRUPO = "";
@@ -3709,7 +3788,7 @@
     lista = [...lista].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"", "pt", {sensitivity:"base"}));
     if(!lista.length){ lbox.innerHTML = `<div class="empty">Nenhum exercício disponível${FX_GRUPO?" em "+esc(FX_GRUPO):""}.</div>`; return; }
     lbox.innerHTML = lista.map(e=>
-      `<button class="fx-pick-item" onclick="addExDireto('${e.id}')">
+      `<button class="fx-pick-item" onclick="addExPopup('${e.id}')">
          <span class="fpi-nome">${esc(e.nome)}</span>
          <span class="fpi-grp">${esc(e.grupo||"")}${e.equipamento?" · "+esc(e.equipamento):""}</span>
        </button>`).join("");
