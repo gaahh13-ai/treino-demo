@@ -2308,6 +2308,7 @@
     let lista = EXERCICIOS;
     if(EX_FILTRO) lista = lista.filter(e=>e.grupo===EX_FILTRO);
     if(q) lista = lista.filter(e=>(e.nome||"").toLowerCase().includes(q));
+    lista = [...lista].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"", "pt", {sensitivity:"base"}));
     if(!lista.length){ box.innerHTML = `<div class="empty">Nenhum exercício encontrado.</div>`; return; }
     box.innerHTML = lista.map(e=>{
       const meu = e.professional_id === ME.id;
@@ -3699,6 +3700,7 @@
     let lista = disp;
     if(FX_GRUPO) lista = lista.filter(e=>e.grupo===FX_GRUPO);
     if(q) lista = lista.filter(e=>(e.nome||"").toLowerCase().includes(q));
+    lista = [...lista].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"", "pt", {sensitivity:"base"}));
     if(!lista.length){ lbox.innerHTML = `<div class="empty">Nenhum exercício disponível${FX_GRUPO?" em "+esc(FX_GRUPO):""}.</div>`; return; }
     lbox.innerHTML = lista.map(e=>
       `<button class="fx-pick-item" onclick="addExDireto('${e.id}')">
