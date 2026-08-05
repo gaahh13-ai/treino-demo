@@ -854,8 +854,27 @@
     </div>`;
   }
 
+  // Modal de confirmação com a cara da LEVO (substitui o confirm nativo)
+  function levoConfirm(opts){
+    return new Promise(res=>{
+      const o=document.createElement("div"); o.className="modal-ov";
+      o.innerHTML=`<div class="modal-cx" style="max-width:380px">
+        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">L<span style="color:#7fff00">E</span>VO</div>
+        <h3 style="margin:0 0 8px;text-align:center">${opts.titulo||""}</h3>
+        ${opts.msg?`<p class="meta-sm" style="margin:0 0 18px;text-align:center">${opts.msg}</p>`:`<div style="height:10px"></div>`}
+        <button class="btn" style="width:100%;margin-bottom:8px" id="lcOk">${opts.ok||"Confirmar"}</button>
+        <button class="btn ghost" style="width:100%" id="lcNo">${opts.cancel||"Cancelar"}</button>
+      </div>`;
+      document.body.appendChild(o);
+      const done=v=>{ o.remove(); res(v); };
+      o.querySelector("#lcOk").onclick=()=>done(true);
+      o.querySelector("#lcNo").onclick=()=>done(false);
+      o.addEventListener("click",e=>{ if(e.target===o) done(false); });
+    });
+  }
+
   async function aprovarVinculo(id){
-    if(!confirm("Aprovar o vínculo?\n\nVocê passará a treinar com este profissional e, se tiver uma assinatura paga, ela será cancelada (você não precisa mais pagar).")) return;
+    if(!(await levoConfirm({ titulo:"Aprovar vínculo?", msg:"Tem certeza que deseja aprovar este vínculo?", ok:"Sim, aprovar", cancel:"Cancelar" }))) return;
     try{
       const { data:{ session } } = await sb.auth.getSession();
       if(!session){ alert("Faça login novamente."); return; }
@@ -872,7 +891,7 @@
   }
 
   async function recusarVinculo(id){
-    if(!confirm("Recusar este pedido de vínculo?")) return;
+    if(!(await levoConfirm({ titulo:"Recusar pedido?", msg:"Tem certeza que deseja recusar este pedido de vínculo? O profissional não será conectado a você.", ok:"Sim, recusar", cancel:"Voltar" }))) return;
     const { error } = await sb.from("vinculos").update({ status:"recusado", updated_at:new Date().toISOString() }).eq("id", id);
     if(error){ alert("Erro: "+error.message); return; }
     const box=document.getElementById("vinculoBanner"); if(box) box.innerHTML="";
