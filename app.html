@@ -841,7 +841,8 @@
         .eq("student_id", ME.id).eq("status","pendente").order("created_at",{ascending:false}).limit(1);
       v = data && data[0];
     }catch(e){ return; }   // tabela ausente: ignora
-    if(!v){ box.innerHTML = ""; return; }
+    if(!v){ box.innerHTML = ""; window.VINC_PEND = null; return; }
+    window.VINC_PEND = v;
     const prof = esc(v.professional_name || "Um profissional");
     box.innerHTML = `<div class="vinc-banner">
       <div class="vb-txt"><b>${prof}</b> quer te vincular como aluno. Ao aprovar, você passa a treinar
@@ -890,7 +891,8 @@
   }
 
   async function aprovarVinculo(id){
-    if(!(await levoConfirm({ titulo:"Aprovar vínculo?", msg:"Tem certeza que deseja aprovar este vínculo?", ok:"Sim, aprovar", cancel:"Cancelar" }))) return;
+    const prof = esc((window.VINC_PEND && window.VINC_PEND.professional_name) || "este profissional");
+    if(!(await levoConfirm({ titulo:"Aprovar vínculo?", msg:`Tem certeza que deseja aprovar o vínculo com <b>${prof}</b>?`, ok:"Sim, aprovar", cancel:"Cancelar" }))) return;
     try{
       const { data:{ session } } = await sb.auth.getSession();
       if(!session){ await levoAlert({ titulo:"Sessão expirada", msg:"Faça login novamente para continuar." }); return; }
@@ -901,13 +903,14 @@
       });
       const data = await resp.json().catch(()=>({}));
       if(!resp.ok || !data.ok){ await levoAlert({ titulo:"Não consegui aprovar", msg:(data.error||("erro "+resp.status)) }); return; }
-      await levoAlert({ emoji:"💪", titulo:"Vínculo aprovado!", msg:"Agora você treina com o seu novo profissional." });
+      await levoAlert({ emoji:"💪", titulo:"Vínculo aprovado!", msg:`Agora você treina com <b>${prof}</b>.` });
       location.reload();
     }catch(e){ await levoAlert({ titulo:"Erro ao aprovar", msg:e.message }); }
   }
 
   async function recusarVinculo(id){
-    if(!(await levoConfirm({ titulo:"Recusar pedido?", msg:"Tem certeza que deseja recusar este pedido de vínculo? O profissional não será conectado a você.", ok:"Sim, recusar", cancel:"Voltar" }))) return;
+    const profR = esc((window.VINC_PEND && window.VINC_PEND.professional_name) || "este profissional");
+    if(!(await levoConfirm({ titulo:"Recusar pedido?", msg:`Tem certeza que deseja recusar o pedido de vínculo de <b>${profR}</b>? O profissional não será conectado a você.`, ok:"Sim, recusar", cancel:"Voltar" }))) return;
     const { error } = await sb.from("vinculos").update({ status:"recusado", updated_at:new Date().toISOString() }).eq("id", id);
     if(error){ await levoAlert({ titulo:"Erro ao recusar", msg:error.message }); return; }
     const box=document.getElementById("vinculoBanner"); if(box) box.innerHTML="";
@@ -1829,6 +1832,15 @@
       if(error) throw error;
       ASSIN_ROWS = data || [];
     }catch(e){ ASSIN_ROWS = []; }
+    // aluno vinculado: a "assinatura" dele é o vínculo com o profissional
+    window.MEU_PROF = null;
+    if(ME && ME.role === "student"){
+      try{
+        const { data:mp } = await sb.rpc("meu_professor");
+        const row = Array.isArray(mp) ? mp[0] : mp;
+        if(row && row.professional_id) window.MEU_PROF = { nome: row.nome, professional_id: row.professional_id, desde: row.desde };
+      }catch(e){}
+    }
     const inicial = window.ASSIN_INICIAL || "atual"; window.ASSIN_INICIAL = null;
     assinSec(inicial);
   }
@@ -1848,6 +1860,16 @@
   }
 
   function renderAssinAtual(){
+    // aluno vinculado a um profissional: a "assinatura" é o vínculo (sem custo pra ele)
+    if(ME && ME.role === "student" && window.MEU_PROF && window.MEU_PROF.professional_id){
+      const prof = esc(window.MEU_PROF.nome || "seu profissional");
+      const desde = window.MEU_PROF.desde ? fmtDataCurta(window.MEU_PROF.desde) : "";
+      return `<div class="assin-atual">
+        <span class="aa-tag">Sua assinatura</span>
+        <div class="aa-plano">Acompanhamento com ${prof}</div>
+        <div class="aa-info">Vinculado${desde?` desde ${desde}`:""} · sem custo pra você</div>
+      </div>`;
+    }
     // toda conta é LEVO Light por padrão (gratuito); paga mostra o plano assinado
     const ativa = ASSIN_ROWS.find(r=>r.status==="authorized");
     const plano = ativa ? ativa.plano : "light";
@@ -1863,8 +1885,16 @@
   }
 
   function renderAssinHistorico(){
-    if(!ASSIN_ROWS.length){
-      return `<div class="empty">Nenhum registro de assinatura ainda.</div>`;
+    let vinc = "";
+    if(ME && ME.role === "student" && window.MEU_PROF && window.MEU_PROF.professional_id){
+      const prof = esc(window.MEU_PROF.nome || "seu profissional");
+      const desde = window.MEU_PROF.desde ? fmtDataCurta(window.MEU_PROF.desde) : "—";
+      vinc = `<div class="assin-hist-row">
+        <span class="ah-plano">Vínculo com ${prof}</span>
+        <span class="ah-data">${desde}</span>
+        <span class="ah-valor">—</span>
+        <span class="fin-tag pg">ativo</span>
+      </div>`;
     }
     const hist = ASSIN_ROWS.map(r=>{
       const nome = PLANO_LABEL[r.plano] || r.plano;
@@ -1876,9 +1906,12 @@
         <span class="fin-tag ${st.cls}">${st.txt}</span>
       </div>`;
     }).join("");
+    if(!vinc && !ASSIN_ROWS.length){
+      return `<div class="empty">Nenhum registro de assinatura ainda.</div>`;
+    }
     return `<div class="assin-hist">
       <div class="ah-tit">Histórico de assinaturas e pagamentos</div>
-      ${hist}
+      ${vinc}${hist}
     </div>`;
   }
 
