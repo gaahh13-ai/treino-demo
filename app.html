@@ -660,7 +660,9 @@
   let ME = null, STUDENTS = [], INVITES = [], ASSESS = [], VIEW = null, EDIT_ID = null, ASSESS_S = null, MANUAL_CALC = false;
   let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
   let EXERCICIOS = [], EX_FILTRO = "";
-  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false;
+  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false, MONTAGEM_LIBERADA = false;
+  // primeiro treino do aluno: sem dias e sem treinos passados
+  function ehPrimeiroTreino(){ return FICHA && FICHA_DIAS.length === 0 && FICHAS_TODAS.filter(f=>!f.ativa).length === 0; }
   let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [], ULTIMO_POR_DIA = {};
   let EXEC_SESSAO = null, EXEC_LOGS = {}, ULTIMAS = {}, EXEC_INICIO = null, CRONO_INT = null;
   let EXEC_DIA = null, EXEC_EXS = [], EXEC_DUR = null, RATE_NOTA = 0;
@@ -3423,7 +3425,7 @@
       document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Este aluno demo ainda não tem treino montado.</div>`;
       return;
     }
-    FICHA = ativa; FICHA_READONLY = demo;
+    FICHA = ativa; FICHA_READONLY = demo; MONTAGEM_LIBERADA = false;
     await abrirFichaDias();
   }
 
@@ -3485,8 +3487,8 @@
 
   function novoTreino(){
     if(document.getElementById("novoTreinoModal")) return;
-    // primeiro treino (ainda sem dias): não há o que duplicar — vai direto pra montagem
-    if(!FICHA_DIAS || FICHA_DIAS.length === 0){ addDia(); return; }
+    // treino atual vazio (sem dias): nada a duplicar — libera a área de montagem logo abaixo
+    if(FICHA_DIAS.length === 0){ MONTAGEM_LIBERADA = true; renderDias(); return; }
     const ov = document.createElement("div");
     ov.id = "novoTreinoModal"; ov.className = "modal-ov";
     ov.onclick = (e)=>{ if(e.target===ov) fecharNovoTreino(); };
@@ -3548,6 +3550,13 @@
   function renderDias(){
     const box = document.getElementById("fichaDias");
     if(!box) return;
+    const cont = document.getElementById("fichaConteudo");
+    // primeiro treino ainda não liberado: mostra só o quadro "Treino atual", sem a área de montagem
+    if(ehPrimeiroTreino() && !MONTAGEM_LIBERADA){
+      box.innerHTML = "";
+      if(cont) cont.innerHTML = "";
+      return;
+    }
     box.innerHTML = FICHA_DIAS.map(d=>
       `<button class="chip-f ${d.id===FICHA_DIA?"sel":""}" onclick="selDia('${d.id}')">${esc(d.label)}</button>`
     ).join("") + (FICHA_READONLY ? "" : `<button class="chip-f" style="border-style:dashed" onclick="addDia()">＋ Dia</button>`);
