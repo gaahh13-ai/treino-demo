@@ -2254,8 +2254,8 @@
       return;
     }
     let lista = studs || [];
-    // aluno(s) demo — visíveis a todo profissional só para leitura (conhecer o app completo)
-    if(ehProfLevo()){
+    // aluno(s) demo — só para profissional SEM assinatura conhecer o app; some quando ele assina um plano
+    if(ehProfLevo() && !podeVincular()){
       const { data: demo } = await sb.from("profiles").select("*").eq("is_demo", true);
       if(demo && demo.length){
         const ids = new Set(lista.map(s => s.id));
