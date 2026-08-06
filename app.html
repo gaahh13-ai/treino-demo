@@ -263,6 +263,7 @@
   .biset-grupo{border:1px solid var(--pink);border-radius:14px;padding:8px;margin:12px 0;background:rgba(127,255,0,.05)}
   .biset-grupo .tr-ex,.biset-grupo .ex-card{margin:6px 0}
   .biset-tag{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;padding:4px 6px 8px}
+  .ex-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .ex-add-cta{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
   #exForm{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
   .star-btn{background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 6px;transition:.12s;flex:0 0 auto}
@@ -2334,15 +2335,14 @@
   const GRUPOS = ["Peito","Costas","Ombro","Bíceps","Tríceps","Perna","Glúteo","Panturrilha","Abdômen","Outro"];
 
   function viewExercicios(){
-    return `<h2>Exercícios</h2>
+    return `<div class="ex-topo">
+        <h2 style="margin:0">Exercícios</h2>
+        <button class="btn small" id="exAddCta" onclick="toggleFormEx(true)">➕ Criar exercício</button>
+      </div>
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
           <h3 style="margin:0">📚 Biblioteca</h3>
           <input id="exBusca" class="aluno-search" style="max-width:220px;margin:0" placeholder="Buscar exercício…" oninput="renderExercicios()">
-        </div>
-        <div class="ex-add-cta" id="exAddCta">
-          <span>Não achou o exercício?</span>
-          <button class="btn small" onclick="toggleFormEx()">➕ Crie aqui</button>
         </div>
 
         <div id="exForm" style="display:none">
