@@ -266,6 +266,10 @@
   .biset-grupo{border:1px solid var(--pink);border-radius:14px;padding:8px;margin:12px 0;background:rgba(127,255,0,.05)}
   .biset-grupo .tr-ex,.biset-grupo .ex-card{margin:6px 0}
   .biset-tag{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;padding:4px 6px 8px}
+  .biset-tag-exec{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .biset-check{flex:0 0 auto}
+  .biset-check.on{background:#122110;border-color:#bbeccb;color:#1a8a4a}
+  .biset-grupo.done{background:#12160b;border-color:#bbeccb}
   .ex-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .ex-add-cta{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
   .ex-form-card{border:1px solid var(--pink);box-shadow:0 6px 20px rgba(0,0,0,.25)}
@@ -1479,6 +1483,7 @@
   function renderExecucao(dia, exs){
     const p = document.getElementById("panel");
     const cards = agruparBiset(exs).map(g=>{
+      const ehBiset = g.length>1;
       const inner = g.map((x,idx)=>{
         const ult = ULTIMAS[x.exercicio_id];
         const alvo = [];
@@ -1490,7 +1495,7 @@
         return `<div class="ex-card${EXEC_FEITOS.has(x.id)?" done":""}" id="exc_${x.id}">
           <div class="ex-card-top">
             <div class="ex-card-nome">${esc(x.nome_cache||"Exercício")}</div>
-            <button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>
+            ${ehBiset ? "" : `<button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>`}
           </div>
           <div class="ex-detalhe">
             <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${ult}`:""}</div>
@@ -1504,7 +1509,16 @@
           </div>
         </div>`;
       }).join("");
-      return g.length>1 ? `<div class="biset-grupo"><div class="biset-tag">🔗 Bi-set — faça em sequência, sem descanso entre eles</div>${inner}</div>` : inner;
+      if(ehBiset){
+        const ids = g.map(x=>x.id).join(",");
+        const todosFeitos = g.every(x=>EXEC_FEITOS.has(x.id));
+        return `<div class="biset-grupo${todosFeitos?" done":""}" id="bisetgrp_${g[0].id}">
+          <div class="biset-tag biset-tag-exec">
+            <span>🔗 Bi-set — faça os dois em sequência</span>
+            <button class="ex-check biset-check${todosFeitos?" on":""}" onclick="toggleBisetDone('${ids}')" title="Marcar o bi-set como feito">✓</button>
+          </div>${inner}</div>`;
+      }
+      return inner;
     }).join("");
 
     p.innerHTML = `
@@ -1529,6 +1543,19 @@
     if(!card) return;
     const done = card.classList.toggle("done");
     if(done) EXEC_FEITOS.add(id); else EXEC_FEITOS.delete(id);
+  }
+  // bi-set: um único ✓ marca os dois (ou mais) exercícios do par de uma vez
+  function toggleBisetDone(idsCsv){
+    const ids = (idsCsv||"").split(",").filter(Boolean);
+    if(!ids.length) return;
+    const novo = !ids.every(id => EXEC_FEITOS.has(id));   // se algum falta, marca todos; senão desmarca todos
+    ids.forEach(id=>{
+      const card = document.getElementById("exc_"+id);
+      if(novo){ EXEC_FEITOS.add(id); if(card) card.classList.add("done"); }
+      else { EXEC_FEITOS.delete(id); if(card) card.classList.remove("done"); }
+    });
+    const grp = document.getElementById("bisetgrp_"+ids[0]);
+    if(grp){ grp.classList.toggle("done", novo); const chk = grp.querySelector(".biset-check"); if(chk) chk.classList.toggle("on", novo); }
   }
   function minimizarTreino(){ go("meutreino"); }   // volta ao app; o treino continua ativo (pílula + cronômetro)
 
@@ -3903,7 +3930,7 @@
         </div>
         <textarea class="fx-obs" rows="2" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
                onchange="updEx('${x.id}','obs',this.value)">${esc(x.obs??"")}</textarea>
-        ${(i < lista.length-1) ? `<label class="fx-biset-chk"><input type="checkbox" ${x.biset?"checked":""} onchange="toggleBiset('${x.id}', this.checked?1:0)"> 🔗 Bi-set com o próximo exercício</label>` : ""}
+        ${(!dentroBiset && i < lista.length-1) ? `<button class="fx-biset-btn" onclick="toggleBiset('${x.id}', 1)">🔗 Fazer em bi-set com o próximo</button>` : ""}
       </div>`;
     // agrupa bi-sets: pares/trios aparecem lado a lado numa caixa destacada
     let rows = "";
@@ -3916,6 +3943,7 @@
         rows += `<div class="biset-box">
           <div class="biset-box-head">
             <span>🔗 Bi-set — feitos em sequência, sem descanso entre eles</span>
+            <button class="btn small ghost" onclick="desfazerBiset('${idsInternos}')">Desfazer</button>
           </div>
           <div class="biset-box-cards">${cards}</div>
         </div>`;
