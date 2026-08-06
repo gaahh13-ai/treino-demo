@@ -379,6 +379,9 @@
   .modo-treino .role-chip{display:none !important}
   .modo-treino .shell{grid-template-columns:1fr}
   /* pílula "treino em andamento" (fora da tela de execução) */
+  /* moldura verde ao redor da tela quando há treino em andamento (fora da tela de execução) */
+  body.treino-em-andamento::after{content:"";position:fixed;inset:0;border:4px solid var(--pink);
+    pointer-events:none;z-index:66;box-shadow:inset 0 0 22px rgba(127,255,0,.28)}
   .treino-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:70;
     display:flex;align-items:center;gap:16px;background:#15171c;border:2px solid var(--pink);
     border-radius:18px;padding:18px 18px 18px 24px;box-shadow:0 16px 44px rgba(0,0,0,.45);width:min(96%,560px)}
@@ -1095,7 +1098,8 @@
         <button class="tp-go" onclick="retomarTreino()">Retomar</button>
         <button class="tp-x" title="Descartar treino" onclick="descartarDoPill()">✕</button>`;
       tickCrono();
-    } else if(pill){ pill.remove(); }
+      document.body.classList.add("treino-em-andamento");   // moldura verde ao redor da tela
+    } else { if(pill) pill.remove(); document.body.classList.remove("treino-em-andamento"); }
   }
   function retomarTreino(){
     if(!EXEC_SESSAO || !EXEC_DIA) return;
@@ -1365,7 +1369,7 @@
   }
   // o aluno pode ajustar a carga do próprio treino (via função segura no banco)
   async function alunoSetCarga(exId, valor){
-    const v = (valor==="" || valor==null) ? null : Number(valor);
+    const n = toNum(valor); const v = isNaN(n) ? null : n;
     try{
       const { error } = await sb.rpc("aluno_set_carga", { p_ex: exId, p_carga: v });
       if(error) throw error;
@@ -1375,7 +1379,7 @@
   function renderAlunoExs(){
     const box = document.getElementById("treinoBoxAluno");
     if(!box) return;
-    if(!ALUNO_DIA){ box.innerHTML = `<div class="empty">Selecione um treino acima para ver os exercícios.</div>`; return; }
+    if(!ALUNO_DIA){ box.innerHTML = ""; return; }
     const lista = ALUNO_EXS.filter(x=>x.dia_id===ALUNO_DIA);
     const dia = ALUNO_DIAS.find(d=>d.id===ALUNO_DIA);
     if(!lista.length){ box.innerHTML = `<div class="empty">Sem exercícios neste dia.</div>`; return; }
@@ -1396,7 +1400,7 @@
               <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
               <div class="tr-presc" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                 ${esq?`<b>${esc(esq)}</b>`:""}
-                <label class="al-carga">Carga <input type="number" step="0.5" value="${x.carga_alvo??""}" placeholder="peso" onchange="alunoSetCarga('${x.id}',this.value)"></label>
+                <label class="al-carga">Carga <input type="text" inputmode="decimal" value="${x.carga_alvo??""}" placeholder="peso" onchange="alunoSetCarga('${x.id}',this.value)"></label>
                 ${(ultimo && x.descanso_seg!=null)?`<span class="meta-sm">descanso ${x.descanso_seg}s</span>`:""}
               </div>
               ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
@@ -1502,7 +1506,7 @@
             ${x.obs?`<div class="tr-obs" style="margin-top:8px">📝 ${esc(x.obs)}</div>`:""}
             <div class="carga-linha">
               <label>Carga usada</label>
-              <input class="carga-in" type="number" step="0.5" placeholder="${ult!=null?ult:"peso"}" value="${(EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].carga!=null)?EXEC_LOGS[x.id].carga:(ult??"")}"
+              <input class="carga-in" type="text" inputmode="decimal" placeholder="${ult!=null?ult:"peso"}" value="${(EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].carga!=null)?EXEC_LOGS[x.id].carga:(ult??"")}"
                      onchange="salvarCarga('${x.id}','${x.exercicio_id||""}',this.value)">
               ${descBtn}
             </div>
@@ -1534,6 +1538,7 @@
       <button class="btn" style="width:100%;margin-top:8px" onclick="finalizarTreino()">✅ Finalizar treino</button>`;
     const cont = document.getElementById("content"); if(cont) cont.classList.add("modo-treino");
     const pill = document.getElementById("treinoPill"); if(pill) pill.remove();
+    document.body.classList.remove("treino-em-andamento");   // na tela de execução não precisa da moldura
     tickCrono();
     window.scrollTo({top:0});
   }
@@ -1561,7 +1566,7 @@
 
   async function salvarCarga(fichaExId, exId, carga){
     let atual = EXEC_LOGS[fichaExId] || {};
-    atual.carga = carga===""?null:Number(carga);
+    { const n = toNum(carga); atual.carga = isNaN(n) ? null : n; }
     EXEC_LOGS[fichaExId] = atual;
     const payload = {
       sessao_id: EXEC_SESSAO.id, student_id: ME.id, professional_id: EXEC_SESSAO.professional_id,
