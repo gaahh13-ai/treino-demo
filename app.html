@@ -265,7 +265,8 @@
   .biset-tag{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;padding:4px 6px 8px}
   .ex-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .ex-add-cta{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
-  #exForm{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+  .ex-form-card{border:1px solid var(--pink);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .ex-form-card h3{color:var(--pink)}
   .star-btn{background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 6px;transition:.12s;flex:0 0 auto}
   .star-btn:hover{color:#ffcc00;transform:scale(1.15)}
   .star-btn.on{color:#ffcc00}
@@ -2339,31 +2340,30 @@
         <h2 style="margin:0">Exercícios</h2>
         <button class="btn small" id="exAddCta" onclick="toggleFormEx(true)">➕ Criar exercício</button>
       </div>
+      <div class="card ex-form-card" id="exForm" style="display:none">
+        <h3 style="margin:0 0 4px">➕ Adicionar exercício</h3>
+        <p class="meta-sm" style="margin:0 0 6px">Cole um link de GIF ou vídeo (YouTube) para demonstração, se quiser.</p>
+        <div class="form-grid2" style="margin-top:12px">
+          <div class="field"><label>Nome</label><input id="ex_nome" type="text" placeholder="ex: Supino declinado"></div>
+          <div class="field"><label>Grupo muscular</label>
+            <select id="ex_grupo">${GRUPOS.map(g=>`<option value="${g}">${g}</option>`).join("")}</select>
+          </div>
+          <div class="field"><label>Equipamento</label><input id="ex_equip" type="text" placeholder="ex: Barra, Halter, Máquina…"></div>
+          <div class="field"><label>Link de GIF/vídeo (opcional)</label><input id="ex_media" type="text" placeholder="cole aqui"></div>
+        </div>
+        <div class="field"><label>Instrução (opcional)</label><textarea id="ex_instr" rows="2" placeholder="dica de execução"></textarea></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn small" id="exBtn" onclick="salvarExercicio()">Adicionar</button>
+          <button class="btn small ghost" onclick="toggleFormEx(false)">Cancelar</button>
+        </div>
+        <div class="msg" id="exMsg"></div>
+      </div>
+
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
           <h3 style="margin:0">📚 Biblioteca</h3>
           <input id="exBusca" class="aluno-search" style="max-width:220px;margin:0" placeholder="Buscar exercício…" oninput="renderExercicios()">
         </div>
-
-        <div id="exForm" style="display:none">
-          <h3 style="margin:0 0 4px">➕ Adicionar exercício</h3>
-          <p class="meta-sm" style="margin:0 0 6px">Cole um link de GIF ou vídeo (YouTube) para demonstração, se quiser.</p>
-          <div class="form-grid2" style="margin-top:12px">
-            <div class="field"><label>Nome</label><input id="ex_nome" type="text" placeholder="ex: Supino declinado"></div>
-            <div class="field"><label>Grupo muscular</label>
-              <select id="ex_grupo">${GRUPOS.map(g=>`<option value="${g}">${g}</option>`).join("")}</select>
-            </div>
-            <div class="field"><label>Equipamento</label><input id="ex_equip" type="text" placeholder="ex: Barra, Halter, Máquina…"></div>
-            <div class="field"><label>Link de GIF/vídeo (opcional)</label><input id="ex_media" type="text" placeholder="cole aqui"></div>
-          </div>
-          <div class="field"><label>Instrução (opcional)</label><textarea id="ex_instr" rows="2" placeholder="dica de execução"></textarea></div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="btn small" id="exBtn" onclick="salvarExercicio()">Adicionar</button>
-            <button class="btn small ghost" onclick="toggleFormEx(false)">Cancelar</button>
-          </div>
-          <div class="msg" id="exMsg"></div>
-        </div>
-
         <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:4px"></div>
         <div id="exLista"><div class="empty">Carregando…</div></div>
       </div>`;
