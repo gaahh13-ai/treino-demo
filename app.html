@@ -254,6 +254,9 @@
   .fx-campos input{width:64px;padding:7px;border:1px solid var(--line);border-radius:8px;font-size:13px}
   .fx-campos label.fx-series input{width:168px}
   .fx-campos label.fx-carga input{width:96px}
+  .fx-biset-chk{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;user-select:none}
+  .fx-biset-chk input{width:18px;height:18px;accent-color:var(--pink);cursor:pointer;flex:0 0 auto}
+  .fx-biset-chk:has(input:checked){color:var(--pink)}
   .fx-biset-btn{margin-top:10px;width:100%;background:transparent;border:1px dashed var(--line);color:var(--muted);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}
   .fx-biset-btn:hover{border-color:var(--pink);color:var(--pink)}
   .fx-biset-btn.on{background:rgba(127,255,0,.10);border:1px solid var(--pink);border-style:solid;color:var(--pink)}
@@ -350,11 +353,16 @@
   .tr-obs{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--txt);background:#12140b;
     border-left:3px solid var(--pink);border-radius:0 10px 10px 0;padding:8px 11px}
   /* cronômetro flutuante de descanso (qualquer tela) */
-  .desc-float{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;
-    background:linear-gradient(120deg,#7fff00,#5fbf00);color:#fff;font-weight:800;font-size:16px;
-    padding:14px 22px;border-radius:16px;box-shadow:0 10px 30px rgba(120,60,100,.3);display:flex;align-items:center;gap:14px}
-  .desc-float button{background:rgba(255,255,255,.25);border:none;color:#fff;font-weight:800;
-    border-radius:9px;padding:6px 10px;cursor:pointer;font-size:13px}
+  /* cronômetro de descanso: ocupa ~1/3 da tela, alto contraste (fácil de ver de longe) */
+  .desc-float{position:fixed;left:0;right:0;bottom:0;z-index:80;
+    min-height:33vh;background:var(--pink);color:#0a0b0d;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+    box-shadow:0 -12px 40px rgba(0,0,0,.5);animation:restFade .15s ease}
+  .desc-float .df-lbl{font-size:18px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+  .desc-float .df-num{font-size:min(30vw,180px);line-height:.95;font-weight:800;font-variant-numeric:tabular-nums}
+  .desc-float .df-un{font-size:16px;font-weight:700;opacity:.75;margin-top:-4px}
+  .desc-float .df-parar{margin-top:16px;background:#0a0b0d;color:var(--pink);border:none;
+    border-radius:12px;padding:12px 30px;font-weight:800;font-size:16px;cursor:pointer}
   /* modal (sair do treino) */
   .modal-ov{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.68);
     display:flex;align-items:center;justify-content:center;padding:20px}
@@ -367,15 +375,15 @@
   .modo-treino .role-chip{display:none !important}
   .modo-treino .shell{grid-template-columns:1fr}
   /* pílula "treino em andamento" (fora da tela de execução) */
-  .treino-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;
-    display:flex;align-items:center;gap:12px;background:#15171c;border:1px solid var(--line);
-    border-radius:999px;padding:8px 10px 8px 16px;box-shadow:0 10px 30px rgba(180,90,140,.18)}
-  .treino-pill .tp-lbl{font-size:12.5px;font-weight:800;color:var(--pink-deep)}
-  .treino-pill .tp-crono{font-size:12.5px;font-weight:800;color:var(--txt)}
+  .treino-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:70;
+    display:flex;align-items:center;gap:16px;background:#15171c;border:2px solid var(--pink);
+    border-radius:18px;padding:18px 18px 18px 24px;box-shadow:0 16px 44px rgba(0,0,0,.45);width:min(96%,560px)}
+  .treino-pill .tp-lbl{font-size:17px;font-weight:800;color:var(--pink-deep)}
+  .treino-pill .tp-crono{font-size:34px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;margin-left:auto}
   .treino-pill .tp-go{border:none;background:linear-gradient(120deg,#7fff00,#5fbf00);color:#fff;
-    font-weight:800;border-radius:999px;padding:7px 14px;cursor:pointer;font-size:12.5px}
+    font-weight:800;border-radius:14px;padding:14px 24px;cursor:pointer;font-size:16px}
   .treino-pill .tp-x{border:none;background:#1d2027;color:var(--muted);border-radius:50%;
-    width:28px;height:28px;cursor:pointer;font-weight:800}
+    width:40px;height:40px;font-size:16px;cursor:pointer;font-weight:800;flex:0 0 auto}
   /* alerta de fim de descanso (tela cheia) */
   .rest-done-ov{position:fixed;inset:0;z-index:90;padding:24px;
     background:linear-gradient(160deg,#7fff00,#5fbf00);
@@ -385,7 +393,9 @@
     background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;
     font-size:82px;font-weight:800;animation:restPop .4s ease}
   .rest-done-txt{font-size:28px;font-weight:800;margin-top:16px}
-  .rest-done-sub{font-size:15px;opacity:.92;margin:6px 0 24px}
+  .rest-done-sub{font-size:15px;opacity:.92;margin:6px 0 18px}
+  .rest-done-passou{font-size:13px;text-transform:uppercase;letter-spacing:.08em;opacity:.9;margin:0 0 24px;line-height:1.5}
+  .rest-done-passou b{font-size:34px;font-weight:800;display:block;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:0}
   .rest-done-cx .btn{background:#15171c;color:var(--pink-deep);font-size:17px;font-weight:800;padding:15px 34px}
   @keyframes restFade{from{opacity:0}to{opacity:1}}
   @keyframes restPop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
@@ -1382,7 +1392,7 @@
               <div class="tr-nome">${esc(x.nome_cache||"Exercício")}</div>
               <div class="tr-presc" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                 ${esq?`<b>${esc(esq)}</b>`:""}
-                <label class="al-carga">Carga <input type="number" step="0.5" value="${x.carga_alvo??""}" placeholder="kg" onchange="alunoSetCarga('${x.id}',this.value)"> kg</label>
+                <label class="al-carga">Carga <input type="number" step="0.5" value="${x.carga_alvo??""}" placeholder="peso" onchange="alunoSetCarga('${x.id}',this.value)"></label>
                 ${(ultimo && x.descanso_seg!=null)?`<span class="meta-sm">descanso ${x.descanso_seg}s</span>`:""}
               </div>
               ${x.obs?`<div class="tr-obs">📝 ${esc(x.obs)}</div>`:""}
@@ -1396,6 +1406,18 @@
 
   /* ---------- ALUNO: EXECUÇÃO DO TREINO (tela dedicada) ---------- */
   async function iniciarTreino(diaId){
+    // já existe um treino rolando? avisa e oferece cancelar o outro (não será salvo)
+    if(EXEC_SESSAO){
+      const ok = await levoConfirm({ titulo:"Outro treino em andamento",
+        msg:"Você já tem um treino rolando. Se começar este, o outro será <b>cancelado e não será salvo</b>. Deseja continuar?",
+        ok:"Cancelar o outro e começar", cancel:"Voltar" });
+      if(!ok) return;
+      pararDescanso(); pararCronoTreino(); pararInatividade(); limparTreinoLS();
+      try{ await sb.from("series_feitas").delete().eq("sessao_id", EXEC_SESSAO.id);
+           await sb.from("sessoes").delete().eq("id", EXEC_SESSAO.id); }catch(e){}
+      EXEC_SESSAO = null;
+    }
+    pedirWakeLock();
     const dia = ALUNO_DIAS.find(d=>d.id===diaId);
     const exs = ALUNO_EXS.filter(x=>x.dia_id===diaId);
     if(!exs.length){ levoAlert("Este treino não tem exercícios."); return; }
@@ -1461,7 +1483,7 @@
         const ult = ULTIMAS[x.exercicio_id];
         const alvo = [];
         { const esq=esquemaPresc(x); if(esq) alvo.push(esc(esq)); }
-        if(x.carga_alvo!=null) alvo.push(`alvo ${x.carga_alvo} kg`);
+        if(x.carga_alvo!=null) alvo.push(`alvo ${x.carga_alvo}`);
         const ultimo = idx === g.length-1;
         const descBtn = (ultimo && x.descanso_seg!=null) ?
           `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
@@ -1471,13 +1493,12 @@
             <button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>
           </div>
           <div class="ex-detalhe">
-            <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${ult} kg`:""}</div>
+            <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${ult}`:""}</div>
             ${x.obs?`<div class="tr-obs" style="margin-top:8px">📝 ${esc(x.obs)}</div>`:""}
             <div class="carga-linha">
               <label>Carga usada</label>
-              <input class="carga-in" type="number" step="0.5" placeholder="${ult!=null?ult:"kg"}" value="${(EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].carga!=null)?EXEC_LOGS[x.id].carga:(ult??"")}"
+              <input class="carga-in" type="number" step="0.5" placeholder="${ult!=null?ult:"peso"}" value="${(EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].carga!=null)?EXEC_LOGS[x.id].carga:(ult??"")}"
                      onchange="salvarCarga('${x.id}','${x.exercicio_id||""}',this.value)">
-              <span class="carga-un">kg</span>
               ${descBtn}
             </div>
           </div>
@@ -1545,37 +1566,43 @@
     }
   }
 
-  let TIMER_INT = null;
+  let TIMER_INT = null, DESC_END = 0, FIM_INT = null;
+  // uma "batida" do descanso — baseada em horário-alvo, então continua correto mesmo com o app minimizado
+  function _descTick(){
+    const bar = document.getElementById("descFloat");
+    if(!bar){ clearInterval(TIMER_INT); return; }
+    const restante = Math.round((DESC_END - Date.now())/1000);
+    if(restante <= 0){
+      clearInterval(TIMER_INT);
+      pararDescanso();
+      try{ navigator.vibrate && navigator.vibrate([400,150,400,150,400]); }catch(e){}
+      mostrarFimDescanso();
+      return;
+    }
+    bar.innerHTML = `<div class="df-lbl">DESCANSO</div>
+      <div class="df-num" id="descTxt">${restante}</div>
+      <div class="df-un">segundos</div>
+      <button class="df-parar" onclick="pararDescanso()">Parar</button>`;
+  }
   // cronômetro de descanso flutuante — funciona tanto na visão do treino quanto na execução
   function descanso(seg){
     clearInterval(TIMER_INT);
-    let bar = document.getElementById("descFloat");
-    if(!bar){
-      bar = document.createElement("div");
-      bar.id = "descFloat"; bar.className = "desc-float";
-      document.body.appendChild(bar);
+    DESC_END = Date.now() + seg*1000;
+    if(!document.getElementById("descFloat")){
+      const b = document.createElement("div"); b.id="descFloat"; b.className="desc-float";
+      document.body.appendChild(b);
     }
-    let t = seg;
-    const render = (txt)=>{ bar.innerHTML = `<span id="descTxt">${txt}</span>
-      <button onclick="pararDescanso()">Parar</button>`; };
-    const tick = ()=>{
-      if(t<=0){ clearInterval(TIMER_INT);
-        pararDescanso();
-        try{ navigator.vibrate && navigator.vibrate([400,150,400,150,400]); }catch(e){}
-        mostrarFimDescanso();
-        return; }
-      render("⏱️ Descanso: " + t + "s"); t--;
-    };
-    tick(); TIMER_INT = setInterval(tick, 1000);
+    _descTick(); TIMER_INT = setInterval(_descTick, 250);
   }
   function pararDescanso(){
-    clearInterval(TIMER_INT);
+    clearInterval(TIMER_INT); DESC_END = 0;
     const bar = document.getElementById("descFloat");
     if(bar) bar.remove();
   }
-  // alerta grande de fim de descanso (vibra + símbolo + botão OK)
+  // alerta grande de fim de descanso (vibra + símbolo + cronômetro do tempo que passou)
   function mostrarFimDescanso(){
     if(document.getElementById("restDone")) return;
+    const t0 = Date.now();
     const ov = document.createElement("div");
     ov.id = "restDone"; ov.className = "rest-done-ov";
     ov.innerHTML = `
@@ -1583,14 +1610,36 @@
         <div class="rest-done-ico">✓</div>
         <div class="rest-done-txt">Descanso concluído!</div>
         <div class="rest-done-sub">Bora para a próxima série 💪</div>
+        <div class="rest-done-passou">passou do descanso<br><b id="restPassou">00:00</b></div>
         <button class="btn" onclick="fecharFimDescanso()">OK, continuar</button>
       </div>`;
     document.body.appendChild(ov);
+    clearInterval(FIM_INT);
+    FIM_INT = setInterval(()=>{
+      const el = document.getElementById("restPassou");
+      if(!el){ clearInterval(FIM_INT); return; }
+      const s = Math.floor((Date.now()-t0)/1000);
+      el.textContent = String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+    }, 1000);
   }
   function fecharFimDescanso(){
+    clearInterval(FIM_INT);
     try{ navigator.vibrate && navigator.vibrate(0); }catch(e){}
     const m = document.getElementById("restDone"); if(m) m.remove();
   }
+  // mantém a tela do celular acesa durante o uso do app (Screen Wake Lock)
+  let WAKE_LOCK = null;
+  async function pedirWakeLock(){
+    try{ if("wakeLock" in navigator && document.visibilityState==="visible"){ WAKE_LOCK = await navigator.wakeLock.request("screen"); } }catch(e){}
+  }
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState === "visible"){
+      pedirWakeLock();
+      if(document.getElementById("descFloat")) _descTick();   // corrige o descanso ao voltar
+    }
+  });
+  window.addEventListener("click", ()=>{ if(!WAKE_LOCK) pedirWakeLock(); });
+  pedirWakeLock();
 
   // cronômetro de DURAÇÃO do treino (conta pra cima desde o iniciar)
   function tickCrono(){
@@ -3854,7 +3903,7 @@
         </div>
         <textarea class="fx-obs" rows="2" placeholder="Observação para o aluno (ex.: fazer devagar, aumentar a carga na última série)"
                onchange="updEx('${x.id}','obs',this.value)">${esc(x.obs??"")}</textarea>
-        ${(!dentroBiset && i < lista.length-1) ? `<button class="fx-biset-btn" onclick="toggleBiset('${x.id}', 1)">🔗 Fazer em bi-set com o próximo</button>` : ""}
+        ${(i < lista.length-1) ? `<label class="fx-biset-chk"><input type="checkbox" ${x.biset?"checked":""} onchange="toggleBiset('${x.id}', this.checked?1:0)"> 🔗 Bi-set com o próximo exercício</label>` : ""}
       </div>`;
     // agrupa bi-sets: pares/trios aparecem lado a lado numa caixa destacada
     let rows = "";
@@ -3867,7 +3916,6 @@
         rows += `<div class="biset-box">
           <div class="biset-box-head">
             <span>🔗 Bi-set — feitos em sequência, sem descanso entre eles</span>
-            <button class="btn small ghost" onclick="desfazerBiset('${idsInternos}')">Desfazer</button>
           </div>
           <div class="biset-box-cards">${cards}</div>
         </div>`;
