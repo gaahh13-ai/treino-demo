@@ -325,7 +325,8 @@
   .treino-hero .ico-big{font-size:38px;line-height:1}
   .treino-hero h3{margin:0 0 4px;color:var(--pink-deep)}
   .treino-hero p{margin:0;font-size:13px;color:var(--txt)}
-  .treino-hero .btn{margin-top:0}
+  .treino-hero .btn{margin-top:0;min-width:210px;text-align:center;justify-content:center}
+  @media(max-width:560px){ .treino-hero .btn{min-width:100%} }
   /* resumo de treinos disponíveis x último treinado */
   .treino-lista{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
   .treino-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;width:100%;
@@ -1102,9 +1103,12 @@
       </div>` : "";
     return `<h2>Dashboard</h2>
       ${heroTreino}
-      <div class="card">
-        <h3>📊 Sua evolução</h3>
-        <p>Acompanhe seu peso, composição corporal e a frequência dos seus treinos ao longo do tempo.</p>
+      <div class="treino-hero">
+        <div class="ico-big">📊</div>
+        <div style="flex:1;min-width:180px">
+          <h3>Sua evolução</h3>
+          <p>Acompanhe seu peso, composição corporal e a frequência dos seus treinos ao longo do tempo.</p>
+        </div>
         <a class="btn" href="dashboard.html">Abrir meu dashboard →</a>
       </div>`;
   }
@@ -2336,9 +2340,6 @@
           <h3 style="margin:0">📚 Biblioteca</h3>
           <input id="exBusca" class="aluno-search" style="max-width:220px;margin:0" placeholder="Buscar exercício…" oninput="renderExercicios()">
         </div>
-        <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:4px"></div>
-        <div id="exLista"><div class="empty">Carregando…</div></div>
-
         <div class="ex-add-cta" id="exAddCta">
           <span>Não achou o exercício?</span>
           <button class="btn small" onclick="toggleFormEx()">➕ Crie aqui</button>
@@ -2362,6 +2363,9 @@
           </div>
           <div class="msg" id="exMsg"></div>
         </div>
+
+        <div id="exFiltros" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap;padding-bottom:4px"></div>
+        <div id="exLista"><div class="empty">Carregando…</div></div>
       </div>`;
   }
 
