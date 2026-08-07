@@ -306,6 +306,19 @@
   .exec-timer{background:linear-gradient(120deg,#7fff00,#5fbf00);color:#fff;font-weight:800;text-align:center;
     padding:12px;border-radius:14px;margin-bottom:12px;font-size:16px}
   .ex-card{background:#15171c;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(180,90,140,.05)}
+  /* histórico de treinos (aluno) */
+  .hist-btn{display:flex;align-items:center;gap:8px;width:100%;justify-content:center;margin:12px 0 0;
+    background:transparent;border:1px dashed var(--line);color:var(--muted);border-radius:12px;
+    padding:11px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  .hist-btn:hover{border-color:var(--pink);color:var(--pink)}
+  .hist-chev{transition:.15s}
+  .hist-btn.open .hist-chev{transform:rotate(180deg)}
+  #histTreinos{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+  .hist-row{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:rgba(127,255,0,.03)}
+  .hist-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .hist-dia{font-weight:800;font-size:14px}
+  .hist-data{font-size:12px;color:var(--muted);font-weight:700}
+  .hist-meta{font-size:12px;color:var(--muted);margin-top:4px}
   .ex-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .ex-card-nome{font-weight:800;font-size:15px;flex:1;min-width:0}
   .ex-card-acoes{display:flex;align-items:center;gap:8px;flex:0 0 auto}
@@ -1134,7 +1147,7 @@
       <div class="treino-hero">
         <div class="ico-big">🏋️</div>
         <div style="flex:1;min-width:180px">
-          <h3>Seu treino de hoje</h3>
+          <h3>Meus Treinos</h3>
           <p>Veja o treino que seu personal montou, siga as orientações e registre suas cargas.</p>
         </div>
         <button class="btn" onclick="go('meutreino')">Acessar meu treino →</button>
@@ -1279,12 +1292,48 @@
 
   /* ---------- ALUNO: MEU TREINO ---------- */
   function viewMeuTreino(){
-    return `<h2>Meu treino</h2>
+    return `<h2>Meus Treinos</h2>
       <div class="card">
         <h3>🏋️ Treino montado pelo seu personal</h3>
+        <div id="treinoMontadoEm" class="meta-sm" style="margin:-2px 0 12px"></div>
         <div id="treinoResumo"></div>
+        <button class="hist-btn" id="histBtn" onclick="toggleHistorico()">📜 Histórico de treinos <span class="hist-chev">▾</span></button>
+        <div id="histTreinos" style="display:none"></div>
         <div id="treinoBoxAluno"><div class="empty">Carregando…</div></div>
       </div>`;
+  }
+  async function toggleHistorico(){
+    const box = document.getElementById("histTreinos");
+    const btn = document.getElementById("histBtn");
+    if(!box) return;
+    const abrir = box.style.display === "none";
+    box.style.display = abrir ? "block" : "none";
+    if(btn) btn.classList.toggle("open", abrir);
+    if(abrir && !box.dataset.loaded){ box.dataset.loaded = "1"; await renderHistorico(); }
+  }
+  async function renderHistorico(){
+    const box = document.getElementById("histTreinos"); if(!box) return;
+    box.innerHTML = `<div class="empty">Carregando…</div>`;
+    const { data: sess, error } = await sb.from("sessoes")
+      .select("data,fim,dia_id,ficha_dias(label)")
+      .eq("student_id", ME.id).eq("finalizada", true)
+      .order("data", { ascending:false }).limit(200);
+    if(error){ box.innerHTML = `<div class="empty">Não consegui carregar o histórico.</div>`; return; }
+    if(!sess || !sess.length){ box.innerHTML = `<div class="empty">Você ainda não finalizou nenhum treino.</div>`; return; }
+    const p = n => String(n).padStart(2,"0");
+    const hh = d => d ? p(d.getHours())+":"+p(d.getMinutes()) : "—";
+    const dm = d => p(d.getDate())+"/"+p(d.getMonth()+1)+"/"+String(d.getFullYear()).slice(2);
+    box.innerHTML = sess.map(s=>{
+      const ini = new Date(s.data);
+      const fim = s.fim ? new Date(s.fim) : null;
+      const durSeg = fim ? Math.max(0, Math.round((fim-ini)/1000)) : null;
+      const durTxt = durSeg!=null ? (Math.floor(durSeg/60)+" min"+(durSeg%60?" "+(durSeg%60)+"s":"")) : "—";
+      const label = (s.ficha_dias && s.ficha_dias.label) ? s.ficha_dias.label : "Treino";
+      return `<div class="hist-row">
+          <div class="hist-top"><span class="hist-dia">${esc(label)}</span><span class="hist-data">${dm(ini)}</span></div>
+          <div class="hist-meta">início ${hh(ini)} · fim ${hh(fim)} · ${durTxt}</div>
+        </div>`;
+    }).join("");
   }
 
   // "há X dias" a partir de uma data
@@ -1302,6 +1351,8 @@
     const box = document.getElementById("treinoBoxAluno");
     if(!fichas || !fichas.length){ if(box) box.innerHTML = `<div class="empty">Seu personal ainda não montou um treino.</div>`; return; }
     const ficha = fichas[0];
+    { const me = document.getElementById("treinoMontadoEm");
+      if(me) me.textContent = ficha.created_at ? ("Montado pelo seu personal em " + fmtDataCurta(ficha.created_at)) : ""; }
     const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", ficha.id).order("ordem");
     ALUNO_DIAS = dias || [];
     if(!ALUNO_DIAS.length){ if(box) box.innerHTML = `<div class="empty">Seu personal ainda não adicionou os dias do treino.</div>`; return; }
@@ -1862,8 +1913,10 @@
     const dur = EXEC_DUR;
     pararCronoTreino(); pararInatividade(); limparTreinoLS();
     // tenta salvar nota+comentário; se as colunas ainda não existem, finaliza mesmo assim
-    const { error } = await sb.from("sessoes").update({ finalizada:true, nota: RATE_NOTA||null, comentario: coment }).eq("id", EXEC_SESSAO.id);
-    if(error){ await sb.from("sessoes").update({ finalizada:true }).eq("id", EXEC_SESSAO.id); }
+    const fimIso = new Date().toISOString();
+    const { error } = await sb.from("sessoes").update({ finalizada:true, fim: fimIso, nota: RATE_NOTA||null, comentario: coment }).eq("id", EXEC_SESSAO.id);
+    if(error){ const { error:e2 } = await sb.from("sessoes").update({ finalizada:true, fim: fimIso }).eq("id", EXEC_SESSAO.id);
+               if(e2){ await sb.from("sessoes").update({ finalizada:true }).eq("id", EXEC_SESSAO.id); } }
     EXEC_SESSAO = null;
     go("meutreino");
     const msg = dur!=null ? `✅ Treino registrado em ${dur} min! Bom trabalho. 💪` : "✅ Treino registrado! Bom trabalho. 💪";
