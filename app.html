@@ -1526,8 +1526,13 @@
 
   // texto do esquema de séries/reps (novo: só texto em x.reps; legado: "3x12")
   function esquemaPresc(x){
-    if(x.series!=null && x.reps) return `${x.series}x${x.reps}`;
-    if(x.reps) return String(x.reps);
+    const reps = (x.reps!=null) ? String(x.reps).trim() : "";
+    if(reps){
+      // dado antigo: reps era um número puro e series o nº de séries → "3x12"
+      if(x.series!=null && /^\d+$/.test(reps)) return `${x.series}x${reps}`;
+      // novo modelo: o professor digita o esquema completo no campo (ex.: "2 x 15") → mostra como está
+      return reps;
+    }
     if(x.series!=null) return `${x.series} séries`;
     return "";
   }
