@@ -379,12 +379,10 @@
   .modo-treino .role-chip{display:none !important}
   .modo-treino .shell{grid-template-columns:1fr}
   /* pílula "treino em andamento" (fora da tela de execução) */
-  /* moldura verde ao redor da tela quando há treino em andamento (fora da tela de execução) */
-  body.treino-em-andamento::after{content:"";position:fixed;inset:0;border:4px solid var(--pink);
-    pointer-events:none;z-index:66;box-shadow:inset 0 0 22px rgba(127,255,0,.28)}
   .treino-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:70;
-    display:flex;align-items:center;gap:16px;background:#15171c;border:2px solid var(--pink);
-    border-radius:18px;padding:18px 18px 18px 24px;box-shadow:0 16px 44px rgba(0,0,0,.45);width:min(96%,560px)}
+    display:flex;align-items:center;gap:16px;background:#15171c;border:3px solid var(--pink);
+    border-radius:18px;padding:18px 18px 18px 24px;
+    box-shadow:0 0 20px rgba(127,255,0,.5), 0 16px 44px rgba(0,0,0,.55);width:min(96%,560px)}
   .treino-pill .tp-lbl{font-size:17px;font-weight:800;color:var(--pink-deep)}
   .treino-pill .tp-crono{font-size:34px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums;margin-left:auto}
   .treino-pill .tp-go{border:none;background:linear-gradient(120deg,#7fff00,#5fbf00);color:#fff;
@@ -1098,8 +1096,7 @@
         <button class="tp-go" onclick="retomarTreino()">Retomar</button>
         <button class="tp-x" title="Descartar treino" onclick="descartarDoPill()">✕</button>`;
       tickCrono();
-      document.body.classList.add("treino-em-andamento");   // moldura verde ao redor da tela
-    } else { if(pill) pill.remove(); document.body.classList.remove("treino-em-andamento"); }
+    } else { if(pill) pill.remove(); }
   }
   function retomarTreino(){
     if(!EXEC_SESSAO || !EXEC_DIA) return;
@@ -1443,10 +1440,15 @@
     const exIds = exs.map(e=>e.exercicio_id).filter(Boolean);
     ULTIMAS = {};
     if(exIds.length){
-      const { data: hist } = await sb.from("series_feitas").select("exercicio_id,carga,created_at")
+      const { data: hist } = await sb.from("series_feitas").select("exercicio_id,carga,carga_txt,created_at")
         .eq("student_id", ME.id).in("exercicio_id", exIds)
         .not("sessao_id","is",null).order("created_at",{ascending:false}).limit(300);
-      (hist||[]).forEach(h=>{ if(h.exercicio_id && !(h.exercicio_id in ULTIMAS) && h.carga!=null) ULTIMAS[h.exercicio_id]=h.carga; });
+      (hist||[]).forEach(h=>{
+        if(h.exercicio_id && !(h.exercicio_id in ULTIMAS)){
+          const val = (h.carga_txt!=null && h.carga_txt!=="") ? h.carga_txt : (h.carga!=null ? String(h.carga) : null);
+          if(val!=null) ULTIMAS[h.exercicio_id] = val;
+        }
+      });
     }
     EXEC_DIA = dia; EXEC_EXS = exs;
     EXEC_FEITOS = new Set();
@@ -1502,11 +1504,11 @@
             ${ehBiset ? "" : `<button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>`}
           </div>
           <div class="ex-detalhe">
-            <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${ult}`:""}</div>
+            <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${esc(String(ult))}`:""}</div>
             ${x.obs?`<div class="tr-obs" style="margin-top:8px">📝 ${esc(x.obs)}</div>`:""}
             <div class="carga-linha">
               <label>Carga usada</label>
-              <input class="carga-in" type="text" inputmode="decimal" placeholder="${ult!=null?ult:"peso"}" value="${(EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].carga!=null)?EXEC_LOGS[x.id].carga:(ult??"")}"
+              <input class="carga-in" type="text" placeholder="${ult!=null?esc(String(ult)):"peso"}" value="${esc((EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].cargaTxt!=null)?EXEC_LOGS[x.id].cargaTxt:(ult??""))}"
                      onchange="salvarCarga('${x.id}','${x.exercicio_id||""}',this.value)">
               ${descBtn}
             </div>
@@ -1538,7 +1540,6 @@
       <button class="btn" style="width:100%;margin-top:8px" onclick="finalizarTreino()">✅ Finalizar treino</button>`;
     const cont = document.getElementById("content"); if(cont) cont.classList.add("modo-treino");
     const pill = document.getElementById("treinoPill"); if(pill) pill.remove();
-    document.body.classList.remove("treino-em-andamento");   // na tela de execução não precisa da moldura
     tickCrono();
     window.scrollTo({top:0});
   }
@@ -1566,12 +1567,13 @@
 
   async function salvarCarga(fichaExId, exId, carga){
     let atual = EXEC_LOGS[fichaExId] || {};
-    { const n = toNum(carga); atual.carga = isNaN(n) ? null : n; }
+    atual.cargaTxt = (carga==null || String(carga).trim()==="") ? null : String(carga).trim();
+    { const n = toNum(carga); atual.carga = isNaN(n) ? null : n; }   // guarda também o número (se der) p/ histórico
     EXEC_LOGS[fichaExId] = atual;
     const payload = {
       sessao_id: EXEC_SESSAO.id, student_id: ME.id, professional_id: EXEC_SESSAO.professional_id,
       ficha_exercicio_id: fichaExId, exercicio_id: exId||null, serie_num: 1,
-      carga: atual.carga, reps: null
+      carga: atual.carga, carga_txt: atual.cargaTxt, reps: null
     };
     if(atual.id){ await sb.from("series_feitas").update(payload).eq("id", atual.id); }
     else {
