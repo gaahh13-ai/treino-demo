@@ -299,10 +299,30 @@
     padding:10px 12px;background:#1d2027;border:1px solid var(--line);border-radius:12px}
   .ficha-head select{padding:8px;border:1px solid var(--line);border-radius:9px;font-size:12.5px}
 
+  /* botão Voltar no topo (só durante a execução) */
+  .nav-voltar{display:none;margin-left:auto;border:1.5px solid var(--pink);color:var(--pink-deep);background:#15171c;
+    border-radius:12px;padding:8px 18px;font-weight:800;font-size:13px;cursor:pointer}
+  body.exec-modo #topAcoes{display:none!important}
+  body.exec-modo .nav-voltar{display:inline-block}
   /* execução do treino (aluno, tela dedicada) */
   .exec-top{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:66px;z-index:5;
     background:linear-gradient(180deg,#0a0b0d,#0a0b0dee);padding:10px 0}
   .exec-titulo{font-size:16px;font-weight:800}
+  .foco-enter{width:100%;margin:0 0 14px;background:#0a0b0d;color:var(--pink);border:1.5px solid var(--pink);font-weight:800}
+  /* Modo Foco */
+  .foco-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .foco-crono{font-size:30px;font-weight:800;color:var(--pink-deep);font-variant-numeric:tabular-nums}
+  .foco-prog{text-align:center;font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .foco-card{border:2px solid var(--pink);border-radius:20px;padding:22px;min-height:44vh;display:flex;flex-direction:column;
+    justify-content:center;background:rgba(127,255,0,.04);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  .foco-card.done{border-color:#bbeccb;background:#12160b}
+  .foco-nome{font-size:26px;font-weight:800;line-height:1.15;text-align:center}
+  .foco-presc{text-align:center;font-size:14px;color:var(--txt);margin-top:8px}
+  .foco-check{width:100%;margin-top:18px;font-size:17px;padding:16px}
+  .foco-prox{text-align:center;font-size:13px;color:var(--muted);margin:16px 0 4px;line-height:1.5}
+  .foco-prox b{color:var(--txt);font-size:16px}
+  .foco-nav{display:flex;gap:8px;margin-top:12px}
+  .foco-nav .btn{flex:1;justify-content:center;text-align:center}
   .exec-timer{background:linear-gradient(120deg,#7fff00,#5fbf00);color:#fff;font-weight:800;text-align:center;
     padding:12px;border-radius:14px;margin-bottom:12px;font-size:16px}
   .ex-card{background:#15171c;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(180,90,140,.05)}
@@ -319,6 +339,18 @@
   .hist-dia{font-weight:800;font-size:14px}
   .hist-data{font-size:12px;color:var(--muted);font-weight:700}
   .hist-meta{font-size:12px;color:var(--muted);margin-top:4px}
+  /* fichas anteriores */
+  #fichasAnt{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding-right:4px}
+  .fa-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+    background:transparent;border:1px solid var(--line);border-radius:12px;padding:11px 14px;cursor:pointer;color:var(--txt)}
+  .fa-row:hover{border-color:var(--pink)}
+  .fa-row.open .hist-chev{transform:rotate(180deg)}
+  .fa-nome{font-weight:800;font-size:14px}
+  .fa-det{padding:4px 4px 6px;display:flex;flex-direction:column;gap:10px}
+  .fa-dia{border:1px solid var(--line);border-left:3px solid var(--pink);border-radius:10px;padding:10px 12px}
+  .fa-dia-tit{font-weight:800;font-size:13.5px;margin-bottom:6px}
+  .fa-ex{font-size:13px;padding:3px 0;border-top:1px solid var(--line)}
+  .fa-ex:first-of-type{border-top:none}
   .ex-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .ex-card-nome{font-weight:800;font-size:15px;flex:1;min-width:0}
   .ex-card-acoes{display:flex;align-items:center;gap:8px;flex:0 0 auto}
@@ -767,6 +799,7 @@
 <nav class="top"><div class="in">
   <a href="index.html"><span class="logo-levo">L<span class="ac">E</span>VO</span></a>
   <div class="top-acoes" id="topAcoes"></div>
+  <button id="navVoltar" class="nav-voltar" onclick="minimizarTreino()">← Voltar</button>
 </div></nav>
 
 <div class="wrap">
@@ -792,6 +825,7 @@
   let EXEC_SESSAO = null, EXEC_LOGS = {}, ULTIMAS = {}, EXEC_INICIO = null, CRONO_INT = null;
   let EXEC_DIA = null, EXEC_EXS = [], EXEC_DUR = null, RATE_NOTA = 0;
   let EXEC_FEITOS = new Set(), INATIV_INT = null;
+  let MODO_FOCO = false, FOCO_IDX = 0;   // Modo Foco: um exercício por vez
 
   // campos das avaliações
   const DOBRAS = [
@@ -1092,6 +1126,8 @@
   function go(id){
     VIEW = id;
     if(typeof pararDescanso==="function") pararDescanso();
+    document.body.classList.remove("exec-modo");   // volta os botões do topo ao sair da execução
+    MODO_FOCO = false;                              // sai do modo foco ao navegar
     const cont = document.getElementById("content"); if(cont) cont.classList.remove("modo-treino");
     // mantém o cronômetro do treino rodando ao navegar; só encerra se não há treino ativo
     if(!EXEC_SESSAO && typeof pararCronoTreino==="function") pararCronoTreino();
@@ -1297,8 +1333,10 @@
         <h3>🏋️ Treino montado pelo seu personal</h3>
         <div id="treinoMontadoEm" class="meta-sm" style="margin:-2px 0 12px"></div>
         <div id="treinoResumo"></div>
-        <button class="hist-btn" id="histBtn" onclick="toggleHistorico()">📜 Histórico de treinos <span class="hist-chev">▾</span></button>
+        <button class="hist-btn" id="histBtn" onclick="toggleHistorico()">📅 Diário de treinos <span class="hist-chev">▾</span></button>
         <div id="histTreinos" style="display:none"></div>
+        <button class="hist-btn" id="fichasAntBtn" onclick="toggleFichasAnt()">📋 Fichas anteriores <span class="hist-chev">▾</span></button>
+        <div id="fichasAnt" style="display:none"></div>
         <div id="treinoBoxAluno"><div class="empty">Carregando…</div></div>
       </div>`;
   }
@@ -1310,7 +1348,9 @@
     box.style.display = abrir ? "flex" : "none";
     if(btn) btn.classList.toggle("open", abrir);
     if(abrir){
-      ALUNO_DIA = null; renderResumoTreinos(); renderAlunoExs();   // fecha o treino aberto para dar lugar ao histórico
+      ALUNO_DIA = null; renderResumoTreinos(); renderAlunoExs();   // fecha o treino aberto
+      const fa=document.getElementById("fichasAnt"); if(fa) fa.style.display="none";   // fecha fichas anteriores
+      const fab=document.getElementById("fichasAntBtn"); if(fab) fab.classList.remove("open");
       if(!box.dataset.loaded){ box.dataset.loaded = "1"; await renderHistorico(); }
     }
   }
@@ -1337,6 +1377,57 @@
           <div class="hist-meta">início ${hh(ini)} · fim ${hh(fim)} · ${durTxt}</div>
         </div>`;
     }).join("");
+  }
+  // ---- Fichas anteriores (programas antigos montados pelo personal) ----
+  async function toggleFichasAnt(){
+    const box = document.getElementById("fichasAnt");
+    const btn = document.getElementById("fichasAntBtn");
+    if(!box) return;
+    const abrir = box.style.display === "none";
+    box.style.display = abrir ? "flex" : "none";
+    if(btn) btn.classList.toggle("open", abrir);
+    if(abrir){
+      if(ALUNO_DIA){ ALUNO_DIA = null; renderResumoTreinos(); renderAlunoExs(); }   // fecha treino aberto
+      const hb=document.getElementById("histTreinos"); if(hb) hb.style.display="none";   // fecha o diário
+      const hbt=document.getElementById("histBtn"); if(hbt) hbt.classList.remove("open");
+      if(!box.dataset.loaded){ box.dataset.loaded = "1"; await renderFichasAnt(); }
+    }
+  }
+  async function renderFichasAnt(){
+    const box = document.getElementById("fichasAnt"); if(!box) return;
+    box.innerHTML = `<div class="empty">Carregando…</div>`;
+    const { data: fichas, error } = await sb.from("fichas").select("id,created_at")
+      .eq("student_id", ME.id).eq("ativa", false).order("created_at",{ascending:false}).limit(50);
+    if(error){ box.innerHTML = `<div class="empty">Não consegui carregar as fichas anteriores.</div>`; return; }
+    if(!fichas || !fichas.length){ box.innerHTML = `<div class="empty">Nenhuma ficha anterior — por enquanto só a atual.</div>`; return; }
+    box.innerHTML = fichas.map(f=>`
+      <button class="fa-row" id="farow_${f.id}" onclick="abrirFichaAnt('${f.id}', this)">
+        <span class="fa-nome">Ficha de ${fmtDataCurta(f.created_at)}</span>
+        <span class="hist-chev">▾</span>
+      </button>
+      <div class="fa-det" id="fadet_${f.id}" style="display:none"></div>`).join("");
+  }
+  async function abrirFichaAnt(fichaId, btn){
+    const det = document.getElementById("fadet_"+fichaId); if(!det) return;
+    const abrir = det.style.display === "none";
+    det.style.display = abrir ? "block" : "none";
+    if(btn) btn.classList.toggle("open", abrir);
+    if(abrir && !det.dataset.loaded){
+      det.dataset.loaded = "1";
+      det.innerHTML = `<div class="empty">Carregando…</div>`;
+      const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", fichaId).order("ordem");
+      const { data: exs }  = await sb.from("ficha_exercicios").select("*").eq("ficha_id", fichaId).order("ordem");
+      if(!dias || !dias.length){ det.innerHTML = `<div class="empty">Sem dias nesta ficha.</div>`; return; }
+      det.innerHTML = dias.map(d=>{
+        const lista = (exs||[]).filter(x=>x.dia_id===d.id);
+        const its = lista.map(x=>{
+          const esq = esquemaPresc(x);
+          const info = [esq, (x.carga_alvo!=null?String(x.carga_alvo):""), (x.descanso_seg!=null?("desc "+x.descanso_seg+"s"):"")].filter(Boolean).join(" · ");
+          return `<div class="fa-ex"><b>${esc(x.nome_cache||"Exercício")}</b>${info?` <span class="meta-sm">${esc(info)}</span>`:""}</div>`;
+        }).join("");
+        return `<div class="fa-dia"><div class="fa-dia-tit">${esc(d.label)}</div>${its || '<div class="meta-sm">sem exercícios</div>'}</div>`;
+      }).join("");
+    }
   }
 
   // "há X dias" a partir de uma data
@@ -1411,9 +1502,9 @@
 
   function selDiaAluno(id){
     ALUNO_DIA = (ALUNO_DIA === id) ? null : id;   // clicar de novo fecha o treino (volta ao zero)
-    if(ALUNO_DIA){   // abriu um treino → fecha o histórico
-      const hb=document.getElementById("histTreinos"); if(hb) hb.style.display="none";
-      const bt=document.getElementById("histBtn"); if(bt) bt.classList.remove("open");
+    if(ALUNO_DIA){   // abriu um treino → fecha diário e fichas anteriores
+      ["histTreinos","fichasAnt"].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display="none"; });
+      ["histBtn","fichasAntBtn"].forEach(id=>{ const b=document.getElementById(id); if(b) b.classList.remove("open"); });
     }
     renderResumoTreinos(); renderAlunoExs();
     if(ALUNO_DIA) window.scrollTo({top:0,behavior:"smooth"});
@@ -1518,6 +1609,7 @@
     if(error){ levoAlert("Erro ao iniciar: "+error.message); return; }
     EXEC_SESSAO = sess;
     EXEC_LOGS = {};
+    MODO_FOCO = false; FOCO_IDX = 0;
 
     // carga da última vez, por exercício
     const exIds = exs.map(e=>e.exercicio_id).filter(Boolean);
@@ -1623,21 +1715,82 @@
       return inner;
     }).join("");
 
+    document.body.classList.add("exec-modo");                 // esconde os botões do topo, mostra "Voltar"
+    const cont = document.getElementById("content"); if(cont) cont.classList.add("modo-treino");
+    const pill = document.getElementById("treinoPill"); if(pill) pill.remove();
+    document.body.classList.remove("treino-em-andamento");
+
+    if(MODO_FOCO){ p.innerHTML = renderFocoHTML(dia, exs); tickCrono(); window.scrollTo({top:0}); return; }
+
     p.innerHTML = `
       <div class="exec-top">
-        <button class="btn small ghost" title="Voltar (o treino continua contando)" onclick="minimizarTreino()">←</button>
         <div style="flex:1;text-align:center">
           <div class="exec-titulo">${esc(dia.label)}</div>
           <span class="exec-crono js-crono" id="execCrono">⏲️ 00:00</span>
         </div>
-        <span style="width:40px"></span>
       </div>
+      <button class="btn foco-enter" onclick="entrarFoco()">🎯 Modo Foco</button>
       ${cards}
       <button class="btn" style="width:100%;margin-top:8px" onclick="finalizarTreino()">✅ Finalizar treino</button>`;
-    const cont = document.getElementById("content"); if(cont) cont.classList.add("modo-treino");
-    const pill = document.getElementById("treinoPill"); if(pill) pill.remove();
     tickCrono();
     window.scrollTo({top:0});
+  }
+
+  /* ---------- MODO FOCO: um exercício por vez ---------- */
+  function renderFocoHTML(dia, exs){
+    const lista = exs || EXEC_EXS || [];
+    if(FOCO_IDX >= lista.length) FOCO_IDX = lista.length-1;
+    if(FOCO_IDX < 0) FOCO_IDX = 0;
+    const x = lista[FOCO_IDX]; if(!x) return `<div class="empty">Sem exercícios.</div>`;
+    const prox = lista[FOCO_IDX+1];
+    const ult = ULTIMAS[x.exercicio_id];
+    const alvo = []; { const esq=esquemaPresc(x); if(esq) alvo.push(esc(esq)); } if(x.carga_alvo!=null) alvo.push("alvo "+esc(String(x.carga_alvo)));
+    const feito = EXEC_FEITOS.has(x.id);
+    const descBtn = (x.descanso_seg!=null) ? `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
+    return `
+      <div class="foco-top">
+        <span class="exec-crono js-crono foco-crono" id="execCrono">⏲️ 00:00</span>
+        <button class="btn small ghost" onclick="sairFoco()">↩ Modo tradicional</button>
+      </div>
+      <div class="foco-prog">Exercício ${FOCO_IDX+1} de ${lista.length}</div>
+      <div class="foco-card${feito?" done":""}">
+        <div class="foco-nome">${esc(x.nome_cache||"Exercício")}</div>
+        <div class="foco-presc">${alvo.join(" · ")||"—"}${ult!=null?` · última vez: ${esc(String(ult))}`:""}</div>
+        ${x.obs?`<div class="tr-obs" style="margin-top:12px">📝 ${esc(x.obs)}</div>`:""}
+        <div class="carga-linha" style="margin-top:16px">
+          <label>Carga usada</label>
+          <input class="carga-in" type="text" placeholder="${ult!=null?esc(String(ult)):"peso"}" value="${esc((EXEC_LOGS[x.id]&&EXEC_LOGS[x.id].cargaTxt!=null)?EXEC_LOGS[x.id].cargaTxt:(ult??""))}" onchange="salvarCarga('${x.id}','${x.exercicio_id||""}',this.value)">
+        </div>
+        ${descBtn?`<div style="margin-top:14px">${descBtn}</div>`:""}
+        <button class="btn foco-check" onclick="focoConcluir()">${feito?"✓ Feito — ir para o próximo":"✓ Concluir e ir para o próximo"}</button>
+      </div>
+      ${prox ? `<div class="foco-prox">Próximo<br><b>${esc(prox.nome_cache||"Exercício")}</b></div>` : `<div class="foco-prox">Último exercício 💪</div>`}
+      <div class="foco-nav">
+        <button class="btn small ghost" ${FOCO_IDX===0?"disabled":""} onclick="focoIr(-1)">← Anterior</button>
+        <button class="btn small ghost" ${FOCO_IDX>=lista.length-1?"disabled":""} onclick="focoIr(1)">Pular →</button>
+      </div>`;
+  }
+  function entrarFoco(){
+    MODO_FOCO = true;
+    const i = EXEC_EXS.findIndex(x=>!EXEC_FEITOS.has(x.id));
+    FOCO_IDX = i<0 ? 0 : i;
+    renderExecucao(EXEC_DIA, EXEC_EXS);
+  }
+  function sairFoco(){ MODO_FOCO = false; renderExecucao(EXEC_DIA, EXEC_EXS); }
+  function focoIr(dir){
+    const n = EXEC_EXS.length;
+    FOCO_IDX = Math.max(0, Math.min(n-1, FOCO_IDX+dir));
+    renderExecucao(EXEC_DIA, EXEC_EXS);
+  }
+  function focoConcluir(){
+    const x = EXEC_EXS[FOCO_IDX]; if(!x) return;
+    EXEC_FEITOS.add(x.id);
+    const n = EXEC_EXS.length;
+    let next = FOCO_IDX+1;
+    while(next < n && EXEC_FEITOS.has(EXEC_EXS[next].id)) next++;   // pula os já feitos
+    if(next < n){ FOCO_IDX = next; renderExecucao(EXEC_DIA, EXEC_EXS); }
+    else if(EXEC_FEITOS.size >= n){ finalizarTreino(); }            // todos concluídos
+    else { FOCO_IDX = Math.min(n-1, FOCO_IDX+1); renderExecucao(EXEC_DIA, EXEC_EXS); }
   }
 
   function toggleExDone(id){
