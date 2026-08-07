@@ -307,7 +307,16 @@
     padding:12px;border-radius:14px;margin-bottom:12px;font-size:16px}
   .ex-card{background:#15171c;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(180,90,140,.05)}
   .ex-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .ex-card-nome{font-weight:800;font-size:15px}
+  .ex-card-nome{font-weight:800;font-size:15px;flex:1;min-width:0}
+  .ex-card-acoes{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .ex-card.done .ex-obs-btn{display:none}   /* some o comentário quando o exercício está feito */
+  /* histórico de comentários no modal */
+  .com-lista{max-height:34vh;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+  .com-item{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:rgba(127,255,0,.05)}
+  .com-item-txt{font-size:13.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+  .com-item-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+  .com-item-data{font-size:11px;color:var(--muted);font-weight:700}
+  .com-del{border:none;background:none;cursor:pointer;font-size:15px;padding:2px 4px;line-height:1}
   .ex-obs-btn{border:1.5px solid var(--line);background:transparent;color:var(--muted);border-radius:10px;
     width:40px;height:40px;font-size:22px;font-weight:800;line-height:1;cursor:pointer;position:relative;flex:0 0 auto}
   .ex-obs-btn:hover,.ex-obs-btn.tem{border-color:var(--pink);color:var(--pink)}
@@ -1467,9 +1476,9 @@
     const fxIds = exs.map(e=>e.id);
     if(fxIds.length){
       try{
-        const { data: coms } = await sb.from("exercicio_comentarios").select("ficha_exercicio_id,texto")
-          .eq("student_id", ME.id).in("ficha_exercicio_id", fxIds);
-        (coms||[]).forEach(c=>{ if(c.texto) COMENTARIOS[c.ficha_exercicio_id]=c.texto; });
+        const { data: coms } = await sb.from("exercicio_comentarios").select("id,ficha_exercicio_id,texto,created_at")
+          .eq("student_id", ME.id).in("ficha_exercicio_id", fxIds).order("created_at",{ascending:true});
+        (coms||[]).forEach(c=>{ if(c.texto){ (COMENTARIOS[c.ficha_exercicio_id]=COMENTARIOS[c.ficha_exercicio_id]||[]).push({id:c.id, texto:c.texto, created_at:c.created_at}); } });
       }catch(e){}
     }
     EXEC_DIA = dia; EXEC_EXS = exs;
@@ -1523,8 +1532,10 @@
         return `<div class="ex-card${EXEC_FEITOS.has(x.id)?" done":""}" id="exc_${x.id}">
           <div class="ex-card-top">
             <div class="ex-card-nome">${esc(x.nome_cache||"Exercício")}</div>
-            <button class="ex-obs-btn${COMENTARIOS[x.id]?" tem":""}" onclick="abrirComentario('${x.id}')" title="Comentar este exercício">⋮</button>
-            ${ehBiset ? "" : `<button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>`}
+            <div class="ex-card-acoes">
+              <button class="ex-obs-btn${(COMENTARIOS[x.id]&&COMENTARIOS[x.id].length)?" tem":""}" onclick="abrirComentario('${x.id}')" title="Comentar este exercício">⋮</button>
+              ${ehBiset ? "" : `<button class="ex-check" onclick="toggleExDone('${x.id}')" title="Marcar como concluído">✓</button>`}
+            </div>
           </div>
           <div class="ex-detalhe">
             <div class="meta-sm">${alvo.join(" · ")}${ult!=null?` · última vez: ${esc(String(ult))}`:""}</div>
@@ -1544,7 +1555,7 @@
         return `<div class="biset-grupo${todosFeitos?" done":""}" id="bisetgrp_${g[0].id}">
           <div class="biset-tag biset-tag-exec">
             <span>🔗 Bi-set — faça os dois em sequência</span>
-            <button class="ex-check biset-check${todosFeitos?" on":""}" onclick="toggleBisetDone('${ids}')" title="Marcar o bi-set como feito">✓</button>
+            <button class="ex-check biset-check${todosFeitos?" on":""}" onclick="toggleBisetDone('${ids}', this)" title="Marcar o bi-set como feito">✓</button>
           </div>${inner}</div>`;
       }
       return inner;
@@ -1574,7 +1585,7 @@
     if(done) EXEC_FEITOS.add(id); else EXEC_FEITOS.delete(id);
   }
   // bi-set: um único ✓ marca os dois (ou mais) exercícios do par de uma vez
-  function toggleBisetDone(idsCsv){
+  function toggleBisetDone(idsCsv, btn){
     const ids = (idsCsv||"").split(",").filter(Boolean);
     if(!ids.length) return;
     const novo = !ids.every(id => EXEC_FEITOS.has(id));   // se algum falta, marca todos; senão desmarca todos
@@ -1583,44 +1594,79 @@
       if(novo){ EXEC_FEITOS.add(id); if(card) card.classList.add("done"); }
       else { EXEC_FEITOS.delete(id); if(card) card.classList.remove("done"); }
     });
-    const grp = document.getElementById("bisetgrp_"+ids[0]);
-    if(grp){ grp.classList.toggle("done", novo); const chk = grp.querySelector(".biset-check"); if(chk) chk.classList.toggle("on", novo); }
+    // usa o próprio botão (robusto) para achar o grupo e pintar de verde
+    const grp = btn ? btn.closest(".biset-grupo") : document.getElementById("bisetgrp_"+ids[0]);
+    if(grp) grp.classList.toggle("done", novo);
+    if(btn) btn.classList.toggle("on", novo);
   }
   function minimizarTreino(){ go("meutreino"); }   // volta ao app; o treino continua ativo (pílula + cronômetro)
 
-  // comentário do aluno em um exercício (⋮)
+  // comentário(s) do aluno em um exercício (⋮) — histórico com data, exclusão e nova mensagem
+  function fmtComentData(iso){
+    try{ const d=new Date(iso);
+      const p=n=>String(n).padStart(2,"0");
+      return `${p(d.getDate())}/${p(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }catch(e){ return ""; }
+  }
   function abrirComentario(fxId){
+    let o = document.getElementById("comentOv");
+    if(!o){ o=document.createElement("div"); o.className="modal-ov"; o.id="comentOv";
+      o.addEventListener("click", e=>{ if(e.target===o) fecharComentario(); });
+      document.body.appendChild(o);
+    }
+    renderComentarioModal(fxId);
+  }
+  function renderComentarioModal(fxId){
+    const o = document.getElementById("comentOv"); if(!o) return;
     const ex = (EXEC_EXS||[]).find(e=>e.id===fxId);
     const nome = ex ? (ex.nome_cache||"Exercício") : "Exercício";
-    const atual = COMENTARIOS[fxId] || "";
-    const o = document.createElement("div"); o.className = "modal-ov"; o.id = "comentOv";
-    o.innerHTML = `<div class="modal-cx" style="max-width:420px">
-        <h3 style="margin:0 0 4px">📝 Comentário</h3>
-        <p class="meta-sm" style="margin:0 0 10px">${esc(nome)}</p>
-        <textarea id="comentTxt" rows="4" class="fx-obs" placeholder="Escreva algo sobre este exercício (ex.: senti dor no ombro, aumentar a carga na próxima…)">${esc(atual)}</textarea>
+    const lista = COMENTARIOS[fxId] || [];
+    const itens = lista.map(c=>`
+      <div class="com-item">
+        <div class="com-item-txt">${esc(c.texto)}</div>
+        <div class="com-item-foot">
+          <span class="com-item-data">${fmtComentData(c.created_at)}</span>
+          <button class="com-del" onclick="excluirComentario('${fxId}','${c.id}')" title="Excluir">🗑</button>
+        </div>
+      </div>`).join("");
+    o.innerHTML = `<div class="modal-cx" style="max-width:440px">
+        <h3 style="margin:0 0 4px">📝 Comentários</h3>
+        <p class="meta-sm" style="margin:0 0 12px">${esc(nome)}</p>
+        ${lista.length ? `<div class="com-lista">${itens}</div>` : ""}
+        <textarea id="comentTxt" rows="3" class="fx-obs" placeholder="Escreva ${lista.length?"outra mensagem":"algo sobre este exercício"}…"></textarea>
         <div style="display:flex;gap:8px;margin-top:12px">
           <button class="btn small" onclick="salvarComentario('${fxId}')">Salvar</button>
-          <button class="btn small ghost" onclick="fecharComentario()">Cancelar</button>
+          <button class="btn small ghost" onclick="fecharComentario()">Fechar</button>
         </div>
       </div>`;
-    o.addEventListener("click", e=>{ if(e.target===o) fecharComentario(); });
-    document.body.appendChild(o);
     const t = document.getElementById("comentTxt"); if(t) t.focus();
   }
   function fecharComentario(){ const o=document.getElementById("comentOv"); if(o) o.remove(); }
+  function atualizarIndicadorComent(fxId){
+    const card = document.getElementById("exc_"+fxId);
+    const btn = card ? card.querySelector(".ex-obs-btn") : null;
+    if(btn) btn.classList.toggle("tem", !!(COMENTARIOS[fxId] && COMENTARIOS[fxId].length));
+  }
   async function salvarComentario(fxId){
     const t = document.getElementById("comentTxt");
     const texto = (t ? t.value : "").trim();
+    if(!texto){ fecharComentario(); return; }
     const ex = (EXEC_EXS||[]).find(e=>e.id===fxId);
     const payload = { student_id: ME.id, ficha_exercicio_id: fxId,
-      professional_id: ex ? ex.professional_id : null, texto: texto || null, updated_at: new Date().toISOString() };
-    const { error } = await sb.from("exercicio_comentarios").upsert(payload, { onConflict:"student_id,ficha_exercicio_id" });
+      professional_id: ex ? ex.professional_id : null, texto, created_at: new Date().toISOString() };
+    const { data, error } = await sb.from("exercicio_comentarios").insert(payload).select("id,created_at").single();
     if(error){ levoAlert("Não consegui salvar o comentário: " + error.message); return; }
-    if(texto) COMENTARIOS[fxId] = texto; else delete COMENTARIOS[fxId];
-    const card = document.getElementById("exc_"+fxId);
-    const btn = card ? card.querySelector(".ex-obs-btn") : null;
-    if(btn) btn.classList.toggle("tem", !!texto);
-    fecharComentario();
+    (COMENTARIOS[fxId] = COMENTARIOS[fxId] || []).push({ id: data.id, texto, created_at: data.created_at });
+    renderComentarioModal(fxId);      // reabre com a nova mensagem no histórico e o campo limpo
+    atualizarIndicadorComent(fxId);
+  }
+  async function excluirComentario(fxId, id){
+    if(!(await levoConfirm({ titulo:"Excluir mensagem?", msg:"Tem certeza que deseja excluir esta mensagem?", ok:"Sim, excluir", cancel:"Voltar" }))) return;
+    const { error } = await sb.from("exercicio_comentarios").delete().eq("id", id);
+    if(error){ levoAlert("Não consegui excluir: " + error.message); return; }
+    COMENTARIOS[fxId] = (COMENTARIOS[fxId] || []).filter(c=>c.id!==id);
+    renderComentarioModal(fxId);
+    atualizarIndicadorComent(fxId);
   }
 
   async function salvarCarga(fichaExId, exId, carga){
