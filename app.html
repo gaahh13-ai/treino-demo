@@ -313,7 +313,7 @@
   .hist-btn:hover{border-color:var(--pink);color:var(--pink)}
   .hist-chev{transition:.15s}
   .hist-btn.open .hist-chev{transform:rotate(180deg)}
-  #histTreinos{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+  #histTreinos{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:330px;overflow-y:auto;padding-right:4px}
   .hist-row{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:rgba(127,255,0,.03)}
   .hist-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .hist-dia{font-weight:800;font-size:14px}
@@ -1307,9 +1307,12 @@
     const btn = document.getElementById("histBtn");
     if(!box) return;
     const abrir = box.style.display === "none";
-    box.style.display = abrir ? "block" : "none";
+    box.style.display = abrir ? "flex" : "none";
     if(btn) btn.classList.toggle("open", abrir);
-    if(abrir && !box.dataset.loaded){ box.dataset.loaded = "1"; await renderHistorico(); }
+    if(abrir){
+      ALUNO_DIA = null; renderResumoTreinos(); renderAlunoExs();   // fecha o treino aberto para dar lugar ao histórico
+      if(!box.dataset.loaded){ box.dataset.loaded = "1"; await renderHistorico(); }
+    }
   }
   async function renderHistorico(){
     const box = document.getElementById("histTreinos"); if(!box) return;
@@ -1406,7 +1409,15 @@
     }).join("") + `</div>`;
   }
 
-  function selDiaAluno(id){ ALUNO_DIA = id; renderResumoTreinos(); renderAlunoExs(); window.scrollTo({top:0,behavior:"smooth"}); }
+  function selDiaAluno(id){
+    ALUNO_DIA = (ALUNO_DIA === id) ? null : id;   // clicar de novo fecha o treino (volta ao zero)
+    if(ALUNO_DIA){   // abriu um treino → fecha o histórico
+      const hb=document.getElementById("histTreinos"); if(hb) hb.style.display="none";
+      const bt=document.getElementById("histBtn"); if(bt) bt.classList.remove("open");
+    }
+    renderResumoTreinos(); renderAlunoExs();
+    if(ALUNO_DIA) window.scrollTo({top:0,behavior:"smooth"});
+  }
 
   // ícone/emoji por grupo muscular (placeholder até termos imagens/GIFs reais)
   function iconeExercicio(x){
