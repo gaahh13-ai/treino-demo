@@ -268,10 +268,10 @@
   .biset-tag{font-size:11px;font-weight:800;color:var(--pink);text-transform:uppercase;letter-spacing:.03em;padding:4px 6px 8px}
   .biset-tag-exec{display:flex;align-items:center;justify-content:space-between;gap:10px}
   .biset-check{flex:0 0 auto}
-  /* bi-set marcado como feito: fica verde igual aos exercícios individuais */
-  .biset-grupo.done{background:#12160b;border-color:#bbeccb}
+  /* bi-set: a caixa fica sempre com a borda verde; ao marcar como feito o ✓ fica verde */
+  .biset-grupo.done{background:#12160b}
   .biset-check.on,
-  .biset-grupo.done .biset-check{background:#122110;border-color:#bbeccb;color:#1a8a4a;font-weight:800}
+  .biset-grupo.done .biset-check{background:var(--pink);border-color:var(--pink);color:#0a0b0d;font-weight:800}
   .ex-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .ex-add-cta{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
   .ex-form-card{border:1px solid var(--pink);box-shadow:0 6px 20px rgba(0,0,0,.25)}
@@ -317,7 +317,7 @@
     font-size:18px;cursor:pointer;color:var(--muted);flex:0 0 auto;transition:.15s}
   .ex-check:hover{border-color:var(--pink)}
   .ex-card.done{background:#12160b;border-color:#bbeccb}
-  .ex-card.done .ex-check{background:#122110;border-color:#bbeccb;color:#1a8a4a;font-weight:800}
+  .ex-card.done .ex-check{background:var(--pink);border-color:var(--pink);color:#0a0b0d;font-weight:800}
   .ex-card.done .ex-card-nome{color:#1a8a4a;text-decoration:line-through;text-decoration-color:#bbeccb}
   .ex-card.done .ex-detalhe{display:none}
   .ser-head{display:grid;grid-template-columns:40px 1fr 1fr 44px;gap:8px;font-size:10px;font-weight:800;color:var(--muted);
@@ -399,14 +399,15 @@
     font-weight:800;border-radius:14px;padding:14px 24px;cursor:pointer;font-size:16px}
   .treino-pill .tp-x{border:none;background:#1d2027;color:var(--muted);border-radius:50%;
     width:40px;height:40px;font-size:16px;cursor:pointer;font-weight:800;flex:0 0 auto}
-  /* alerta de fim de descanso (tela cheia) */
+  /* alerta de fim de descanso: o verde SOBE do painel (33vh) e preenche a tela inteira */
   .rest-done-ov{position:fixed;inset:0;z-index:90;padding:24px;
-    background:linear-gradient(160deg,#7fff00,#5fbf00);
-    display:flex;align-items:center;justify-content:center;animation:restFade .18s ease}
-  .rest-done-cx{text-align:center;color:#fff}
+    background:var(--pink);
+    display:flex;align-items:center;justify-content:center;animation:restFill .5s cubic-bezier(.2,.85,.2,1)}
+  @keyframes restFill{from{clip-path:inset(67% 0 0 0)}to{clip-path:inset(0 0 0 0)}}
+  .rest-done-cx{text-align:center;color:#0a0b0d;animation:restFade .3s ease .3s both}
   .rest-done-ico{width:140px;height:140px;margin:0 auto;border-radius:50%;
-    background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;
-    font-size:82px;font-weight:800;animation:restPop .4s ease}
+    background:rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;
+    font-size:82px;font-weight:800;animation:restPop .4s ease .3s both}
   .rest-done-txt{font-size:28px;font-weight:800;margin-top:16px}
   .rest-done-sub{font-size:15px;opacity:.92;margin:6px 0 18px}
   .rest-done-passou{font-size:13px;text-transform:uppercase;letter-spacing:.08em;opacity:.9;margin:0 0 24px;line-height:1.5}
@@ -1667,9 +1668,9 @@
     if(restante <= 0){
       clearInterval(TIMER_INT);
       const fim = DESC_END;                 // momento exato em que o descanso terminou
-      pararDescanso();
       try{ navigator.vibrate && navigator.vibrate([400,150,400,150,400]); }catch(e){}
-      mostrarFimDescanso(fim);
+      mostrarFimDescanso(fim);              // o verde sobe cobrindo o painel do descanso
+      pararDescanso();                      // remove o painel por baixo (já coberto pelo overlay)
       return;
     }
     bar.innerHTML = `<div class="df-lbl">DESCANSO</div>
