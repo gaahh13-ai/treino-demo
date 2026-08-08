@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LEVO</title>
+<title>Piik</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{color-scheme:light;--txt:#e8eaee;--muted:#9aa0ab;--line:#262a33;--pink:#7fff00;--pink-deep:#5fbf00}
@@ -797,7 +797,7 @@
 </head>
 <body>
 <nav class="top"><div class="in">
-  <a href="index.html"><span class="logo-levo">L<span class="ac">E</span>VO</span></a>
+  <a href="index.html"><span class="logo-levo">P<span class="ac">ii</span>k</span></a>
   <div class="top-acoes" id="topAcoes"></div>
   <button id="navVoltar" class="nav-voltar" onclick="minimizarTreino()">← Voltar</button>
 </div></nav>
@@ -918,13 +918,13 @@
 
   /* profissionais com o módulo de treino habilitado (por enquanto por e-mail).
      Depois vira uma configuração por profissional no banco. */
-  const IS_LEVO = true; // build_levo.sh liga para true na geração do demo LEVO
+  const IS_LEVO = true; // build_levo.sh liga para true na geração do demo Piik
   function ehProfLevo(){ return IS_LEVO && (ME.role === "professional" || ME.role === "creator"); }
-  // Exercícios, Desempenho e Treino: liberados p/ todo profissional LEVO conhecer a ferramenta antes de assinar.
+  // Exercícios, Desempenho e Treino: liberados p/ todo profissional Piik conhecer a ferramenta antes de assinar.
   function mostrarExercicios(){ return ehProfLevo(); }
   function temPlanoTreino(){ return ehProfLevo(); }
   function temTreino(){ return ehProfLevo(); } // compat com chamadas existentes
-  // Conectar alunos reais (enviar convite / vincular) é a trava: exige plano pago (LEVO Fit / You LEVO).
+  // Conectar alunos reais (enviar convite / vincular) é a trava: exige plano pago (Piik Fit / You Piik).
   function podeVincular(){ const p=(ME.plano||"").toLowerCase(); return IS_LEVO && (ME.role === "creator" || p === "fit" || p === "you_levo"); }
 
   /* ================= MENU / LAYOUT ================= */
@@ -943,7 +943,7 @@
         {id:"inativos",  label:"Alunos inativos"}
       ]}
     ];
-    // Exercícios: todo profissional LEVO vê a biblioteca desde a criação da conta.
+    // Exercícios: todo profissional Piik vê a biblioteca desde a criação da conta.
     if(mostrarExercicios()) m.push({id:"exercicios", label:"Exercícios"});
     // Desempenho: só depois que o profissional adquire um plano pago.
     if(temPlanoTreino())    m.push({id:"desempenho", label:"Desempenho"});
@@ -1018,13 +1018,13 @@
     </div>`;
   }
 
-  // Modal de confirmação com a cara da LEVO (substitui o confirm nativo)
+  // Modal de confirmação com a cara da Piik (substitui o confirm nativo)
   function levoConfirm(opts){
     if(typeof opts === "string") opts = { msg: opts };
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
       o.innerHTML=`<div class="modal-cx" style="max-width:380px">
-        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">L<span style="color:#7fff00">E</span>VO</div>
+        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">P<span style="color:#7fff00">ii</span>k</div>
         <h3 style="margin:0 0 8px;text-align:center">${opts.titulo||""}</h3>
         ${opts.msg?`<p class="meta-sm" style="margin:0 0 18px;text-align:center">${opts.msg}</p>`:`<div style="height:10px"></div>`}
         <button class="btn" style="width:100%;margin-bottom:8px" id="lcOk">${opts.ok||"Confirmar"}</button>
@@ -1038,13 +1038,13 @@
     });
   }
 
-  // Aviso (um botão) com a cara da LEVO — substitui o alert nativo
+  // Aviso (um botão) com a cara da Piik — substitui o alert nativo
   function levoAlert(opts){
     if(typeof opts === "string") opts = { msg: opts };
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
       o.innerHTML=`<div class="modal-cx" style="max-width:380px">
-        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">L<span style="color:#7fff00">E</span>VO</div>
+        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">P<span style="color:#7fff00">ii</span>k</div>
         ${opts.emoji?`<div style="text-align:center;font-size:34px;line-height:1;margin:0 0 8px">${opts.emoji}</div>`:""}
         <h3 style="margin:0 0 8px;text-align:center">${opts.titulo||""}</h3>
         ${opts.msg?`<p class="meta-sm" style="margin:0 0 18px;text-align:center">${opts.msg}</p>`:`<div style="height:10px"></div>`}
@@ -2296,7 +2296,7 @@
 
   const PLANOS = {
     alunos: [
-      { nome:"LEVO Light", preco:"Grátis", sub:"", destaque:false, itens:[
+      { nome:"Piik Light", preco:"Grátis", sub:"", destaque:false, itens:[
         {ok:true,  t:"Acesso ao treino montado pelo personal"},
         {ok:true,  t:"Marcar treinos e ver o histórico"},
         {ok:true,  t:"Dashboard de evolução básico"},
@@ -2305,8 +2305,8 @@
         {ok:false, t:"Acompanhamento com comentários"},
         {ok:false, t:"Metas personalizadas"}
       ]},
-      { nome:"LEVO Pro", preco:"R$ 39,90", sub:"/mês", destaque:true, itens:[
-        {ok:true,  t:"Tudo do LEVO Light"},
+      { nome:"Piik Pro", preco:"R$ 39,90", sub:"/mês", destaque:true, itens:[
+        {ok:true,  t:"Tudo do Piik Light"},
         {ok:true,  t:"Avaliações físicas completas (composição corporal, RCQ)"},
         {ok:true,  t:"Gráficos de evolução de carga e medidas"},
         {ok:true,  t:"Acompanhamento com comentários"},
@@ -2315,17 +2315,17 @@
       ]}
     ],
     personal: [
-      { nome:"LEVO Fit", preco:"R$ 39,90", sub:"/mês", destaque:false, itens:[
+      { nome:"Piik Fit", preco:"R$ 39,90", sub:"/mês", destaque:false, itens:[
         {ok:true,  t:"Montagem de treinos ilimitada"},
         {ok:true,  t:"Avaliações físicas dos alunos"},
         {ok:true,  t:"Dashboard de desempenho e retenção"},
         {ok:true,  t:"Controle financeiro dos alunos"},
         {ok:false, t:"Marca própria (white-label): seu logo e suas cores"},
         {ok:false, t:"Domínio próprio"},
-        {ok:false, t:"App com a sua marca (You LEVO)"}
+        {ok:false, t:"App com a sua marca (You Piik)"}
       ]},
-      { nome:"You LEVO", preco:"R$ 59,90", sub:"/mês", destaque:true, itens:[
-        {ok:true,  t:"Tudo do LEVO Fit"},
+      { nome:"You Piik", preco:"R$ 59,90", sub:"/mês", destaque:true, itens:[
+        {ok:true,  t:"Tudo do Piik Fit"},
         {ok:true,  t:"Alunos ilimitados"},
         {ok:true,  t:"White-label completo: seu logo e suas cores"},
         {ok:true,  t:"Domínio próprio"},
@@ -2335,7 +2335,7 @@
     ]
   };
 
-  const PLANO_LABEL = { pro:"LEVO Pro", fit:"LEVO Fit", you_levo:"You LEVO", light:"LEVO Light" };
+  const PLANO_LABEL = { pro:"Piik Pro", fit:"Piik Fit", you_levo:"You Piik", light:"Piik Light" };
   const ASSIN_STATUS = {
     authorized:{txt:"Ativa",     cls:"pg"},
     pending:   {txt:"Pendente",  cls:"pe"},
@@ -2415,7 +2415,7 @@
         <button class="btn small ghost" style="margin-top:14px" onclick="sairDoProfessor()">Sair deste professor</button>
       </div>`;
     }
-    // toda conta é LEVO Light por padrão (gratuito); paga mostra o plano assinado
+    // toda conta é Piik Light por padrão (gratuito); paga mostra o plano assinado
     const ativa = ASSIN_ROWS.find(r=>r.status==="authorized");
     const plano = ativa ? ativa.plano : "light";
     const nome = PLANO_LABEL[plano] || plano;
@@ -2470,7 +2470,7 @@
   }
 
   function renderAssinSuporte(){
-    const msg = encodeURIComponent("Olá! Preciso de ajuda com a minha assinatura LEVO.");
+    const msg = encodeURIComponent("Olá! Preciso de ajuda com a minha assinatura Piik.");
     return `<div class="assin-suporte">
       <h3 style="margin:0 0 6px">Suporte</h3>
       <p class="meta-sm" style="margin:0 0 14px">Dúvidas sobre sua assinatura, cobrança ou troca de plano? Fale com a gente.</p>
@@ -2500,9 +2500,9 @@
   }
 
   async function assinarPlano(nome){
-    const mapa = { "LEVO Pro":"pro", "LEVO Fit":"fit", "You LEVO":"you_levo" };
+    const mapa = { "Piik Pro":"pro", "Piik Fit":"fit", "You Piik":"you_levo" };
     const plano = mapa[nome];
-    if(!plano){ levoAlert("O LEVO Light é gratuito — não há o que pagar. 🙂"); return; }
+    if(!plano){ levoAlert("O Piik Light é gratuito — não há o que pagar. 🙂"); return; }
     try{
       const { data:{ session } } = await sb.auth.getSession();
       if(!session){ levoAlert("Faça login para assinar."); return; }
@@ -2538,7 +2538,7 @@
     const ov = document.createElement("div");
     ov.id = "ajudaModal"; ov.className = "ajuda-ov";
     ov.onclick = (e)=>{ if(e.target===ov) fecharAjuda(); };
-    const msg = encodeURIComponent("Olá! Preciso de ajuda com o app LEVO.");
+    const msg = encodeURIComponent("Olá! Preciso de ajuda com o app Piik.");
     ov.innerHTML = `
       <div class="ajuda-pop" id="ajudaPop">
         <h3 style="margin:0 0 4px">Central de ajuda</h3>
@@ -3238,7 +3238,7 @@
       </div>`;
     }).join("");
   }
-  // cor do "preto ao verde LEVO" conforme a proximidade da meta (0 → 1)
+  // cor do "preto ao verde Piik" conforme a proximidade da meta (0 → 1)
   function corDegradeMeta(n, meta){
     const ratio = meta>0 ? Math.max(0, Math.min(1, n/meta)) : 0;
     const a=[38,42,50], b=[127,255,0];   // grafite → chartreuse
@@ -3530,7 +3530,7 @@
     const nome  = document.getElementById("inviteName").value.trim();
     const email = document.getElementById("inviteEmail").value.trim().toLowerCase();
     const msg = document.getElementById("inviteMsg"), btn = document.getElementById("inviteBtn");
-    if(!podeVincular()){ msg.className="msg warn"; msg.textContent="Conectar alunos é um recurso dos planos pagos. Assine o LEVO Fit ou You LEVO para cadastrar e vincular seus alunos."; return; }
+    if(!podeVincular()){ msg.className="msg warn"; msg.textContent="Conectar alunos é um recurso dos planos pagos. Assine o Piik Fit ou You Piik para cadastrar e vincular seus alunos."; return; }
     if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do aluno."; return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
@@ -3544,7 +3544,7 @@
     }
     if(res === "pendente"){
       btn.disabled=false; msg.className="msg ok";
-      msg.textContent = "Esse e-mail já tem conta no LEVO. Enviamos um pedido de vínculo — ele precisa aprovar dentro do app dele. Assim que aprovar, aparece na sua lista.";
+      msg.textContent = "Esse e-mail já tem conta no Piik. Enviamos um pedido de vínculo — ele precisa aprovar dentro do app dele. Assim que aprovar, aparece na sua lista.";
       document.getElementById("inviteName").value=""; document.getElementById("inviteEmail").value="";
       return;
     }
