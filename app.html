@@ -903,6 +903,7 @@
     if(ME.role !== "student" && alunoParam) PENDING_SELECT = alunoParam;
     montar();
     aberturaPosLogin();
+    checarConsentimentoContato();
   }
 
   // recém-confirmou o e-mail (?planos=1) → abre a Assinatura já na seção de Planos
@@ -911,6 +912,38 @@
       window.ASSIN_INICIAL = "planos";
       go("assinatura");
     }
+  }
+
+  /* ===== Termo de consentimento de contato (professor) ===== */
+  const TERMO_CONTATO_VERSAO = "v1";
+  const TERMO_CONTATO_TEXTO = "Autorizo o Piik a exibir meus dados de contato (e-mail, WhatsApp, CREF e Instagram) na minha página de perfil para os alunos sob minha assessoria. Estou ciente de que posso revogar esta autorização a qualquer momento nas configurações do meu perfil.";
+  async function registrarConsentimentoContato(aceito){
+    try{
+      await sb.rpc("registrar_consentimento", { p_tipo:"contato_publico", p_versao:TERMO_CONTATO_VERSAO, p_texto:TERMO_CONTATO_TEXTO, p_aceito: !!aceito });
+      if(ME){ ME.contato_publico = !!aceito; ME.contato_consent_at = new Date().toISOString(); }
+    }catch(e){ console.warn("consentimento:", e && e.message); }
+  }
+  function fecharTermoContato(){ const m=document.getElementById("termoContatoOv"); if(m) m.remove(); }
+  async function responderTermoContato(aceito){
+    await registrarConsentimentoContato(aceito);
+    fecharTermoContato();
+    const cb = document.getElementById("myContatoPublico"); if(cb) cb.checked = !!aceito;
+  }
+  function checarConsentimentoContato(){
+    const isProf = ME && (ME.role === "professional" || ME.role === "creator");
+    if(!isProf) return;
+    if(ME.contato_consent_at) return;                 // já respondeu (autorizou ou recusou)
+    if(document.getElementById("termoContatoOv")) return;
+    const ov = document.createElement("div");
+    ov.id = "termoContatoOv"; ov.className = "modal-ov";
+    ov.innerHTML =
+      '<div class="modal-cx" style="max-width:420px">'
+      + '<h3 style="margin:0 0 10px">Exibir seus contatos para seus alunos?</h3>'
+      + '<p class="meta-sm" style="margin:0 0 18px;line-height:1.5">' + TERMO_CONTATO_TEXTO + '</p>'
+      + '<button class="btn" style="width:100%;margin-bottom:8px" onclick="responderTermoContato(true)">Autorizar</button>'
+      + '<button class="btn ghost" style="width:100%" onclick="responderTermoContato(false)">Agora não</button>'
+      + '</div>';
+    document.body.appendChild(ov);
   }
   let PENDING_SELECT = null;
   let ALUNO_TREINO = false;
@@ -2246,11 +2279,13 @@
     const val = id => { const e=document.getElementById(id); return e ? (e.value.trim()||null) : undefined; };
     const sexEl = document.getElementById("mySex");
     if(sexEl){ upd.sex = sexEl.value||null; upd.birth_date = document.getElementById("myBirth").value||null; }
-    if(document.getElementById("myWhats")){ upd.whatsapp = val("myWhats"); upd.cref = val("myCref"); upd.instagram = val("myInsta"); upd.contato_publico = !!(document.getElementById("myContatoPublico")||{}).checked; }
+    if(document.getElementById("myWhats")){ upd.whatsapp = val("myWhats"); upd.cref = val("myCref"); upd.instagram = val("myInsta"); }
     const { error } = await sb.from("profiles").update(upd).eq("id", ME.id);
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
     Object.assign(ME, upd);
+    // registra/atualiza o consentimento de exibir contatos (gera prova no log)
+    if(document.getElementById("myContatoPublico")){ await registrarConsentimentoContato(document.getElementById("myContatoPublico").checked); }
     msg.className="msg ok"; msg.textContent="✅ Dados salvos com sucesso!";
     const h = document.querySelector(".hello");
     const pn = primeiroNome();
