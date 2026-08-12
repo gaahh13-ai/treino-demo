@@ -2178,7 +2178,13 @@
     const camposProf = `
       <div class="field"><label>WhatsApp</label><input id="myWhats" type="text" value="${esc(ME.whatsapp||"")}" placeholder="(11) 99999-9999"></div>
       <div class="field"><label>CREF</label><input id="myCref" type="text" value="${esc(ME.cref||"")}" placeholder="ex: 000000-G/SP"></div>
-      <div class="field"><label>Instagram</label><input id="myInsta" type="text" value="${esc(ME.instagram||"")}" placeholder="@seuperfil"></div>`;
+      <div class="field"><label>Instagram</label><input id="myInsta" type="text" value="${esc(ME.instagram||"")}" placeholder="@seuperfil"></div>
+      <div class="field" style="grid-column:1/-1;margin-top:6px">
+        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-weight:600">
+          <input id="myContatoPublico" type="checkbox" ${ME.contato_publico?"checked":""} style="width:20px;height:20px;margin-top:2px;flex:0 0 auto;accent-color:#7fff00">
+          <span style="line-height:1.4;color:#c7ccd6">Autorizo exibir meus dados de contato (e-mail, WhatsApp, CREF e Instagram) na minha p&aacute;gina de perfil para os alunos sob minha assessoria.</span>
+        </label>
+      </div>`;
     const camposAluno = `
       <div class="form-grid2">
         <div class="field"><label>Sexo</label>
@@ -2240,7 +2246,7 @@
     const val = id => { const e=document.getElementById(id); return e ? (e.value.trim()||null) : undefined; };
     const sexEl = document.getElementById("mySex");
     if(sexEl){ upd.sex = sexEl.value||null; upd.birth_date = document.getElementById("myBirth").value||null; }
-    if(document.getElementById("myWhats")){ upd.whatsapp = val("myWhats"); upd.cref = val("myCref"); upd.instagram = val("myInsta"); }
+    if(document.getElementById("myWhats")){ upd.whatsapp = val("myWhats"); upd.cref = val("myCref"); upd.instagram = val("myInsta"); upd.contato_publico = !!(document.getElementById("myContatoPublico")||{}).checked; }
     const { error } = await sb.from("profiles").update(upd).eq("id", ME.id);
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
