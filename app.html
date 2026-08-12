@@ -495,6 +495,19 @@
   .ades-row{margin-bottom:12px}
   .ades-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px}
   .ades-num{font-size:13px;font-weight:800;color:var(--txt)}
+  .qt-tog{background:transparent;border:0;color:var(--muted);font-weight:800;font-size:13px;padding:8px 16px;cursor:pointer}
+  .qt-tog.on{background:var(--accent,#7fff00);color:#0a0b0d}
+  .qt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:8px;background:#15171c}
+  .qt-row .rr-nome{font-weight:800;font-size:14px}
+  .qt-num{font-size:13px;font-weight:800;color:var(--accent,#7fff00);white-space:nowrap}
+  .prazo-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:transparent;border:0;color:var(--txt,#e8eaee);font-weight:800;font-size:16px;cursor:pointer;padding:2px 0}
+  .prazo-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;
+    margin-left:6px;border-radius:999px;background:#ff6b6b;color:#0a0b0d;font-size:12px;font-weight:800;vertical-align:middle}
+  .prazo-edit{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;
+    background:var(--card2,#12161b);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:8px 12px}
+  .prazo-edit select{background:var(--card,#0f1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:8px;padding:6px 8px;font-size:13px}
   .ades-bar{height:9px;border-radius:999px;background:#eee;overflow:hidden}
   .ades-fill{height:100%;border-radius:999px;transition:width .3s}
   .treino-resumo-al{font-size:12.5px;color:var(--txt);background:#1d2027;border:1px solid var(--line);
@@ -1182,7 +1195,7 @@
     else if(id === "alunos"){    p.innerHTML = viewAlunos();    loadStudents(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
-    else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); carregarDesempenho(); }
+    else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); PRAZOS_CARREGADOS=false; carregarDesempenho(); carregarQuemTreinou(); carregarPrazos(); }
     else if(id === "financeiro"){ p.innerHTML = viewFinanceiro(); carregarFinanceiro(); }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
     atualizarPill();
@@ -3222,7 +3235,131 @@
         <h3>✅ Adesão da semana</h3>
         <p class="meta-sm" style="margin-top:2px">Treinos feitos nos últimos 7 dias × o previsto (nº de treinos da ficha ativa).</p>
         <div id="adesaoBox" style="margin-top:12px"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="card">
+        <h3>🗓️ Quem treinou</h3>
+        <p class="meta-sm" style="margin-top:2px">Veja quais alunos registraram treino num dia ou numa semana.</p>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0">
+          <input id="qt_data" type="date" value="${isoLocal(new Date())}" onchange="carregarQuemTreinou()"
+                 style="background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:8px 10px;font-size:14px">
+          <div style="display:inline-flex;background:var(--card2,#12161b);border:1px solid var(--line,#2a2f37);border-radius:10px;overflow:hidden">
+            <button id="qt_dia" class="qt-tog on" onclick="qtSetModo('dia')">Dia</button>
+            <button id="qt_sem" class="qt-tog" onclick="qtSetModo('semana')">Semana</button>
+          </div>
+        </div>
+        <div id="qtBox"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="card">
+        <button class="prazo-toggle" onclick="togglePrazos()">
+          <span>🗓️ Prazo dos treinos <span id="prazoCount"></span></span>
+          <span id="prazoChevron" style="opacity:.6">▾</span>
+        </button>
+        <div id="prazoLista" style="display:none;margin-top:12px"><div class="empty">Carregando…</div></div>
       </div>`;
+  }
+
+  // ---- Prazo dos treinos (lista por vencimento) ----
+  let PRAZOS_CARREGADOS = false;
+  function togglePrazos(){
+    const box = document.getElementById("prazoLista");
+    const ch = document.getElementById("prazoChevron");
+    if(!box) return;
+    const aberto = box.style.display !== "none";
+    box.style.display = aberto ? "none" : "block";
+    if(ch) ch.textContent = aberto ? "▾" : "▴";
+    if(!aberto && !PRAZOS_CARREGADOS) carregarPrazos();
+  }
+  async function carregarPrazos(){
+    const box = document.getElementById("prazoLista");
+    if(!STUDENTS.length){
+      const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
+      STUDENTS = studs || [];
+    }
+    const { data: fichas } = await sb.from("fichas")
+      .select("id,student_id,created_at,duracao_meses")
+      .eq("professional_id", ME.id).eq("ativa", true);
+    const nomeDe = id => { const s = STUDENTS.find(x=>x.id===id); return s ? nomeAluno(s) : "Aluno"; };
+    const comPrazo = (fichas||[]).filter(f=>f.duracao_meses)
+      .map(f=>({ f, dias: diasParaVencer(f), nome: nomeDe(f.student_id) }))
+      .sort((a,b)=> a.dias - b.dias);
+    const semPrazo = (fichas||[]).filter(f=>!f.duracao_meses).map(f=>nomeDe(f.student_id));
+
+    // badge de quantos vencem em 7 dias ou menos (inclui vencidos)
+    const alerta = comPrazo.filter(x=>x.dias <= 7).length;
+    const cnt = document.getElementById("prazoCount");
+    if(cnt) cnt.innerHTML = alerta ? `<span class="prazo-badge">${alerta}</span>` : "";
+
+    if(box){
+      let html = "";
+      if(comPrazo.length){
+        html += comPrazo.map(x=>`
+          <div class="qt-row">
+            <span class="rr-nome">${esc(x.nome)}</span>
+            <span>${textoVencimento(x.f)}</span>
+          </div>`).join("");
+      } else {
+        html += `<div class="empty">Nenhum treino ativo com prazo definido ainda.</div>`;
+      }
+      if(semPrazo.length){
+        html += `<p class="meta-sm" style="margin-top:12px;opacity:.8">Sem prazo definido (${semPrazo.length}): ${semPrazo.map(esc).join(", ")}. Defina no cabeçalho do treino de cada aluno.</p>`;
+      }
+      box.innerHTML = html;
+    }
+    PRAZOS_CARREGADOS = true;
+  }
+
+  // ---- Quem treinou (por dia / por semana) ----
+  let QT_MODO = "dia";
+  function isoLocal(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+  function qtSetModo(m){
+    QT_MODO = m;
+    const bd=document.getElementById("qt_dia"), bs=document.getElementById("qt_sem");
+    if(bd) bd.classList.toggle("on", m==="dia");
+    if(bs) bs.classList.toggle("on", m==="semana");
+    carregarQuemTreinou();
+  }
+  function qtIntervalo(){
+    const inp = document.getElementById("qt_data");
+    const base = inp && inp.value ? new Date(inp.value+"T12:00:00") : new Date();
+    if(QT_MODO === "dia"){
+      const ini = new Date(base); ini.setHours(0,0,0,0);
+      const fim = new Date(base); fim.setHours(23,59,59,999);
+      return { ini, fim, label: "em "+ini.toLocaleDateString("pt-BR") };
+    }
+    // semana (segunda a domingo) que contém a data escolhida
+    const dow = (base.getDay()+6)%7;   // 0 = segunda
+    const ini = new Date(base); ini.setDate(base.getDate()-dow); ini.setHours(0,0,0,0);
+    const fim = new Date(ini); fim.setDate(ini.getDate()+6); fim.setHours(23,59,59,999);
+    return { ini, fim, label: `na semana de ${ini.toLocaleDateString("pt-BR")} a ${fim.toLocaleDateString("pt-BR")}` };
+  }
+  async function carregarQuemTreinou(){
+    const box = document.getElementById("qtBox"); if(!box) return;
+    box.innerHTML = `<div class="empty">Carregando…</div>`;
+    if(!STUDENTS.length){
+      const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
+      STUDENTS = studs || [];
+    }
+    const { ini, fim, label } = qtIntervalo();
+    const { data: sess } = await sb.from("sessoes").select("student_id,data")
+      .eq("professional_id", ME.id).eq("finalizada", true);
+    const cont = {};
+    (sess||[]).forEach(s=>{
+      if(!s.student_id || !s.data) return;
+      const t = new Date(s.data).getTime();
+      if(t >= ini.getTime() && t <= fim.getTime()) cont[s.student_id] = (cont[s.student_id]||0) + 1;
+    });
+    const ids = Object.keys(cont);
+    if(!ids.length){ box.innerHTML = `<div class="empty">Ninguém treinou ${label}.</div>`; return; }
+    const nomeDe = id => { const s = STUDENTS.find(x=>x.id===id); return s ? nomeAluno(s) : "Aluno"; };
+    const linhas = ids.map(id=>({ n: cont[id], nome: nomeDe(id) }))
+                      .sort((a,b)=> b.n - a.n || a.nome.localeCompare(b.nome,"pt-BR"));
+    box.innerHTML =
+      `<p class="meta-sm" style="margin-bottom:10px">${linhas.length} aluno(s) treinaram ${label}.</p>` +
+      linhas.map(r=>`
+        <div class="qt-row">
+          <span class="rr-nome">${esc(r.nome)}</span>
+          <span class="qt-num">${r.n} treino${r.n>1?"s":""}</span>
+        </div>`).join("");
   }
 
   async function carregarDesempenho(){
@@ -4058,6 +4195,43 @@
   }
   function fecharTreino(){ fecharJanela("fichaCard"); FICHA=null; FICHA_DIA=null; }
 
+  // ---- Prazo (duração recomendada) do treino ----
+  function opcoesMeses(sel){
+    let o = "";
+    for(let m=1;m<=12;m++) o += `<option value="${m}" ${Number(sel)===m?"selected":""}>${m} ${m===1?"mês":"meses"}</option>`;
+    return o;
+  }
+  function vencimentoDe(f){
+    if(!f || !f.created_at || !f.duracao_meses) return null;
+    const d = new Date(f.created_at);
+    d.setMonth(d.getMonth() + Number(f.duracao_meses));
+    return d;
+  }
+  function diasParaVencer(f){
+    const v = vencimentoDe(f); if(!v) return null;
+    return Math.ceil((v.getTime() - Date.now())/86400000);
+  }
+  function textoVencimento(f){
+    const v = vencimentoDe(f);
+    if(!v) return `<span class="meta-sm" style="opacity:.7">sem prazo definido</span>`;
+    const dias = diasParaVencer(f);
+    const data = v.toLocaleDateString("pt-BR");
+    let cor = "var(--muted)", extra = `em ${dias} dias`;
+    if(dias < 0){ cor = "#ff6b6b"; extra = `venceu há ${Math.abs(dias)} dias`; }
+    else if(dias <= 7){ cor = "#ffb020"; extra = `vence em ${dias} dia${dias===1?"":"s"}`; }
+    else if(dias === 0){ cor = "#ffb020"; extra = "vence hoje"; }
+    return `<span class="meta-sm">vence em <b>${data}</b> · <b style="color:${cor}">${extra}</b></span>`;
+  }
+  async function salvarPrazoFicha(v){
+    if(!FICHA) return;
+    const meses = parseInt(v,10) || null;
+    const { error } = await sb.from("fichas").update({ duracao_meses:meses }).eq("id", FICHA.id);
+    if(error){ levoAlert("Erro ao salvar o prazo: "+error.message); return; }
+    FICHA.duracao_meses = meses;
+    const f = FICHAS_TODAS.find(x=>x.id===FICHA.id); if(f) f.duracao_meses = meses;
+    const el = document.getElementById("fichaVence"); if(el) el.innerHTML = textoVencimento(FICHA);
+  }
+
   async function carregarFicha(studentId){
     const demo = alunoEhDemo(studentId);
     const { data: todas } = await sb.from("fichas").select("*")
@@ -4120,6 +4294,14 @@
           ${selPassadas}
           <button class="btn small" onclick="novoTreino()">＋ Novo treino</button>
         </div>
+        <div class="prazo-edit">
+          <span class="meta-sm">Recomendado por</span>
+          <select onchange="salvarPrazoFicha(this.value)">
+            <option value="">— meses —</option>
+            ${opcoesMeses(FICHA.duracao_meses)}
+          </select>
+          <span id="fichaVence">${textoVencimento(FICHA)}</span>
+        </div>
         ${presencaBlock}`;
     }
   }
@@ -4146,6 +4328,8 @@
       <div class="modal-cx">
         <h3 style="margin:0 0 6px">Novo treino</h3>
         <p class="meta-sm" style="margin:0 0 16px">O treino atual vira histórico (treinos passados) e o novo fica ativo. Como quer começar?</p>
+        <label class="meta-sm" style="display:block;margin-bottom:6px">Recomendado por quantos meses? <span class="meta-sm" style="opacity:.7">(avisamos você 7 dias antes de vencer)</span></label>
+        <select id="ntMeses" style="width:100%;margin-bottom:16px;background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:9px 10px;font-size:14px">${opcoesMeses(3)}</select>
         <button class="btn" style="width:100%;margin-bottom:8px" onclick="criarNovoTreino(true)">Duplicar o treino atual</button>
         <p class="meta-sm" style="margin:-2px 0 12px">Copia todos os dias e exercícios — você ajusta só o que mudar, mantendo o histórico do treino anterior.</p>
         <button class="btn ghost" style="width:100%;margin-bottom:8px" onclick="criarNovoTreino(false)">Começar em branco</button>
@@ -4156,12 +4340,13 @@
   function fecharNovoTreino(){ const m=document.getElementById("novoTreinoModal"); if(m) m.remove(); }
 
   async function criarNovoTreino(duplicar){
+    const meses = parseInt((document.getElementById("ntMeses")||{}).value || "", 10) || null;
     fecharNovoTreino();
     const studentId = FICHA.student_id;
     const origem = FICHA;
     await sb.from("fichas").update({ ativa:false }).eq("id", origem.id);
     const { data: nova, error } = await sb.from("fichas")
-      .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true }).select().single();
+      .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true, duracao_meses:meses }).select().single();
     if(error){ levoAlert("Erro: "+error.message); return; }
     if(duplicar){
       const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", origem.id).order("ordem");
