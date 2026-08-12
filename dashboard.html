@@ -956,11 +956,33 @@
     document.getElementById("d_meta").textContent = falta>0.05 ? "para o peso ideal" : "parabéns!";
   }
 
+  // primeiro índice com valor preenchido (ignora buracos no começo)
+  const _primeiroIdx = arr => { for(let i=0;i<arr.length;i++){ if(arr[i]!=null) return i; } return -1; };
+  const _fmtNum = v => (v==null ? "—" : String(v).replace(".",","));
+  // rótulo do tooltip: valor do ponto + variação desde a 1ª medição (evolução)
+  function rotuloComEvolucao(ctx){
+    const arr = ctx.dataset.data;
+    const v = ctx.parsed.y;
+    const nome = ctx.dataset.label || "";
+    const pi = _primeiroIdx(arr);
+    let sufixo = "";
+    if(pi >= 0 && v != null){
+      if(ctx.dataIndex === pi){
+        sufixo = "  (ponto inicial)";
+      }else{
+        const d = v - arr[pi];
+        const s = d >= 0 ? "+" : "−";
+        sufixo = `  (${s}${Math.abs(d).toFixed(1).replace(".",",")} desde o início)`;
+      }
+    }
+    return `${nome}: ${_fmtNum(v)}${sufixo}`;
+  }
+
   const opcoes = (titulo, datas) => ({
     responsive:true, maintainAspectRatio:false,
     plugins:{
       legend:{ display:titulo, labels:{ color:CORES.txt, font:{size:11} } },
-      tooltip:{ callbacks:{ title:(items)=> (datas && items.length) ? datas[items[0].dataIndex] : "" } }
+      tooltip:{ callbacks:{ title:(items)=> (datas && items.length) ? datas[items[0].dataIndex] : "", label: rotuloComEvolucao } }
     },
     scales:{
       x:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} } },
@@ -1020,7 +1042,7 @@
           interaction:{ mode:"index", intersect:false },
           plugins:{
             legend:{ position:"top", labels:{ color:CORES.txt, usePointStyle:true, pointStyle:"rectRounded", boxWidth:10, font:{size:11} } },
-            tooltip:{ callbacks:{ title:(items)=> items.length ? datasFull[items[0].dataIndex] : "" } }
+            tooltip:{ callbacks:{ title:(items)=> items.length ? datasFull[items[0].dataIndex] : "", label: rotuloComEvolucao } }
           },
           scales:{
             x:{ grid:{ color:CORES.grid }, ticks:{ color:CORES.txt, font:{size:10} } },
