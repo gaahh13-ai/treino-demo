@@ -899,6 +899,36 @@
     v = v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");
     alvo.value = v; return v;
   }
+  // pop-up obrigatório de CPF ao logar (aluno sem CPF). Não fecha sem um CPF válido.
+  function pedirCpfObrigatorio(){
+    return new Promise((resolve)=>{
+      const ov = document.createElement("div");
+      ov.className = "modal-ov"; ov.style.zIndex = "9999";
+      ov.innerHTML = `
+        <div class="modal-cx">
+          <h3 style="margin:0 0 6px">Complete seu cadastro</h3>
+          <p class="meta-sm" style="margin:0 0 14px">Para continuar, informe seu <b>CPF</b>. Ele é usado apenas para identificar sua conta com segurança e <b>não poderá ser alterado depois</b>.</p>
+          <input id="gateCpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"
+                 style="width:100%;background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:11px 12px;font-size:15px"
+                 oninput="mascaraCpf(this)">
+          <div class="msg" id="gateCpfMsg" style="margin:8px 0 0"></div>
+          <button class="btn" id="gateCpfBtn" style="width:100%;margin-top:12px">Salvar e continuar</button>
+        </div>`;
+      document.body.appendChild(ov);
+      const inp = ov.querySelector("#gateCpf");
+      const btn = ov.querySelector("#gateCpfBtn");
+      const msg = ov.querySelector("#gateCpfMsg");
+      inp.focus();
+      btn.onclick = async ()=>{
+        const raw = soDigitos(inp.value);
+        if(!cpfValido(raw)){ msg.className="msg err"; msg.textContent="Digite um CPF válido."; return; }
+        btn.disabled = true; msg.className="msg"; msg.textContent="Salvando…";
+        const { error } = await sb.from("profiles").update({ cpf: raw }).eq("id", ME.id);
+        if(error){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
+        ME.cpf = raw; ov.remove(); resolve();
+      };
+    });
+  }
 
   /* ================= INÍCIO ================= */
   async function init(){
@@ -949,6 +979,10 @@
       });
       if(ok){ try{ await sb.rpc("cancelar_exclusao_conta"); ME.delecao_solicitada_at = null; }catch(e){} }
       else { await sb.auth.signOut(); location.href = "login.html"; return; }
+    }
+    // aluno sem CPF (cadastrado pelo personal / conta antiga) → exige o CPF para continuar
+    if(ME.role === "student" && (ME.status||"active") === "active" && !ME.cpf){
+      await pedirCpfObrigatorio();
     }
     // aluno: só mostra "Meu treino" se o profissional já montou algum treino
     if(ME.role === "student"){
@@ -2276,7 +2310,7 @@
         </label>
       </div>`;
     const camposAluno = `
-      <div class="field"><label>CPF</label><input id="myCpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" value="${ME.cpf?mascaraCpf(String(ME.cpf)):""}" oninput="mascaraCpf(this)"></div>
+      <div class="field"><label>CPF <span class="meta-sm" style="opacity:.7">(não editável)</span></label><input type="text" value="${ME.cpf?mascaraCpf(String(ME.cpf)):"—"}" disabled></div>
       <div class="form-grid2">
         <div class="field"><label>Sexo</label>
           <select id="mySex"><option value="">—</option>
@@ -2304,7 +2338,9 @@
         <div class="acc-body" id="accDados">
           <div class="field"><label>Nome completo</label>
             <input id="myName" type="text" value="${esc(ME.full_name||"")}" placeholder="Seu nome"></div>
-          <div class="field"><label>E-mail</label><input type="text" value="${esc(ME.email||"")}" disabled></div>
+          <div class="field"><label>E-mail</label><input type="text" value="${esc(ME.email||"")}" disabled>
+            <div class="meta-sm" style="margin-top:4px;opacity:.8">Para alterar o e-mail, fale com o suporte pelo WhatsApp.</div>
+          </div>
           ${isProf ? camposProf : camposAluno}
           <button class="btn small" id="nameBtn" onclick="salvarNome()">Salvar dados</button>
           <div class="msg" id="nameMsg"></div>
@@ -2358,12 +2394,6 @@
     if(!v){ msg.className="msg err"; msg.textContent="Digite seu nome."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
     const upd = { full_name:v };
-    const cpfEl = document.getElementById("myCpf");
-    if(cpfEl){
-      const cpfRaw = soDigitos(cpfEl.value);
-      if(cpfRaw && !cpfValido(cpfRaw)){ msg.className="msg err"; msg.textContent="CPF inválido."; return; }
-      upd.cpf = cpfRaw || null;
-    }
     const val = id => { const e=document.getElementById(id); return e ? (e.value.trim()||null) : undefined; };
     const sexEl = document.getElementById("mySex");
     if(sexEl){ upd.sex = sexEl.value||null; upd.birth_date = document.getElementById("myBirth").value||null; }
@@ -2796,7 +2826,7 @@
            e ficam visíveis para o cliente também.</p>
         <input type="hidden" id="cliId">
         <div class="field" style="margin-top:12px"><label>Nome completo</label><input id="cli_nome" type="text"></div>
-        <div class="field"><label>CPF</label><input id="cli_cpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" oninput="mascaraCpf(this)"></div>
+        <div class="field"><label>CPF <span class="meta-sm" style="opacity:.7">(não editável)</span></label><input id="cli_cpf" type="text" placeholder="—" disabled></div>
         <div class="form-grid2">
           <div class="field"><label>Sexo</label>
             <select id="cli_sex">
@@ -3973,17 +4003,15 @@
     if(bloqueiaDemo(id)) return;
     const msg = document.getElementById("cliMsg"), btn = document.getElementById("cliBtn");
     const nome  = document.getElementById("cli_nome").value.trim() || null;
-    const cpfRaw = soDigitos(document.getElementById("cli_cpf").value);
     const sex   = document.getElementById("cli_sex").value || null;
     const birth = document.getElementById("cli_birth").value || null;
     const modalidade = document.getElementById("cli_modal").value || "online";
-    if(cpfRaw && !cpfValido(cpfRaw)){ msg.className="msg err"; msg.textContent="CPF inválido."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
-    const { error } = await sb.from("profiles").update({ full_name:nome, cpf:cpfRaw||null, sex, birth_date:birth, modalidade }).eq("id", id);
+    const { error } = await sb.from("profiles").update({ full_name:nome, sex, birth_date:birth, modalidade }).eq("id", id);
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
     const s = STUDENTS.find(x=>x.id===id);
-    if(s){ s.full_name=nome; s.cpf=cpfRaw||null; s.sex=sex; s.birth_date=birth; s.modalidade=modalidade; }
+    if(s){ s.full_name=nome; s.sex=sex; s.birth_date=birth; s.modalidade=modalidade; }
     msg.className="msg ok"; msg.textContent="✅ Dados salvos!";
     renderStudents();
   }
