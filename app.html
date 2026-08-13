@@ -884,6 +884,21 @@
   function shortId(id){ return String(id||"").slice(0,8); }
   function primeiroNome(){ const n=(ME.full_name||"").trim(); return n?n.split(/\s+/)[0]:""; }
   function nomeAluno(s){ return s ? (s.full_name || s.email || ("Aluno "+shortId(s.id))) : "Aluno"; }
+  function soDigitos(v){ return (v||"").replace(/\D/g,""); }
+  function cpfValido(cpf){
+    cpf = soDigitos(cpf);
+    if(cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i);
+    let d1=(s*10)%11; if(d1===10) d1=0; if(d1!==parseInt(cpf[9])) return false;
+    s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i);
+    let d2=(s*10)%11; if(d2===10) d2=0; return d2===parseInt(cpf[10]);
+  }
+  function mascaraCpf(el){
+    const alvo = (typeof el === "string") ? {value:el} : el;
+    let v = soDigitos(alvo.value).slice(0,11);
+    v = v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");
+    alvo.value = v; return v;
+  }
 
   /* ================= INÍCIO ================= */
   async function init(){
@@ -2261,6 +2276,7 @@
         </label>
       </div>`;
     const camposAluno = `
+      <div class="field"><label>CPF</label><input id="myCpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" value="${ME.cpf?mascaraCpf(String(ME.cpf)):""}" oninput="mascaraCpf(this)"></div>
       <div class="form-grid2">
         <div class="field"><label>Sexo</label>
           <select id="mySex"><option value="">—</option>
@@ -2342,6 +2358,12 @@
     if(!v){ msg.className="msg err"; msg.textContent="Digite seu nome."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
     const upd = { full_name:v };
+    const cpfEl = document.getElementById("myCpf");
+    if(cpfEl){
+      const cpfRaw = soDigitos(cpfEl.value);
+      if(cpfRaw && !cpfValido(cpfRaw)){ msg.className="msg err"; msg.textContent="CPF inválido."; return; }
+      upd.cpf = cpfRaw || null;
+    }
     const val = id => { const e=document.getElementById(id); return e ? (e.value.trim()||null) : undefined; };
     const sexEl = document.getElementById("mySex");
     if(sexEl){ upd.sex = sexEl.value||null; upd.birth_date = document.getElementById("myBirth").value||null; }
@@ -2774,6 +2796,7 @@
            e ficam visíveis para o cliente também.</p>
         <input type="hidden" id="cliId">
         <div class="field" style="margin-top:12px"><label>Nome completo</label><input id="cli_nome" type="text"></div>
+        <div class="field"><label>CPF</label><input id="cli_cpf" type="text" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" oninput="mascaraCpf(this)"></div>
         <div class="form-grid2">
           <div class="field"><label>Sexo</label>
             <select id="cli_sex">
@@ -3933,6 +3956,7 @@
     const s = STUDENTS.find(x=>x.id===id);
     document.getElementById("cliId").value = id;
     document.getElementById("cli_nome").value = s?.full_name || "";
+    document.getElementById("cli_cpf").value = s?.cpf ? mascaraCpf(String(s.cpf)) : "";
     document.getElementById("cli_sex").value = s?.sex || "";
     document.getElementById("cli_birth").value = s?.birth_date ? String(s.birth_date).slice(0,10) : "";
     document.getElementById("cli_modal").value = s?.modalidade || "online";
@@ -3949,15 +3973,17 @@
     if(bloqueiaDemo(id)) return;
     const msg = document.getElementById("cliMsg"), btn = document.getElementById("cliBtn");
     const nome  = document.getElementById("cli_nome").value.trim() || null;
+    const cpfRaw = soDigitos(document.getElementById("cli_cpf").value);
     const sex   = document.getElementById("cli_sex").value || null;
     const birth = document.getElementById("cli_birth").value || null;
     const modalidade = document.getElementById("cli_modal").value || "online";
+    if(cpfRaw && !cpfValido(cpfRaw)){ msg.className="msg err"; msg.textContent="CPF inválido."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
-    const { error } = await sb.from("profiles").update({ full_name:nome, sex, birth_date:birth, modalidade }).eq("id", id);
+    const { error } = await sb.from("profiles").update({ full_name:nome, cpf:cpfRaw||null, sex, birth_date:birth, modalidade }).eq("id", id);
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
     const s = STUDENTS.find(x=>x.id===id);
-    if(s){ s.full_name=nome; s.sex=sex; s.birth_date=birth; s.modalidade=modalidade; }
+    if(s){ s.full_name=nome; s.cpf=cpfRaw||null; s.sex=sex; s.birth_date=birth; s.modalidade=modalidade; }
     msg.className="msg ok"; msg.textContent="✅ Dados salvos!";
     renderStudents();
   }
