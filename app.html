@@ -508,6 +508,14 @@
   .prazo-edit{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;
     background:var(--card2,#12161b);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:8px 12px}
   .prazo-edit select{background:var(--card,#0f1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:8px;padding:6px 8px;font-size:13px}
+  .grupos-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .grp-chip{background:var(--card2,#12161b);border:1px solid var(--line,#2a2f37);color:var(--txt,#e8eaee);
+    border-radius:999px;padding:6px 13px;font-size:13px;font-weight:700;cursor:pointer}
+  .grp-chip.on{background:var(--accent,#7fff00);border-color:var(--accent,#7fff00);color:#0a0b0d}
+  .grp-chip.add{font-weight:800;padding:6px 12px}
+  .grp-chip.ghost{background:transparent;color:var(--muted);font-weight:600}
+  .grupos-aluno-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
+  .grupos-aluno{display:inline-flex;gap:6px;flex-wrap:wrap}
   .ades-bar{height:9px;border-radius:999px;background:#eee;overflow:hidden}
   .ades-fill{height:100%;border-radius:999px;transition:width .3s}
   .treino-resumo-al{font-size:12.5px;color:var(--txt);background:#1d2027;border:1px solid var(--line);
@@ -898,6 +906,7 @@
         id:user.id, role:(meta.role === "professional" ? "professional" : "student"),
         status:"active", plano:"light",
         full_name: meta.full_name || null,
+        cpf: meta.cpf || null,
         email:user.email
       };
       try{
@@ -906,6 +915,26 @@
       }catch(e){ profile = novo; }
     }
     ME = { ...profile, email: user.email };
+    // preenche o CPF a partir do cadastro (metadados) se ainda não estiver salvo no perfil
+    if(!ME.cpf && user.user_metadata && user.user_metadata.cpf){
+      try{ await sb.from("profiles").update({ cpf:user.user_metadata.cpf }).eq("id", ME.id); ME.cpf = user.user_metadata.cpf; }catch(e){}
+    }
+    // conta já excluída → sem acesso
+    if(ME.deletado_em){
+      await sb.auth.signOut();
+      location.href = "login.html?conta=excluida";
+      return;
+    }
+    // exclusão pendente (dentro dos 30 dias) → pergunta se quer cancelar e continuar
+    if(ME.delecao_solicitada_at){
+      const ok = await levoConfirm({
+        titulo:"Exclusão de conta pendente",
+        msg:"Você solicitou a exclusão da sua conta. Se prosseguir, a exclusão será <b>cancelada</b> e sua conta volta ao normal.",
+        ok:"Prosseguir e cancelar exclusão", cancel:"Sair"
+      });
+      if(ok){ try{ await sb.rpc("cancelar_exclusao_conta"); ME.delecao_solicitada_at = null; }catch(e){} }
+      else { await sb.auth.signOut(); location.href = "login.html"; return; }
+    }
     // aluno: só mostra "Meu treino" se o profissional já montou algum treino
     if(ME.role === "student"){
       const { count } = await sb.from("ficha_dias").select("id",{count:"exact",head:true}).eq("student_id", ME.id);
@@ -1192,7 +1221,7 @@
     else if(id === "perfil"){ p.innerHTML = viewPerfil(); }
     else if(id === "assinatura"){ p.innerHTML = viewAssinatura(); carregarMinhaAssinatura(); }
     else if(id === "admin")p.innerHTML = viewAdmin();
-    else if(id === "alunos"){    p.innerHTML = viewAlunos();    loadStudents(); }
+    else if(id === "alunos"){    if(PENDING_GRUPO===undefined) GRUPO_FILTRO=null; p.innerHTML = viewAlunos();    loadStudents(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
     else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); PRAZOS_CARREGADOS=false; carregarDesempenho(); carregarQuemTreinou(); carregarPrazos(); }
@@ -2279,9 +2308,33 @@
           <button class="btn small" id="pwBtn" onclick="definirSenha()">Salvar nova senha</button>
           <div class="msg" id="pwMsg"></div>
         </div>
-      </div>`;
+      </div>
+      ${role==="student" ? `
+      <div class="acc">
+        <button class="acc-head" onclick="toggleAcc('accExcluir')">
+          <span class="acc-txt"><span class="acc-tit" style="color:#ff6b6b">Excluir minha conta</span><span class="acc-sub">Encerrar sua conta no Piik</span></span>
+          <span class="acc-chev">›</span>
+        </button>
+        <div class="acc-body" id="accExcluir">
+          <p class="meta-sm" style="margin-bottom:10px">Ao excluir, sua conta fica <b>30 dias</b> guardada. Se você não acessar nesse período, ela é excluída e seus dados são apagados de vez. Se acessar de novo antes disso, a exclusão é cancelada automaticamente.</p>
+          <button class="btn small" style="background:#ff6b6b;border-color:#ff6b6b;color:#0a0b0d;font-weight:800" onclick="excluirMinhaConta()">Excluir minha conta</button>
+        </div>
+      </div>` : ""}`;
   }
   function toggleAcc(id){ const b=document.getElementById(id); if(b) b.parentElement.classList.toggle("open"); }
+
+  async function excluirMinhaConta(){
+    const ok = await levoConfirm({
+      titulo:"Excluir sua conta?",
+      msg:"Sua conta ficará <b>30 dias</b> guardada. Se você não acessar nesse período, ela será <b>excluída</b> e seus dados apagados de vez. Se entrar de novo antes disso, a exclusão é cancelada.<br><br>Deseja continuar?",
+      ok:"Sim, excluir minha conta", cancel:"Não"
+    });
+    if(!ok) return;
+    try{ await sb.rpc("solicitar_exclusao_conta"); }
+    catch(e){ levoAlert("Não foi possível agora: "+(e.message||"")); return; }
+    await sb.auth.signOut();
+    location.href = "login.html?conta=exclusao_solicitada";
+  }
 
   async function salvarNome(){
     const v=document.getElementById("myName").value.trim();
@@ -2633,6 +2686,7 @@
   /* ================= TELAS: PROFISSIONAL ================= */
   function viewAlunos(){
     return `<h2>Meus alunos</h2>
+      <div id="gruposBar" class="grupos-bar"></div>
       <div class="alunos-layout">
         <section class="card aluno-detalhe" id="alunoDetalhe">
           <div class="empty">👉 Selecione um aluno na lista ao lado para ver as opções.</div>
@@ -2802,7 +2856,7 @@
   }
 
   /* ================= BIBLIOTECA DE EXERCÍCIOS ================= */
-  const GRUPOS = ["Peito","Costas","Ombro","Bíceps","Tríceps","Perna","Glúteo","Panturrilha","Abdômen","Outro"];
+  const GRUPOS_MUSC = ["Peito","Costas","Ombro","Bíceps","Tríceps","Perna","Glúteo","Panturrilha","Abdômen","Outro"];
 
   function viewExercicios(){
     return `<div class="ex-topo">
@@ -2815,7 +2869,7 @@
         <div class="form-grid2" style="margin-top:12px">
           <div class="field"><label>Nome</label><input id="ex_nome" type="text" placeholder="ex: Supino declinado"></div>
           <div class="field"><label>Grupo muscular</label>
-            <select id="ex_grupo">${GRUPOS.map(g=>`<option value="${g}">${g}</option>`).join("")}</select>
+            <select id="ex_grupo">${GRUPOS_MUSC.map(g=>`<option value="${g}">${g}</option>`).join("")}</select>
           </div>
           <div class="field"><label>Equipamento</label><input id="ex_equip" type="text" placeholder="ex: Barra, Halter, Máquina…"></div>
           <div class="field"><label>Link de GIF/vídeo (opcional)</label><input id="ex_media" type="text" placeholder="cole aqui"></div>
@@ -2975,8 +3029,114 @@
     const { data: ast } = await sb.from("assessments")
       .select("id,student_id,date,weight,body_fat").order("date",{ascending:false});
     ASSESS = ast || [];
+    await carregarGrupos();
     renderStudents();
     loadInvites();
+  }
+
+  /* ---------- GRUPOS DE ALUNOS (vários grupos por aluno) ---------- */
+  let GRUPOS = [], GRUPO_MEMBROS = {}, GRUPO_FILTRO = null, PENDING_GRUPO = undefined;
+
+  async function carregarGrupos(){
+    try{
+      const { data: gs } = await sb.from("grupos").select("id,nome").eq("professional_id", ME.id).order("nome");
+      GRUPOS = gs || [];
+      const { data: ms } = await sb.from("aluno_grupos").select("grupo_id,student_id").eq("professional_id", ME.id);
+      GRUPO_MEMBROS = {};
+      (ms||[]).forEach(m=>{ (GRUPO_MEMBROS[m.grupo_id] = GRUPO_MEMBROS[m.grupo_id] || new Set()).add(m.student_id); });
+    }catch(e){ GRUPOS = []; GRUPO_MEMBROS = {}; }   // tabelas ainda não criadas: segue sem grupos
+    injetarSubmenuGrupos();
+  }
+
+  function injetarSubmenuGrupos(){
+    const cont = document.querySelector('#grp_alunosgrp .navsubs');
+    if(!cont) return;
+    cont.querySelectorAll('.navsub-grupo').forEach(e=>e.remove());
+    const html = GRUPOS.map(g=>{
+      const n = (GRUPO_MEMBROS[g.id]||new Set()).size;
+      return `<button class="navitem navsub navsub-grupo" onclick="verGrupo('${g.id}')"><span class="lbl">• ${esc(g.nome)} <span style="opacity:.55">(${n})</span></span></button>`;
+    }).join("") + `<button class="navitem navsub navsub-grupo" onclick="novoGrupo()"><span class="lbl" style="color:var(--accent)">＋ Novo grupo</span></button>`;
+    const primeiro = document.getElementById('nav_alunos');   // subitem "Meus alunos"
+    if(primeiro) primeiro.insertAdjacentHTML('afterend', html);
+    else cont.insertAdjacentHTML('afterbegin', html);
+  }
+
+  function verGrupo(id){
+    PENDING_GRUPO = id;
+    const grp = document.getElementById('grp_alunosgrp'); if(grp) grp.classList.add('open');
+    if(VIEW==='alunos'){ GRUPO_FILTRO = id; PENDING_GRUPO = undefined; renderStudents(); }
+    else go('alunos');
+  }
+  function verTodosAlunos(){ GRUPO_FILTRO = null; PENDING_GRUPO = undefined; renderStudents(); }
+
+  function renderGruposBar(){
+    const bar = document.getElementById("gruposBar");
+    if(!bar) return;
+    let html = `<button class="grp-chip ${!GRUPO_FILTRO?'on':''}" onclick="verTodosAlunos()">Todos</button>`;
+    html += GRUPOS.map(g=>{
+      const n = (GRUPO_MEMBROS[g.id]||new Set()).size;
+      return `<button class="grp-chip ${GRUPO_FILTRO===g.id?'on':''}" onclick="verGrupo('${g.id}')">${esc(g.nome)} <span style="opacity:.55">${n}</span></button>`;
+    }).join("");
+    html += `<button class="grp-chip add" onclick="novoGrupo()" title="Novo grupo">＋</button>`;
+    if(GRUPO_FILTRO){
+      html += `<button class="grp-chip ghost" onclick="renomearGrupo('${GRUPO_FILTRO}')">✎ renomear</button>`;
+      html += `<button class="grp-chip ghost" onclick="excluirGrupo('${GRUPO_FILTRO}')">🗑 excluir</button>`;
+    }
+    bar.innerHTML = html;
+  }
+
+  async function novoGrupo(){
+    const nome = (window.prompt("Nome do novo grupo (ex.: Online, Presencial, Iniciantes):")||"").trim();
+    if(!nome) return;
+    const { data, error } = await sb.from("grupos").insert({ professional_id: ME.id, nome }).select().single();
+    if(error){ levoAlert("Erro ao criar grupo: "+error.message); return; }
+    GRUPOS.push({ id:data.id, nome:data.nome });
+    GRUPOS.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
+    injetarSubmenuGrupos(); renderGruposBar();
+    if(SELECTED_STUDENT) renderGruposDoAluno(SELECTED_STUDENT);
+  }
+  async function renomearGrupo(id){
+    const g = GRUPOS.find(x=>x.id===id); if(!g) return;
+    const nome = (window.prompt("Novo nome do grupo:", g.nome)||"").trim();
+    if(!nome || nome===g.nome) return;
+    const { error } = await sb.from("grupos").update({ nome }).eq("id", id);
+    if(error){ levoAlert("Erro: "+error.message); return; }
+    g.nome = nome; GRUPOS.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
+    injetarSubmenuGrupos(); renderGruposBar();
+    if(SELECTED_STUDENT) renderGruposDoAluno(SELECTED_STUDENT);
+  }
+  async function excluirGrupo(id){
+    const g = GRUPOS.find(x=>x.id===id); if(!g) return;
+    if(!(await levoConfirm(`Excluir o grupo "${esc(g.nome)}"? Os alunos continuam cadastrados; só a marcação deste grupo é removida.`))) return;
+    const { error } = await sb.from("grupos").delete().eq("id", id);
+    if(error){ levoAlert("Erro: "+error.message); return; }
+    GRUPOS = GRUPOS.filter(x=>x.id!==id); delete GRUPO_MEMBROS[id];
+    if(GRUPO_FILTRO===id){ GRUPO_FILTRO=null; PENDING_GRUPO=undefined; }
+    injetarSubmenuGrupos(); renderStudents();
+    if(SELECTED_STUDENT) renderGruposDoAluno(SELECTED_STUDENT);
+  }
+  async function toggleGrupoAluno(studentId, grupoId){
+    const set = GRUPO_MEMBROS[grupoId] = GRUPO_MEMBROS[grupoId] || new Set();
+    if(set.has(studentId)){
+      const { error } = await sb.from("aluno_grupos").delete().eq("grupo_id",grupoId).eq("student_id",studentId);
+      if(error){ levoAlert("Erro: "+error.message); return; }
+      set.delete(studentId);
+    } else {
+      const { error } = await sb.from("aluno_grupos").insert({ professional_id: ME.id, grupo_id: grupoId, student_id: studentId });
+      if(error){ levoAlert("Erro: "+error.message); return; }
+      set.add(studentId);
+    }
+    injetarSubmenuGrupos(); renderGruposBar(); renderGruposDoAluno(studentId);
+    if(GRUPO_FILTRO && !((GRUPO_MEMBROS[GRUPO_FILTRO]||new Set()).has(studentId))) renderStudents();
+  }
+  function renderGruposDoAluno(studentId){
+    const box = document.getElementById("gruposAluno_"+studentId);
+    if(!box) return;
+    if(!GRUPOS.length){ box.innerHTML = `<span class="meta-sm" style="opacity:.7">Nenhum grupo criado ainda.</span>`; return; }
+    box.innerHTML = GRUPOS.map(g=>{
+      const on = (GRUPO_MEMBROS[g.id]||new Set()).has(studentId);
+      return `<button class="grp-chip ${on?'on':''}" onclick="toggleGrupoAluno('${studentId}','${g.id}')">${on?'✓ ':''}${esc(g.nome)}</button>`;
+    }).join("");
   }
 
   /* ---------- PROFISSIONAL: FINANCEIRO ---------- */
@@ -3233,7 +3393,7 @@
       </div>
       <div class="card">
         <h3>✅ Adesão da semana</h3>
-        <p class="meta-sm" style="margin-top:2px">Treinos feitos nos últimos 7 dias × o previsto (nº de treinos da ficha ativa).</p>
+        <p class="meta-sm" style="margin-top:2px">Treinos feitos nesta semana (desde domingo) × o previsto (nº de treinos da ficha ativa).</p>
         <div id="adesaoBox" style="margin-top:12px"><div class="empty">Carregando…</div></div>
       </div>
       <div class="card">
@@ -3326,11 +3486,13 @@
       const fim = new Date(base); fim.setHours(23,59,59,999);
       return { ini, fim, label: "em "+ini.toLocaleDateString("pt-BR") };
     }
-    // semana (segunda a domingo) que contém a data escolhida
-    const dow = (base.getDay()+6)%7;   // 0 = segunda
-    const ini = new Date(base); ini.setDate(base.getDate()-dow); ini.setHours(0,0,0,0);
+    // semana (domingo a sábado) que contém a data escolhida
+    const ini = inicioSemanaDomingo(base);
     const fim = new Date(ini); fim.setDate(ini.getDate()+6); fim.setHours(23,59,59,999);
     return { ini, fim, label: `na semana de ${ini.toLocaleDateString("pt-BR")} a ${fim.toLocaleDateString("pt-BR")}` };
+  }
+  function inicioSemanaDomingo(base){
+    const d = new Date(base); d.setHours(0,0,0,0); d.setDate(d.getDate() - d.getDay()); return d;
   }
   async function carregarQuemTreinou(){
     const box = document.getElementById("qtBox"); if(!box) return;
@@ -3371,12 +3533,12 @@
     const { data: sess } = await sb.from("sessoes").select("student_id,data")
       .eq("professional_id", ME.id).eq("finalizada", true).order("data",{ascending:false});
     const agora = Date.now();
+    const iniSemana = inicioSemanaDomingo(new Date()).getTime();   // domingo 00:00 desta semana
     const ultimo = {}, semana = {};
     (sess||[]).forEach(s=>{
       if(!s.student_id) return;
       if(!(s.student_id in ultimo)) ultimo[s.student_id] = s.data;
-      const dd = (agora - new Date(s.data).getTime())/86400000;
-      if(dd <= 7) semana[s.student_id] = (semana[s.student_id]||0) + 1;
+      if(new Date(s.data).getTime() >= iniSemana) semana[s.student_id] = (semana[s.student_id]||0) + 1;
     });
     // previsto = nº de dias (treinos) da ficha ativa de cada aluno
     const { data: fichasAtivas } = await sb.from("fichas").select("id,student_id")
@@ -3505,10 +3667,16 @@
   }
 
   function renderStudents(){
-    const ativos = STUDENTS.filter(s => (s.status||"active") === "active")
-                           .sort((a,b)=> nomeAluno(a).localeCompare(nomeAluno(b),"pt-BR"));
-    const arqs   = STUDENTS.filter(s => s.status === "archived");
+    if(PENDING_GRUPO !== undefined){ GRUPO_FILTRO = PENDING_GRUPO; PENDING_GRUPO = undefined; }
+    let ativos = STUDENTS.filter(s => (s.status||"active") === "active")
+                         .sort((a,b)=> nomeAluno(a).localeCompare(nomeAluno(b),"pt-BR"));
+    if(GRUPO_FILTRO){
+      const set = GRUPO_MEMBROS[GRUPO_FILTRO] || new Set();
+      ativos = ativos.filter(s => set.has(s.id));
+    }
+    const arqs   = STUDENTS.filter(s => s.status === "archived" || s.status === "deleted");
     ATIVOS_CACHE = ativos;
+    renderGruposBar();
 
     const busca = (document.getElementById("alunoSearch")||{}).value || "";
     desenharListaAlunos(filtrar(ativos, busca));
@@ -3629,8 +3797,10 @@
         <button class="btn small ghost" id="btnAvals" onclick="verAvaliacoes('${id}')">Avaliações</button>
         ${demo?"":`<button class="btn small ghost" id="btnFin" onclick="verFinanceiroAluno('${id}')">Financeiro</button>`}
       </div>
+      ${demo?"":`<div class="grupos-aluno-box"><span class="meta-sm" style="font-weight:700">Grupos:</span> <span id="gruposAluno_${id}" class="grupos-aluno"></span></div>`}
       <div id="assessList_${id}" style="margin-top:6px"></div>
       <div id="finList_${id}" style="margin-top:6px"></div>`;
+    if(!demo) renderGruposDoAluno(id);
     if(temTreino()) carregarResumoTreinoAluno(id);
   }
 

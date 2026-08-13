@@ -160,6 +160,7 @@
       <div class="role-hint" id="roleHint">Como aluno você entra no plano gratuito e pode se vincular ao seu personal.</div>
     </div>
     <div class="field"><label>Nome completo</label><input id="suNome" type="text" placeholder="Seu nome" autocomplete="name"></div>
+    <div class="field"><label>CPF</label><input id="suCpf" type="text" inputmode="numeric" placeholder="000.000.000-00" autocomplete="off" maxlength="14" oninput="mascaraCpf(this)"></div>
     <div class="field"><label>E-mail</label><input id="suEmail" type="email" placeholder="voce@email.com" autocomplete="email"></div>
     <div class="field"><label>Senha</label><input id="suPass" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
     <button class="btn" id="suBtn" onclick="criarConta()">Criar conta</button>
@@ -215,6 +216,11 @@
     localStorage.removeItem("sessao_inicio");
     setTimeout(()=>showMsg("Sua sessão expirou por segurança. Entre novamente para continuar.","warn"), 200);
   }
+  {
+    const c = new URLSearchParams(location.search).get("conta");
+    if(c==="excluida") setTimeout(()=>showMsg("Esta conta foi excluída. Para voltar, crie uma nova conta com o mesmo CPF.","warn"), 200);
+    else if(c==="exclusao_solicitada") setTimeout(()=>showMsg("Recebemos seu pedido de exclusão. Você tem 30 dias para reativar — é só entrar de novo nesse período.","warn"), 200);
+  }
 
   /* ---------- contador de tentativas ---------- */
   function chave(email){ return "tent_" + email.trim().toLowerCase(); }
@@ -264,12 +270,29 @@
     showView("forgot");
   }
 
+  function soDigitos(v){ return (v||"").replace(/\D/g,""); }
+  function cpfValido(cpf){
+    cpf = soDigitos(cpf);
+    if(cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i);
+    let d1=(s*10)%11; if(d1===10) d1=0; if(d1!==parseInt(cpf[9])) return false;
+    s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i);
+    let d2=(s*10)%11; if(d2===10) d2=0; return d2===parseInt(cpf[10]);
+  }
+  function mascaraCpf(el){
+    let v = soDigitos(el.value).slice(0,11);
+    v = v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");
+    el.value = v;
+  }
+
   async function criarConta(){
     const nome  = document.getElementById("suNome").value.trim();
+    const cpf   = soDigitos(document.getElementById("suCpf").value);
     const email = document.getElementById("suEmail").value.trim();
     const pass  = document.getElementById("suPass").value;
     const btn   = document.getElementById("suBtn");
     if(!nome){ showMsg("Digite seu nome."); return; }
+    if(!cpfValido(cpf)){ showMsg("Digite um CPF válido."); return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
     if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
     btn.disabled = true; showMsg("Criando conta…", "warn");
@@ -277,7 +300,7 @@
       const { data, error } = await sb.auth.signUp({
         email, password: pass,
         // ao confirmar o e-mail, cai no app já na tela de planos
-        options: { data: { full_name: nome, role: SIGNUP_ROLE }, emailRedirectTo: APP_URL + "?planos=1" }
+        options: { data: { full_name: nome, role: SIGNUP_ROLE, cpf }, emailRedirectTo: APP_URL + "?planos=1" }
       });
       if(error) throw error;
       btn.disabled = false;
