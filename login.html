@@ -295,6 +295,7 @@
     if(!cpfValido(cpf)){ showMsg("Digite um CPF válido."); return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
     if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
+    if(!window.confirm(`Confirme seu CPF: ${document.getElementById("suCpf").value}\n\nDepois do cadastro, a alteração do CPF é feita somente pelo suporte. Está correto?`)) return;
     btn.disabled = true; showMsg("Criando conta…", "warn");
     try{
       const { data, error } = await sb.auth.signUp({

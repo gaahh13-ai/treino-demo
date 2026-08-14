@@ -336,8 +336,10 @@
   #histTreinos{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:330px;overflow-y:auto;padding-right:4px}
   .hist-row{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:rgba(127,255,0,.03)}
   .hist-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  .hist-dia{font-weight:800;font-size:14px}
+  .hist-dia{font-weight:800;font-size:14px;flex:1}
   .hist-data{font-size:12px;color:var(--muted);font-weight:700}
+  .hist-del{background:transparent;border:0;cursor:pointer;font-size:15px;opacity:.6;padding:0 2px;line-height:1}
+  .hist-del:hover{opacity:1}
   .hist-meta{font-size:12px;color:var(--muted);margin-top:4px}
   /* fichas anteriores */
   #fichasAnt{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;padding-right:4px}
@@ -912,16 +914,32 @@
                  style="width:100%;background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:11px 12px;font-size:15px"
                  oninput="mascaraCpf(this)">
           <div class="msg" id="gateCpfMsg" style="margin:8px 0 0"></div>
-          <button class="btn" id="gateCpfBtn" style="width:100%;margin-top:12px">Salvar e continuar</button>
+          <button class="btn" id="gateCpfBtn" style="width:100%;margin-top:12px">Continuar</button>
+          <div style="text-align:center;margin-top:8px"><a id="gateCpfCorr" class="link muted" style="display:none;cursor:pointer">Corrigir CPF</a></div>
         </div>`;
       document.body.appendChild(ov);
       const inp = ov.querySelector("#gateCpf");
       const btn = ov.querySelector("#gateCpfBtn");
       const msg = ov.querySelector("#gateCpfMsg");
+      const corr = ov.querySelector("#gateCpfCorr");
       inp.focus();
+      let etapa = "input";
+      corr.onclick = ()=>{
+        etapa = "input"; inp.disabled = false; inp.focus();
+        msg.className = "msg"; msg.textContent = "";
+        btn.textContent = "Continuar"; corr.style.display = "none";
+      };
       btn.onclick = async ()=>{
         const raw = soDigitos(inp.value);
-        if(!cpfValido(raw)){ msg.className="msg err"; msg.textContent="Digite um CPF válido."; return; }
+        if(etapa === "input"){
+          if(!cpfValido(raw)){ msg.className="msg err"; msg.textContent="Digite um CPF válido."; return; }
+          etapa = "confirm"; inp.disabled = true;
+          msg.className = "msg warn";
+          msg.innerHTML = `Confirme: seu CPF é <b>${mascaraCpf(raw)}</b>? A alteração depois é feita <b>somente pelo suporte</b>, então confira com atenção.`;
+          btn.textContent = "Confirmar e continuar";
+          corr.style.display = "inline";
+          return;
+        }
         btn.disabled = true; msg.className="msg"; msg.textContent="Salvando…";
         const { error } = await sb.from("profiles").update({ cpf: raw }).eq("id", ME.id);
         if(error){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
@@ -1482,7 +1500,7 @@
     const box = document.getElementById("histTreinos"); if(!box) return;
     box.innerHTML = `<div class="empty">Carregando…</div>`;
     const { data: sess, error } = await sb.from("sessoes")
-      .select("data,fim,dia_id,ficha_dias(label)")
+      .select("id,data,fim,dia_id,ficha_dias(label)")
       .eq("student_id", ME.id).eq("finalizada", true)
       .order("data", { ascending:false }).limit(200);
     if(error){ box.innerHTML = `<div class="empty">Não consegui carregar o histórico.</div>`; return; }
@@ -1497,10 +1515,20 @@
       const durTxt = durSeg!=null ? (Math.floor(durSeg/60)+" min"+(durSeg%60?" "+(durSeg%60)+"s":"")) : "—";
       const label = (s.ficha_dias && s.ficha_dias.label) ? s.ficha_dias.label : "Treino";
       return `<div class="hist-row">
-          <div class="hist-top"><span class="hist-dia">${esc(label)}</span><span class="hist-data">${dm(ini)}</span></div>
+          <div class="hist-top"><span class="hist-dia">${esc(label)}</span><span class="hist-data">${dm(ini)}</span>
+            <button class="hist-del" title="Excluir este treino" onclick="excluirTreino('${s.id}')">🗑️</button></div>
           <div class="hist-meta">início ${hh(ini)} · fim ${hh(fim)} · ${durTxt}</div>
         </div>`;
     }).join("");
+  }
+
+  async function excluirTreino(id){
+    if(!(await levoConfirm({ titulo:"Excluir este treino?", msg:"O registro deste treino será removido do seu <b>diário</b> e do seu <b>dashboard</b>. Esta ação não pode ser desfeita.", ok:"Excluir", cancel:"Cancelar" }))) return;
+    try{ await sb.from("series_feitas").delete().eq("sessao_id", id); }catch(e){}
+    const { error } = await sb.from("sessoes").delete().eq("id", id);
+    if(error){ levoAlert("Não consegui excluir: "+error.message); return; }
+    const box = document.getElementById("histTreinos");
+    if(box){ box.dataset.loaded=""; await renderHistorico(); box.dataset.loaded="1"; }
   }
   // ---- Fichas anteriores (programas antigos montados pelo personal) ----
   async function toggleFichasAnt(){
