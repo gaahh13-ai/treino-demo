@@ -127,6 +127,12 @@
   .menu-drop{background:#15171c!important;border-color:#2a2e37!important}
   .menu-drop button{color:#e8eaee!important}
   .menu-drop button:hover{background:#1d2027!important}
+  /* modal de confirmação estilizado (Piik) */
+  .piik-ov{position:fixed;inset:0;background:rgba(5,6,8,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9999}
+  .piik-modal{background:#15171c;border:1px solid #262a33;border-radius:18px;max-width:340px;width:100%;padding:24px 22px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .piik-modal h3{font-size:17px;font-weight:800;color:#fff;margin:0 0 8px;text-align:center}
+  .piik-modal-txt{font-size:13.5px;line-height:1.5;color:#c7ccd6;text-align:center;margin-bottom:16px}
+  .piik-modal .btn{margin-top:8px}
 </style>
 
 </head>
@@ -295,7 +301,12 @@
     if(!cpfValido(cpf)){ showMsg("Digite um CPF válido."); return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
     if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
-    if(!window.confirm(`Confirme seu CPF: ${document.getElementById("suCpf").value}\n\nDepois do cadastro, a alteração do CPF é feita somente pelo suporte. Está correto?`)) return;
+    if(!(await piikConfirm({
+      titulo: "Confirme seu CPF",
+      html: `Seu CPF é <b style="color:#7fff00">${document.getElementById("suCpf").value}</b>?<br><br>Depois do cadastro, a alteração do CPF é feita <b>somente pelo suporte</b>. Confira com atenção antes de continuar.`,
+      ok: "Confirmar e criar conta",
+      cancel: "Corrigir"
+    }))) return;
     btn.disabled = true; showMsg("Criando conta…", "warn");
     try{
       const { data, error } = await sb.auth.signUp({
@@ -393,7 +404,7 @@
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: RESET_URL });
       if(error) throw error;
       zerarTentativas(email);
-      showMsg("Enviamos um link para " + email + ". Confira sua caixa de entrada (e o spam) e crie uma senha nova.", "ok");
+      showMsg("Se este e-mail tiver uma conta na Piik, você receberá um link para redefinir a senha. Confira sua caixa de entrada (e o spam).", "ok");
     } catch(e){ showMsg(traduz(e.message)); btn.disabled = false; }
   }
 
@@ -402,6 +413,26 @@
     if(/Email not confirmed/i.test(m)) return "Confirme seu e-mail antes de entrar.";
     if(/rate limit|too many|after/i.test(m)) return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
     return m || "Ocorreu um erro. Tente de novo.";
+  }
+
+  /* ---------- modal de confirmação estilizado ---------- */
+  function piikConfirm({titulo, html, ok, cancel}){
+    return new Promise((resolve)=>{
+      const ov = document.createElement("div");
+      ov.className = "piik-ov";
+      ov.innerHTML = `
+        <div class="piik-modal">
+          <h3>${titulo||"Confirmar"}</h3>
+          <div class="piik-modal-txt">${html||""}</div>
+          <button class="btn" id="pkOk">${ok||"Confirmar"}</button>
+          <button class="btn alt" id="pkNo">${cancel||"Cancelar"}</button>
+        </div>`;
+      document.body.appendChild(ov);
+      const done = (v)=>{ ov.remove(); resolve(v); };
+      ov.querySelector("#pkOk").onclick = ()=>done(true);
+      ov.querySelector("#pkNo").onclick = ()=>done(false);
+      ov.addEventListener("click", (e)=>{ if(e.target===ov) done(false); });
+    });
   }
   document.getElementById("password").addEventListener("keydown", e=>{ if(e.key==="Enter") entrar(); });
 </script>

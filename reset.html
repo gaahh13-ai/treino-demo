@@ -4,32 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Redefinir senha — Piik</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{color-scheme:light;--txt:#334155;--muted:#64748b;--line:#e5e7eb;--pink-deep:#4338ca}
-  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  :root{color-scheme:dark;--txt:#e8eaee;--muted:#9aa0ab;--line:#262a33;--ac:#7fff00}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
   body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
-    background:linear-gradient(140deg,#f8fafc,#f1f5f9 55%,#eef2ff);color:var(--txt)}
-  .card{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(30,41,59,.14);width:100%;max-width:400px;padding:34px}
-  .logo{height:34px;display:block;margin:0 auto 18px}
-  h1{font-size:20px;font-weight:800;text-align:center;margin-bottom:4px}
-  .sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:20px;line-height:1.4}
+    background:linear-gradient(140deg,#0a0b0d,#15171c 55%,#15171c);color:var(--txt)}
+  .card{background:#15171c;border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.45);width:100%;max-width:400px;padding:34px}
+  .logo{text-align:center;margin-bottom:6px}
+  .logo span{font-weight:800;font-size:24px;letter-spacing:1px;color:var(--ac)}
+  h1{font-size:20px;font-weight:800;text-align:center;margin-bottom:4px;color:#fff}
+  .sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:20px;line-height:1.45}
   .field{margin-bottom:12px}
   .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
-  .field input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:14px}
-  .field input:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
-  .btn{width:100%;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:15px;color:#fff;cursor:pointer;
-    background:linear-gradient(120deg,#6366f1,#818cf8);box-shadow:0 8px 20px rgba(79,70,229,.22);margin-top:6px}
+  .field input{width:100%;padding:12px;border:1px solid #2a2e37;border-radius:12px;font-size:14px;background:#0f1116;color:#e8eaee}
+  .field input::placeholder{color:#6b7079}
+  .field input:focus{outline:2px solid var(--ac);border-color:var(--ac)}
+  .btn{width:100%;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:15px;color:#0a0b0d;cursor:pointer;
+    background:var(--ac);box-shadow:0 8px 20px rgba(127,255,0,.18);margin-top:6px}
   .btn:disabled{opacity:.6;cursor:default}
-  .msg{margin-top:14px;font-size:13px;text-align:center;padding:10px;border-radius:10px;display:none;line-height:1.4}
-  .msg.err{display:block;background:#fdecec;color:#c0392b}
-  .msg.ok{display:block;background:#eafaf0;color:#1a8a4a}
+  .msg{margin-top:14px;font-size:13px;text-align:center;padding:10px;border-radius:10px;display:none;line-height:1.45}
+  .msg.err{display:block;background:#2a1416;color:#f2a2a2}
+  .msg.ok{display:block;background:#122110;color:#7fff00}
   .back{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:none}
 </style>
 </head>
 <body>
 <div class="card">
-  <a href="index.html" style="display:block"><span style="font-weight:800;font-size:20px;color:var(--pink-deep)">Piik</span></a>
+  <a href="index.html" class="logo" style="display:block;text-decoration:none"><span>Piik</span></a>
   <h1>Criar nova senha</h1>
   <div class="sub" id="sub">Digite sua nova senha abaixo.</div>
 
