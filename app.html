@@ -518,6 +518,12 @@
   .grp-chip.ghost{background:transparent;color:var(--muted);font-weight:600}
   .grupos-aluno-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
   .grupos-aluno{display:inline-flex;gap:6px;flex-wrap:wrap}
+  .email-help-wrap{position:relative;display:inline-flex}
+  .email-help{width:18px;height:18px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--muted);
+    font-size:11px;font-weight:800;cursor:pointer;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+  .email-info{display:none;position:absolute;right:0;top:24px;z-index:30;background:#15171c;border:1px solid var(--line);
+    border-radius:8px;padding:8px 10px;font-size:12px;color:var(--txt);width:220px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .email-info.show{display:block}
   .ades-bar{height:9px;border-radius:999px;background:#eee;overflow:hidden}
   .ades-fill{height:100%;border-radius:999px;transition:width .3s}
   .treino-resumo-al{font-size:12.5px;color:var(--txt);background:#1d2027;border:1px solid var(--line);
@@ -2366,8 +2372,15 @@
         <div class="acc-body" id="accDados">
           <div class="field"><label>Nome completo</label>
             <input id="myName" type="text" value="${esc(ME.full_name||"")}" placeholder="Seu nome"></div>
-          <div class="field"><label>E-mail</label><input type="text" value="${esc(ME.email||"")}" disabled>
-            <div class="meta-sm" style="margin-top:4px;opacity:.8">Para alterar o e-mail, fale com o suporte pelo WhatsApp.</div>
+          <div class="field">
+            <label style="display:flex;align-items:center;justify-content:space-between">
+              <span>E-mail</span>
+              <span class="email-help-wrap">
+                <button type="button" class="email-help" onclick="toggleEmailHelp(event)" title="Como alterar o e-mail">?</button>
+                <span class="email-info" id="emailInfo">Para alterar o e-mail, fale com o suporte pelo WhatsApp.</span>
+              </span>
+            </label>
+            <input type="text" value="${esc(ME.email||"")}" disabled>
           </div>
           ${isProf ? camposProf : camposAluno}
           <button class="btn small" id="nameBtn" onclick="salvarNome()">Salvar dados</button>
@@ -2402,6 +2415,14 @@
       </div>` : ""}`;
   }
   function toggleAcc(id){ const b=document.getElementById(id); if(b) b.parentElement.classList.toggle("open"); }
+  function toggleEmailHelp(ev){
+    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+    const el = document.getElementById("emailInfo"); if(!el) return;
+    const abrir = !el.classList.contains("show");
+    el.classList.toggle("show", abrir);
+    if(abrir){ setTimeout(()=>document.addEventListener("click", fecharEmailHelp, { once:true }), 0); }
+  }
+  function fecharEmailHelp(){ const el=document.getElementById("emailInfo"); if(el) el.classList.remove("show"); }
 
   async function excluirMinhaConta(){
     const ok = await levoConfirm({
