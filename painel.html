@@ -201,7 +201,11 @@
     <section class="sec">
       <div class="sec-h"><span class="dot"></span><h2>Saúde de infra / custo</h2><span class="hint">quando subir de plano</span></div>
       <div class="grid">
-        <div class="kpi wide"><span class="pending">pendente</span><div class="k-label">Termômetro de e-mail — Resend (mês)</div><div class="k-sub" style="margin-top:12px;line-height:1.6">Precisa puxar o uso pela API do Resend (via função de servidor). Fica pra próxima etapa.</div></div>
+        <div class="kpi wide"><span class="live">ao vivo</span><div class="k-label">Termômetro de e-mail — Resend</div>
+          <div class="prog"><div class="r"><span>Hoje</span><b id="v_em_dia">— / 100</b></div><div class="track"><div class="fill" id="f_em_dia" style="width:0%"></div></div></div>
+          <div class="prog"><div class="r"><span>Mês</span><b id="v_em_mes">— / 3.000</b></div><div class="track"><div class="fill" id="f_em_mes" style="width:0%"></div></div></div>
+          <div class="k-sub" id="v_em_hint" style="margin-top:10px;line-height:1.55">Cada e-mail (login, confirmação, redefinição) conta. Fica <span style="color:var(--warn)">amarelo</span> em 70% e <span style="color:var(--neg)">vermelho</span> em 90% do limite.</div>
+        </div>
         <div class="kpi wide"><span class="live">ao vivo</span><div class="k-label">Supabase (plano Free)</div>
           <div class="prog"><div class="r"><span>Banco de dados</span><b id="v_db">— / 500 MB</b></div><div class="track"><div class="fill" id="f_db" style="width:0%"></div></div></div>
           <div class="prog"><div class="r"><span>Ativos no mês (aprox., treinaram)</span><b id="v_mau">— / 50.000</b></div><div class="track"><div class="fill" id="f_mau" style="width:0%"></div></div></div>
@@ -240,6 +244,18 @@
   const nf = n => (n==null? "—" : Number(n).toLocaleString("pt-BR"));
   const pct = (a,b) => b ? Math.round((a/b)*100) : 0;
 
+  /* termômetro de e-mail (Resend: 100/dia, 3.000/mês) — cor sobe conforme o uso */
+  function emailTermo(name, usado, limite){
+    usado = usado || 0;
+    const p = Math.min(100, Math.round((usado/limite)*100));
+    set("v_"+name, nf(usado)+" / "+nf(limite));
+    setW("f_"+name, usado>0 ? Math.max(2, p) : 0);
+    const cor = p>=90 ? "var(--neg)" : (p>=70 ? "var(--warn)" : "var(--ac)");
+    const fEl = document.getElementById("f_"+name);
+    if(fEl) fEl.style.background = cor;
+    return p;
+  }
+
   async function carregarMetricas(){
     try{
       const { data:m, error } = await sb.rpc("painel_metricas");
@@ -269,6 +285,14 @@
       setW("f_db", Math.min(100, Math.round((m.db_size_mb/500)*100)));
       set("v_mau", nf(m.ativos_30d)+" / 50.000");
       setW("f_mau", Math.max(1, Math.min(100, Math.round((m.ativos_30d/50000)*100))));
+      const pDia = emailTermo("em_dia", m.emails_hoje, 100);
+      const pMes = emailTermo("em_mes", m.emails_mes, 3000);
+      const pMax = Math.max(pDia, pMes);
+      const hintEl = document.getElementById("v_em_hint");
+      if(hintEl){
+        if(pMax>=90) hintEl.innerHTML = "<b style='color:var(--neg)'>Atenção:</b> uso em "+pMax+"% do limite gratuito. Considere assinar o plano pago do Resend para não interromper os e-mails.";
+        else if(pMax>=70) hintEl.innerHTML = "<b style='color:var(--warn)'>Uso em "+pMax+"%</b> do limite gratuito — fique de olho; se passar de 90% vale assinar o plano pago.";
+      }
       if(m.gerado_em) set("v_gerado", "Atualizado: "+m.gerado_em);
     }catch(e){ /* silencioso */ }
   }
