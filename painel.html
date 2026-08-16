@@ -18,8 +18,6 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,Arial,sans-serif}
   body{background:var(--bg);color:var(--ink)}
-
-  /* ---------- GATE (login / token) ---------- */
   #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .auth-card{background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.5);width:100%;max-width:410px;padding:32px}
   .brand{text-align:center;font-weight:800;font-size:24px;letter-spacing:1px;color:var(--ac);margin-bottom:4px}
@@ -47,18 +45,14 @@
   .steps{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:14px;text-align:left}
   .steps b{color:var(--ink)}
   .hide{display:none}
-
-  /* ---------- PAINEL (dashboard) ---------- */
   #painel{display:none;padding:22px 16px 60px}
   .wrap{max-width:1180px;margin:0 auto}
   .top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px}
   .top .b{font-weight:800;font-size:24px;letter-spacing:1px;color:var(--ac)}
   .top .b small{color:var(--muted);font-weight:600;font-size:13px;letter-spacing:0;margin-left:8px}
   .top .r{display:flex;align-items:center;gap:10px}
-  .period{display:flex;gap:6px}
-  .period button{background:var(--surface);border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer}
-  .period button.on{background:var(--ac);color:#0a0b0d;border-color:var(--ac);font-weight:800}
   .logout{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer}
+  .stamp{font-size:12px;color:var(--dim)}
   .banner{font-size:12px;color:var(--warn);background:rgba(255,206,77,.1);border:1px solid rgba(255,206,77,.28);border-radius:10px;padding:9px 12px;margin:14px 0 22px}
   .sec{margin-top:24px}
   .sec-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -78,12 +72,10 @@
   .delta{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;margin-top:8px}
   .delta.up{color:var(--pos)} .delta.down{color:var(--neg)}
   .pending{position:absolute;top:12px;right:12px;font-size:9.5px;font-weight:700;letter-spacing:.3px;color:var(--warn);background:rgba(255,206,77,.12);border:1px solid rgba(255,206,77,.3);border-radius:20px;padding:3px 8px;text-transform:uppercase}
+  .live{position:absolute;top:12px;right:12px;font-size:9.5px;font-weight:700;letter-spacing:.3px;color:var(--ac);background:var(--ac-soft);border:1px solid rgba(127,255,0,.3);border-radius:20px;padding:3px 8px;text-transform:uppercase}
   .split{display:flex;gap:14px;margin-top:8px}
   .split div b{display:block;font-size:22px;color:#fff;font-weight:800;line-height:1.1}
   .split div span{font-size:11px;color:var(--muted)}
-  .bars{display:flex;align-items:flex-end;gap:5px;height:44px;margin-top:12px}
-  .bars i{flex:1;background:var(--ac);border-radius:3px 3px 2px 2px;min-height:4px;opacity:.85}
-  .bars i:last-child{opacity:1}
   .funnel{display:flex;flex-direction:column;gap:7px;margin-top:4px}
   .fn-row{display:flex;align-items:center;gap:10px}
   .fn-bar{height:26px;border-radius:7px;background:var(--ac-soft);border:1px solid rgba(127,255,0,.25);position:relative;flex:1;overflow:hidden}
@@ -102,20 +94,15 @@
   .prog .r{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
   .prog .r b{color:#fff;font-weight:700}
   .prog .track{height:9px;background:var(--surface2);border-radius:6px;overflow:hidden}
-  .prog .fill{height:100%;border-radius:6px}
+  .prog .fill{height:100%;border-radius:6px;background:var(--ac)}
 </style>
 </head>
 <body>
 
-<!-- ================= GATE ================= -->
 <div id="gate">
   <div class="auth-card">
     <div class="brand">Piik <small>PAINEL DE GESTÃO · ACESSO RESTRITO</small></div>
-
-    <!-- carregando -->
     <div id="vLoad"><div class="sub" style="margin-top:18px">Carregando…</div></div>
-
-    <!-- LOGIN -->
     <div id="vLogin" class="hide">
       <h1>Entrar</h1>
       <div class="sub">Acesso exclusivo de administração.</div>
@@ -124,16 +111,12 @@
       <button class="btn" id="loginBtn" onclick="entrar()">Entrar</button>
       <a class="foot" href="login.html">← Voltar ao login normal</a>
     </div>
-
-    <!-- SEM ACESSO -->
     <div id="vDeny" class="hide">
       <div style="font-size:38px;text-align:center;margin:8px 0">🔒</div>
       <h1>Sem acesso</h1>
       <div class="sub">Esta conta não tem permissão para o painel de gestão.</div>
       <button class="btn alt" onclick="sair()">Sair</button>
     </div>
-
-    <!-- CADASTRAR TOKEN (enroll) -->
     <div id="vEnroll" class="hide">
       <h1>Configurar o autenticador</h1>
       <div class="steps">
@@ -149,8 +132,6 @@
       <button class="btn" id="enrollBtn" onclick="confirmarEnroll()">Confirmar e ativar</button>
       <a class="foot" onclick="sair()">Sair</a>
     </div>
-
-    <!-- PEDIR CÓDIGO (challenge) -->
     <div id="vChallenge" class="hide">
       <h1>Código de verificação</h1>
       <div class="sub">Digite o código de 6 dígitos do seu app autenticador.</div>
@@ -158,39 +139,37 @@
       <button class="btn" id="challBtn" onclick="confirmarChallenge()">Entrar</button>
       <a class="foot" onclick="sair()">Sair</a>
     </div>
-
     <div class="msg" id="msg"></div>
   </div>
 </div>
 
-<!-- ================= PAINEL ================= -->
 <div id="painel">
   <div class="wrap">
     <div class="top">
       <div class="b">Piik <small>· Painel de Gestão</small></div>
       <div class="r">
-        <div class="period"><button>7 dias</button><button class="on">30 dias</button><button>90 dias</button><button>12 meses</button></div>
+        <span class="stamp" id="v_gerado"></span>
         <button class="logout" onclick="sair()">Sair</button>
       </div>
     </div>
-    <div class="banner">📊 Dados de exemplo — as métricas reais serão ligadas ao banco na próxima etapa. As etiquetas PENDENTE marcam o que ainda depende de dado que não coletamos (cidades) ou do Mercado Pago em produção (receita).</div>
+    <div class="banner">Indicadores com <span style="color:var(--ac)">DADOS REAIS</span> já estão ligados ao banco (excluindo contas demo e excluídas). Os marcados <span style="color:var(--warn)">PENDENTE</span> dependem de analytics (cidades) ou do Mercado Pago em produção (receita).</div>
 
     <section class="sec">
       <div class="sec-h"><span class="dot"></span><h2>Crescimento</h2><span class="hint">aquisição e ativação</span></div>
       <div class="grid">
-        <div class="kpi"><div class="k-label">Usuários totais</div><div class="k-val">1.248</div><div class="delta up">▲ 73 nos últimos 30d</div></div>
-        <div class="kpi"><div class="k-label">Personais / Alunos</div><div class="split"><div><b>86</b><span>personais</span></div><div><b>1.162</b><span>alunos</span></div></div><div class="k-sub">13,5 alunos por personal (média)</div></div>
-        <div class="kpi wide"><div class="k-label">Novos cadastros por semana</div><div class="k-val" style="font-size:22px">+73 <span class="u">últimos 30d</span></div><div class="bars"><i style="height:40%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:70%"></i><i style="height:62%"></i><i style="height:80%"></i><i style="height:75%"></i><i style="height:100%"></i></div></div>
-        <div class="kpi wide"><div class="k-label" style="margin-bottom:10px">Funil de ativação (novos cadastros)</div>
+        <div class="kpi"><span class="live">ao vivo</span><div class="k-label">Usuários totais</div><div class="k-val" id="v_usuarios">—</div><div class="delta up" id="v_novos_delta">▲ — nos últimos 30d</div></div>
+        <div class="kpi"><span class="live">ao vivo</span><div class="k-label">Personais / Alunos</div><div class="split"><div><b id="v_personais">—</b><span>personais</span></div><div><b id="v_alunos">—</b><span>alunos</span></div></div><div class="k-sub"><span id="v_app">—</span> alunos por personal (média)</div></div>
+        <div class="kpi wide"><span class="live">ao vivo</span><div class="k-label">Novos cadastros (30 dias)</div><div class="k-val" id="v_novos" style="font-size:24px">—</div><div class="k-sub">total de contas criadas nos últimos 30 dias</div></div>
+        <div class="kpi wide"><span class="live">ao vivo</span><div class="k-label" style="margin-bottom:10px">Funil de ativação</div>
           <div class="funnel">
             <div class="fn-row"><span class="fn-lbl">Cadastro iniciado</span><span class="fn-bar"><span class="fn-fill" style="width:100%"></span></span><span class="fn-num">100%</span></div>
-            <div class="fn-row"><span class="fn-lbl">E-mail confirmado</span><span class="fn-bar"><span class="fn-fill" style="width:81%"></span></span><span class="fn-num">81%</span></div>
-            <div class="fn-row"><span class="fn-lbl">1ª ficha criada</span><span class="fn-bar"><span class="fn-fill" style="width:54%"></span></span><span class="fn-num">54%</span></div>
-            <div class="fn-row"><span class="fn-lbl">1º aluno vinculado</span><span class="fn-bar"><span class="fn-fill" style="width:39%"></span></span><span class="fn-num">39%</span></div>
-            <div class="fn-row"><span class="fn-lbl">1º treino feito</span><span class="fn-bar"><span class="fn-fill" style="width:28%"></span></span><span class="fn-num">28%</span></div>
+            <div class="fn-row"><span class="fn-lbl">E-mail confirmado</span><span class="fn-bar"><span class="fn-fill" id="f_email" style="width:0%"></span></span><span class="fn-num" id="n_email">—</span></div>
+            <div class="fn-row"><span class="fn-lbl">Personal criou ficha</span><span class="fn-bar"><span class="fn-fill" id="f_ficha" style="width:0%"></span></span><span class="fn-num" id="n_ficha">—</span></div>
+            <div class="fn-row"><span class="fn-lbl">Personal com aluno</span><span class="fn-bar"><span class="fn-fill" id="f_aluno" style="width:0%"></span></span><span class="fn-num" id="n_aluno">—</span></div>
+            <div class="fn-row"><span class="fn-lbl">Aluno fez 1º treino</span><span class="fn-bar"><span class="fn-fill" id="f_treino" style="width:0%"></span></span><span class="fn-num" id="n_treino">—</span></div>
           </div>
         </div>
-        <div class="kpi"><div class="k-label">Confirmação de e-mail</div><div class="k-val">81<span class="u">%</span></div><div class="k-sub">confirmados ÷ iniciados</div></div>
+        <div class="kpi"><span class="live">ao vivo</span><div class="k-label">Confirmação de e-mail</div><div class="k-val"><span id="v_conf">—</span><span class="u">%</span></div><div class="k-sub">confirmados ÷ iniciados</div></div>
         <div class="kpi"><span class="pending">pendente</span><div class="k-label">Cidades que mais usam</div><div class="k-sub" style="margin-top:14px;line-height:1.7">Precisa de analytics<br>(não coletamos hoje)</div></div>
       </div>
     </section>
@@ -198,32 +177,35 @@
     <section class="sec">
       <div class="sec-h"><span class="dot"></span><h2>Engajamento / Produto</h2><span class="hint">uso real do app</span></div>
       <div class="grid">
-        <div class="kpi"><div class="k-label">Treinou (7d)</div><div class="k-val">41<span class="u">%</span></div><div class="k-sub">abriram o app: 58%</div></div>
-        <div class="kpi wide"><div class="k-label">Treinos concluídos por semana</div><div class="k-val" style="font-size:22px">2.940</div><div class="bars"><i style="height:60%"></i><i style="height:52%"></i><i style="height:68%"></i><i style="height:64%"></i><i style="height:75%"></i><i style="height:70%"></i><i style="height:88%"></i><i style="height:100%"></i></div></div>
-        <div class="kpi"><div class="k-label">Frequência</div><div class="k-val">3,2</div><div class="k-sub">treinos/aluno ativo por semana</div></div>
-        <div class="kpi"><div class="k-label">Churn de aluno</div><div class="k-val">9<span class="u">%</span></div><div class="delta down">▲ 30+ dias sem treinar</div></div>
-        <div class="kpi wide"><span class="pending">v2</span><div class="k-label">Retenção por coorte</div><div class="k-sub" style="margin-top:14px;line-height:1.6">Dos que entraram no mês X, quantos seguem ativos no mês 1, 2, 3… (fica pra v2)</div></div>
+        <div class="kpi"><span class="live">ao vivo</span><div class="k-label">Treinou (7d)</div><div class="k-val"><span id="v_treinou">—</span><span class="u">%</span></div><div class="k-sub">dos alunos treinaram na semana</div></div>
+        <div class="kpi"><span class="live">ao vivo</span><div class="k-label">Treinos concluídos (7d)</div><div class="k-val" id="v_treinos">—</div><div class="k-sub">total na semana</div></div>
+        <div class="kpi"><span class="live">ao vivo</span><div class="k-label">Frequência</div><div class="k-val" id="v_freq">—</div><div class="k-sub">treinos/aluno ativo por semana</div></div>
+        <div class="kpi"><span class="live">ao vivo</span><div class="k-label">Churn de aluno</div><div class="k-val"><span id="v_churn">—</span><span class="u">%</span></div><div class="delta down">30+ dias sem treinar</div></div>
+        <div class="kpi wide"><span class="pending">v2</span><div class="k-label">Retenção por coorte / abriu o app</div><div class="k-sub" style="margin-top:14px;line-height:1.6">Coorte (mês a mês) fica pra v2; "abriu o app" (≠ treinou) precisa de analytics.</div></div>
       </div>
     </section>
 
     <section class="sec">
       <div class="sec-h"><span class="dot"></span><h2>Receita</h2><span class="hint">depende do Mercado Pago em produção</span></div>
       <div class="grid">
-        <div class="kpi"><span class="pending">pendente</span><div class="k-label">MRR</div><div class="k-val" style="font-size:26px">R$ 4.300</div><div class="delta up">▲ receita recorrente/mês</div></div>
-        <div class="kpi wide"><span class="pending">pendente</span><div class="k-label">Movimento do MRR (30d)</div><div class="split" style="margin-top:12px"><div><b style="color:var(--pos)">+R$ 620</b><span>novo</span></div><div><b style="color:var(--pos)">+R$ 180</b><span>expansão</span></div><div><b style="color:var(--neg)">−R$ 150</b><span>cancelado</span></div></div></div>
-        <div class="kpi"><span class="pending">pendente</span><div class="k-label">ARPU</div><div class="k-val" style="font-size:26px">R$ 82</div><div class="k-sub">por personal pagante</div></div>
-        <div class="kpi"><div class="k-label">Pagantes / Gratuitos</div><div class="donut-wrap"><div class="donut"><b>60%</b></div><div class="leg"><div><span class="sw" style="background:var(--ac)"></span>52 pagantes</div><div><span class="sw" style="background:#2a2f37"></span>34 gratuitos</div></div></div></div>
-        <div class="kpi"><span class="pending">pendente</span><div class="k-label">Conversão grátis → pago</div><div class="k-val">18<span class="u">%</span></div></div>
-        <div class="kpi"><span class="pending">pendente</span><div class="k-label">Inadimplência</div><div class="k-val">6<span class="u">%</span></div><div class="k-sub">em atraso / bloqueados</div></div>
-        <div class="kpi"><span class="pending">pendente</span><div class="k-label">Churn de personal</div><div class="k-val">3<span class="u">%</span></div><div class="k-sub">cancelamentos de pagantes/mês</div></div>
+        <div class="kpi"><span class="pending">pendente</span><div class="k-label">MRR</div><div class="k-val" style="font-size:26px">R$ —</div><div class="k-sub">receita recorrente/mês</div></div>
+        <div class="kpi wide"><span class="pending">pendente</span><div class="k-label">Movimento do MRR (30d)</div><div class="split" style="margin-top:12px"><div><b style="color:var(--pos)">R$ —</b><span>novo</span></div><div><b style="color:var(--pos)">R$ —</b><span>expansão</span></div><div><b style="color:var(--neg)">R$ —</b><span>cancelado</span></div></div></div>
+        <div class="kpi"><span class="pending">pendente</span><div class="k-label">ARPU</div><div class="k-val" style="font-size:26px">R$ —</div><div class="k-sub">por personal pagante</div></div>
+        <div class="kpi"><span class="live">ao vivo</span><div class="k-label">Pagantes / Gratuitos</div><div class="donut-wrap"><div class="donut" id="donut"><b id="v_pag_pct">—</b></div><div class="leg"><div><span class="sw" style="background:var(--ac)"></span><span id="v_pagantes">—</span></div><div><span class="sw" style="background:#2a2f37"></span><span id="v_gratuitos">—</span></div></div></div></div>
+        <div class="kpi"><span class="pending">pendente</span><div class="k-label">Conversão grátis → pago</div><div class="k-val">—<span class="u">%</span></div></div>
+        <div class="kpi"><span class="pending">pendente</span><div class="k-label">Inadimplência</div><div class="k-val">—<span class="u">%</span></div><div class="k-sub">em atraso / bloqueados</div></div>
+        <div class="kpi"><span class="pending">pendente</span><div class="k-label">Churn de personal</div><div class="k-val">—<span class="u">%</span></div><div class="k-sub">cancelamentos de pagantes/mês</div></div>
       </div>
     </section>
 
     <section class="sec">
       <div class="sec-h"><span class="dot"></span><h2>Saúde de infra / custo</h2><span class="hint">quando subir de plano</span></div>
       <div class="grid">
-        <div class="kpi wide"><div class="k-label">Termômetro de e-mail — Resend (mês)</div><div class="prog"><div class="r"><span>Enviados</span><b>420 / 3.000</b></div><div class="track"><div class="fill" style="width:14%;background:var(--ac)"></div></div></div></div>
-        <div class="kpi wide"><div class="k-label">Supabase (plano Free)</div><div class="prog"><div class="r"><span>Banco de dados</span><b>180 / 500 MB</b></div><div class="track"><div class="fill" style="width:36%;background:var(--ac)"></div></div></div><div class="prog"><div class="r"><span>Usuários ativos no mês (MAU)</span><b>1.100 / 50.000</b></div><div class="track"><div class="fill" style="width:2%;background:var(--ac)"></div></div></div></div>
+        <div class="kpi wide"><span class="pending">pendente</span><div class="k-label">Termômetro de e-mail — Resend (mês)</div><div class="k-sub" style="margin-top:12px;line-height:1.6">Precisa puxar o uso pela API do Resend (via função de servidor). Fica pra próxima etapa.</div></div>
+        <div class="kpi wide"><span class="live">ao vivo</span><div class="k-label">Supabase (plano Free)</div>
+          <div class="prog"><div class="r"><span>Banco de dados</span><b id="v_db">— / 500 MB</b></div><div class="track"><div class="fill" id="f_db" style="width:0%"></div></div></div>
+          <div class="prog"><div class="r"><span>Ativos no mês (aprox., treinaram)</span><b id="v_mau">— / 50.000</b></div><div class="track"><div class="fill" id="f_mau" style="width:0%"></div></div></div>
+        </div>
       </div>
     </section>
   </div>
@@ -235,7 +217,6 @@
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
     auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
   });
-
   let ENROLL_FACTOR = null, CHALL_FACTOR = null;
 
   function msg(t, tipo){ const el=document.getElementById("msg"); el.className="msg"+(t?" "+(tipo||"err"):""); el.textContent=t||""; }
@@ -249,6 +230,47 @@
   function showPainel(){
     document.getElementById("gate").style.display = "none";
     document.getElementById("painel").style.display = "block";
+    carregarMetricas();
+  }
+
+  /* ---------- métricas reais ---------- */
+  function set(id,v){ const el=document.getElementById(id); if(el) el.textContent=v; }
+  function setW(id,w){ const el=document.getElementById(id); if(el) el.style.width=(w)+"%"; }
+  function fn(name,p){ setW("f_"+name,p); set("n_"+name,p+"%"); }
+  const nf = n => (n==null? "—" : Number(n).toLocaleString("pt-BR"));
+  const pct = (a,b) => b ? Math.round((a/b)*100) : 0;
+
+  async function carregarMetricas(){
+    try{
+      const { data:m, error } = await sb.rpc("painel_metricas");
+      if(error || !m) return;
+      set("v_usuarios", nf(m.usuarios));
+      set("v_novos_delta", "▲ "+nf(m.novos_30d)+" nos últimos 30d");
+      set("v_personais", nf(m.personais));
+      set("v_alunos", nf(m.alunos));
+      set("v_app", (m.alunos_por_personal ?? "—").toString().replace(".",","));
+      set("v_novos", "+"+nf(m.novos_30d));
+      fn("email",  pct(m.confirmados, m.iniciados));
+      fn("ficha",  pct(m.personais_com_ficha, m.personais));
+      fn("aluno",  pct(m.personais_com_aluno, m.personais));
+      fn("treino", pct(m.alunos_com_treino, m.alunos));
+      set("v_conf", pct(m.confirmados, m.iniciados));
+      set("v_treinou", pct(m.treinou_7d, m.alunos));
+      set("v_treinos", nf(m.treinos_7d_total));
+      set("v_freq", m.treinou_7d ? (m.treinos_7d_total/m.treinou_7d).toFixed(1).replace(".",",") : "0");
+      set("v_churn", pct(m.alunos_sem_treino_30d, m.alunos));
+      const grat = Math.max(0,(m.personais||0)-(m.pagantes||0));
+      const dp = pct(m.pagantes, m.personais);
+      set("v_pag_pct", dp+"%");
+      set("v_pagantes", nf(m.pagantes)+" pagantes");
+      set("v_gratuitos", nf(grat)+" gratuitos");
+      const dEl=document.getElementById("donut"); if(dEl) dEl.style.background="conic-gradient(var(--ac) 0 "+dp+"%, #2a2f37 "+dp+"% 100%)";
+      set("v_db", nf(m.db_size_mb)+" / 500 MB");
+      setW("f_db", Math.min(100, Math.round((m.db_size_mb/500)*100)));
+      set("v_mau", nf(m.ativos_30d)+" / 50.000");
+      setW("f_mau", Math.max(1, Math.min(100, Math.round((m.ativos_30d/50000)*100))));
+      if(m.gerado_em) set("v_gerado", "Atualizado: "+m.gerado_em);
+    }catch(e){ /* silencioso */ }
   }
 
   async function boot(){
@@ -257,24 +279,19 @@
     if(!session){ show("vLogin"); return; }
     await afterAuth();
   }
-
   async function afterAuth(){
     show("vLoad");
     const { data:{ user } } = await sb.auth.getUser();
     if(!user){ show("vLogin"); return; }
-    // 1) é admin?
     const { data: prof, error } = await sb.from("profiles").select("is_admin").eq("id", user.id).single();
     if(error || !prof || !prof.is_admin){ show("vDeny"); return; }
-    // 2) tem token cadastrado?
     const { data: fData } = await sb.auth.mfa.listFactors();
     const verified = (fData && fData.totp ? fData.totp : []).filter(f=>f.status==="verified");
     if(verified.length === 0){ show("vEnroll"); startEnroll(); return; }
-    // 3) sessão já passou pelo 2º fator?
     const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
     if(aal.currentLevel !== "aal2"){ CHALL_FACTOR = verified[0].id; show("vChallenge"); setTimeout(()=>document.getElementById("challCode").focus(),100); return; }
     showPainel();
   }
-
   async function entrar(){
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
@@ -285,14 +302,11 @@
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if(error) throw error;
       await afterAuth();
-    }catch(e){
-      msg(/Invalid login/i.test(e.message||"") ? "E-mail ou senha incorretos." : (e.message||"Erro ao entrar."));
-    }finally{ btn.disabled = false; }
+    }catch(e){ msg(/Invalid login/i.test(e.message||"") ? "E-mail ou senha incorretos." : (e.message||"Erro ao entrar.")); }
+    finally{ btn.disabled = false; }
   }
-
   async function startEnroll(){
     msg("");
-    // limpa fatores não confirmados (evita duplicidade)
     try{
       const { data } = await sb.auth.mfa.listFactors();
       const all = (data && data.all) ? data.all : ((data && data.totp) ? data.totp : []);
@@ -306,7 +320,6 @@
       document.getElementById("qrSecret").textContent = data.totp.secret;
     }catch(e){ msg(e.message || "Erro ao gerar o QR."); }
   }
-
   async function confirmarEnroll(){
     const code = document.getElementById("enrollCode").value.replace(/\D/g,"");
     const btn = document.getElementById("enrollBtn");
@@ -320,7 +333,6 @@
       await afterAuth();
     }catch(e){ msg("Código incorreto ou expirado. Tente com o código atual do app."); btn.disabled = false; }
   }
-
   async function confirmarChallenge(){
     const code = document.getElementById("challCode").value.replace(/\D/g,"");
     const btn = document.getElementById("challBtn");
@@ -334,13 +346,11 @@
       await afterAuth();
     }catch(e){ msg("Código incorreto ou expirado. Tente com o código atual do app."); btn.disabled = false; }
   }
-
   async function sair(){ try{ await sb.auth.signOut(); }catch(e){} show("vLogin"); }
 
   document.getElementById("password").addEventListener("keydown", e=>{ if(e.key==="Enter") entrar(); });
   document.getElementById("enrollCode").addEventListener("keydown", e=>{ if(e.key==="Enter") confirmarEnroll(); });
   document.getElementById("challCode").addEventListener("keydown", e=>{ if(e.key==="Enter") confirmarChallenge(); });
-
   boot();
 </script>
 </body>
