@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Piik · Personalização</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0a0b0d; --elev:#101317; --card:#12161b; --border:#1e242c; --line:#232a33;
+    --text:#fff; --dim:#c7ccd6; --mute:#6b7079; --accent:#7fff00; --danger:#ff5a5a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:24px 18px 80px}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .brand{font-weight:800;font-style:italic;letter-spacing:1px;font-size:24px}
+  .brand i{color:var(--accent);font-style:italic}
+  a.voltar{color:var(--dim);text-decoration:none;font-size:14px}
+  h1{font-size:24px;margin:14px 0 4px}
+  .sub{color:var(--mute);font-size:14px;margin-bottom:22px}
+  .label{font-weight:700;font-size:14px;margin:22px 0 8px}
+  .hint{color:var(--mute);font-size:12px;margin-top:6px}
+  .swatches{display:flex;flex-wrap:wrap;gap:10px}
+  .sw{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900}
+  .sw.on{border:2px solid #fff}
+  .hexrow{display:flex;align-items:center;gap:10px;margin-top:10px}
+  input[type=color]{width:44px;height:44px;border:none;background:none;padding:0;border-radius:10px;cursor:pointer}
+  input[type=text]{flex:1;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:0 12px;font-size:15px}
+  .logobox{width:120px;height:70px;border-radius:12px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .logobox img{max-width:100%;max-height:100%;object-fit:contain}
+  .btn{height:50px;border-radius:12px;border:none;background:var(--accent);color:#0a0b0d;font-weight:800;font-size:15px;cursor:pointer;width:100%}
+  .btn:disabled{opacity:.6;cursor:default}
+  .btn.outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+  .row{display:flex;gap:12px;align-items:center}
+  /* preview */
+  .previewLbl{color:var(--mute);font-size:12px;letter-spacing:.5px;margin-bottom:8px}
+  .preview{border-radius:22px;border:1px solid var(--border);padding:16px}
+  .pv-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .pv-logo{font-weight:800;font-style:italic;font-size:20px}
+  .pv-dot{width:12px;height:12px;border-radius:6px}
+  .pv-card{border-radius:16px;border:1px solid;padding:14px;background:rgba(255,255,255,.04)}
+  .pv-btn{margin-top:12px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .msg{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;text-align:center;color:var(--dim)}
+  .msg a{color:var(--accent)}
+  .toast{position:fixed;left:0;right:0;bottom:20px;display:flex;justify-content:center;pointer-events:none}
+  .toast div{background:var(--accent);color:#0a0b0d;font-weight:800;padding:12px 18px;border-radius:999px;opacity:0;transition:opacity .2s}
+  .toast.show div{opacity:1}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="brand">P<i>ii</i>k</span>
+    <a class="voltar" href="app.html">← Voltar ao app</a>
+  </div>
+
+  <div id="carregando" class="msg">Carregando…</div>
+
+  <div id="bloqueio" class="msg hidden"></div>
+
+  <div id="painel" class="hidden">
+    <h1>Deixe com a sua cara</h1>
+    <div class="sub">Escolha as cores e o logo. O visual vale para você e para os alunos vinculados a você — no app e no site.</div>
+
+    <div class="previewLbl">PRÉVIA</div>
+    <div class="preview" id="pv">
+      <div class="pv-head">
+        <span class="pv-logo" id="pvLogo">Piik</span>
+        <span class="pv-dot" id="pvDot"></span>
+      </div>
+      <div class="pv-card" id="pvCard">
+        <div style="font-weight:700" id="pvT1">Treino A · Peito e Tríceps</div>
+        <div style="opacity:.6;font-size:12px;margin-top:2px" id="pvT2">6 exercícios · última: há 2 dias</div>
+        <div class="pv-btn" id="pvBtn">▶ Iniciar treino</div>
+      </div>
+      <div style="font-weight:700;margin-top:12px" id="pvProg">● Progresso da semana</div>
+    </div>
+
+    <div class="label">Cor de destaque</div>
+    <div class="swatches" id="swAccent"></div>
+    <div class="hexrow">
+      <input type="color" id="accentColor" />
+      <input type="text" id="accentHex" maxlength="7" placeholder="#7fff00" />
+    </div>
+
+    <div class="label">Cor de fundo</div>
+    <div class="swatches" id="swBg"></div>
+    <div class="hexrow">
+      <input type="color" id="bgColor" />
+      <input type="text" id="bgHex" maxlength="7" placeholder="#0a0b0d" />
+    </div>
+    <div class="hint">Dica: fundos escuros deixam o app mais legível. O texto se ajusta automaticamente para claro ou escuro.</div>
+
+    <div class="label">Logo</div>
+    <div class="row">
+      <div class="logobox" id="logoBox"><span style="color:var(--mute);font-size:12px">sem logo</span></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <button class="btn outline" id="btnLogo">Enviar logo</button>
+        <button class="btn outline hidden" id="btnLogoRm" style="border-color:var(--danger);color:var(--danger)">Remover logo</button>
+      </div>
+    </div>
+    <input type="file" id="logoInput" accept="image/*" class="hidden" />
+
+    <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px">
+      <button class="btn" id="btnSalvar">Salvar personalização</button>
+      <button class="btn outline" id="btnPadrao">Restaurar padrão Piik</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div id="toastMsg"></div></div>
+
+<script>
+const PADRAO = { accent:'#7fff00', bg:'#0a0b0d', logo_url:null };
+const ACCENTS = ['#7fff00','#00e0ff','#ff5a5a','#ffb020','#a06bff','#ff3ea5','#20e070','#ffffff'];
+const BGS = ['#0a0b0d','#101317','#12161b','#0d1220','#1a1030','#0f1a14'];
+let estado = { ...PADRAO };
+let sb=null, uid=null;
+
+const $ = id => document.getElementById(id);
+function hex6(v){ return /^#[0-9a-fA-F]{6}$/.test((v||'').trim()); }
+function legivel(hexBg){
+  const c=(hexBg||'').replace('#',''); if(c.length<6) return '#fff';
+  const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
+  return (0.299*r+0.587*g+0.114*b)/255>0.6 ? '#0a0b0d' : '#ffffff';
+}
+function toast(m){ $('toastMsg').textContent=m; $('toast').classList.add('show'); setTimeout(()=>$('toast').classList.remove('show'),1800); }
+
+function pintarPreview(){
+  const {accent,bg,logo_url}=estado; const txt=legivel(bg);
+  const pv=$('pv'); pv.style.background=bg;
+  $('pvDot').style.background=accent;
+  $('pvProg').style.color=accent;
+  $('pvT1').style.color=txt; $('pvT2').style.color=txt;
+  $('pvCard').style.borderColor=accent+'55';
+  const b=$('pvBtn'); b.style.background=accent; b.style.color=legivel(accent);
+  const pl=$('pvLogo');
+  if(logo_url){ pl.innerHTML='<img src="'+logo_url+'" style="height:26px" />'; }
+  else { pl.textContent='Piik'; pl.style.color=txt; }
+  // logo box
+  const lb=$('logoBox');
+  if(logo_url){ lb.innerHTML='<img src="'+logo_url+'" />'; $('btnLogoRm').classList.remove('hidden'); $('btnLogo').textContent='Trocar logo'; }
+  else { lb.innerHTML='<span style="color:var(--mute);font-size:12px">sem logo</span>'; $('btnLogoRm').classList.add('hidden'); $('btnLogo').textContent='Enviar logo'; }
+  // inputs
+  if(hex6(accent)){ $('accentColor').value=accent; $('accentHex').value=accent; }
+  if(hex6(bg)){ $('bgColor').value=bg; $('bgHex').value=bg; }
+  marcarSwatches();
+}
+function marcarSwatches(){
+  document.querySelectorAll('#swAccent .sw').forEach(el=>el.classList.toggle('on', el.dataset.c.toLowerCase()===estado.accent.toLowerCase()));
+  document.querySelectorAll('#swBg .sw').forEach(el=>el.classList.toggle('on', el.dataset.c.toLowerCase()===estado.bg.toLowerCase()));
+}
+function montarSwatches(){
+  ACCENTS.forEach(c=>{ const d=document.createElement('div'); d.className='sw'; d.dataset.c=c; d.style.background=c;
+    d.onclick=()=>{ estado.accent=c; pintarPreview(); }; $('swAccent').appendChild(d); });
+  BGS.forEach(c=>{ const d=document.createElement('div'); d.className='sw'; d.dataset.c=c; d.style.background=c;
+    d.onclick=()=>{ estado.bg=c; pintarPreview(); }; $('swBg').appendChild(d); });
+}
+
+function ligarInputs(){
+  $('accentColor').oninput=e=>{ estado.accent=e.target.value; pintarPreview(); };
+  $('accentHex').oninput=e=>{ let v=e.target.value; if(!v.startsWith('#'))v='#'+v.replace('#',''); if(hex6(v)){estado.accent=v; pintarPreview();} };
+  $('bgColor').oninput=e=>{ estado.bg=e.target.value; pintarPreview(); };
+  $('bgHex').oninput=e=>{ let v=e.target.value; if(!v.startsWith('#'))v='#'+v.replace('#',''); if(hex6(v)){estado.bg=v; pintarPreview();} };
+  $('btnLogo').onclick=()=>$('logoInput').click();
+  $('btnLogoRm').onclick=()=>{ estado.logo_url=null; pintarPreview(); };
+  $('logoInput').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+    rd.onload=()=>{ estado.logo_url=rd.result; pintarPreview(); }; rd.readAsDataURL(f); };
+  $('btnPadrao').onclick=()=>{ estado={...PADRAO}; pintarPreview(); };
+  $('btnSalvar').onclick=salvar;
+}
+
+async function salvar(){
+  if(!hex6(estado.accent)||!hex6(estado.bg)){ toast('Cor inválida'); return; }
+  $('btnSalvar').disabled=true; $('btnSalvar').textContent='Salvando…';
+  const { error } = await sb.from('personalizacao').upsert({
+    professional_id: uid, accent: estado.accent, bg: estado.bg, logo_url: estado.logo_url,
+    ativo: true, updated_at: new Date().toISOString()
+  }, { onConflict:'professional_id' });
+  $('btnSalvar').disabled=false; $('btnSalvar').textContent='Salvar personalização';
+  if(error){ toast('Erro ao salvar'); console.error(error); }
+  else { toast('Personalização salva!'); }
+}
+
+function bloquear(msgHtml){ $('carregando').classList.add('hidden'); const b=$('bloqueio'); b.innerHTML=msgHtml; b.classList.remove('hidden'); }
+
+async function init(){
+  try{
+    // reaproveita a config e o login do próprio site
+    const src = await fetch('app.html').then(r=>r.text());
+    const URL = (src.match(/SUPABASE_URL\s*=\s*["']([^"']+)["']/)||[])[1];
+    const ANON = (src.match(/SUPABASE_ANON\s*=\s*["']([^"']+)["']/)||[])[1];
+    if(!URL||!ANON){ bloquear('Não consegui carregar a configuração do site.'); return; }
+    sb = supabase.createClient(URL, ANON, { auth:{ flowType:'implicit', detectSessionInUrl:true, persistSession:true, autoRefreshToken:true } });
+
+    const { data:{ user } } = await sb.auth.getUser();
+    if(!user){ bloquear('Você precisa entrar primeiro. <a href="app.html">Abrir o app e fazer login</a>, depois volte aqui.'); return; }
+    uid = user.id;
+
+    const { data:perfil } = await sb.from('profiles').select('role').eq('id', uid).single();
+    const ehProf = perfil && (perfil.role==='professional' || perfil.role==='creator');
+    if(!ehProf){ bloquear('A personalização é exclusiva para personais. <a href="app.html">Voltar ao app</a>.'); return; }
+
+    const { data:pz } = await sb.from('personalizacao').select('accent,bg,logo_url,ativo').eq('professional_id', uid).maybeSingle();
+    if(pz && pz.ativo!==false){ estado = { accent: pz.accent||PADRAO.accent, bg: pz.bg||PADRAO.bg, logo_url: pz.logo_url||null }; }
+
+    montarSwatches(); ligarInputs(); pintarPreview();
+    $('carregando').classList.add('hidden'); $('painel').classList.remove('hidden');
+  }catch(e){ console.error(e); bloquear('Algo deu errado ao carregar. Tente recarregar a página.'); }
+}
+init();
+</script>
+</body>
+</html>
