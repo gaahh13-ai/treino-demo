@@ -5134,5 +5134,41 @@
 
   init();
 </script>
+
+<!-- Piik: item de menu "Personalização" (link para personalizar.html) — visível só para o personal -->
+<script>
+(async function(){
+  try{
+    if(!window.supabase) return;
+    const _src = await fetch('app.html',{cache:'no-store'}).then(r=>r.text());
+    const _URL=(_src.match(/SUPABASE_URL\s*=\s*["']([^"']+)["']/)||[])[1];
+    const _ANON=(_src.match(/SUPABASE_ANON\s*=\s*["']([^"']+)["']/)||[])[1];
+    if(!_URL||!_ANON) return;
+    const _sb=window.supabase.createClient(_URL,_ANON,{auth:{flowType:'implicit',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+    const { data:{ user } } = await _sb.auth.getUser();
+    if(!user) return;
+    const { data:perfil } = await _sb.from('profiles').select('role').eq('id',user.id).single();
+    if(!perfil || !(perfil.role==='professional'||perfil.role==='creator')) return;
+    function inject(){
+      if(document.getElementById('piik-perso-link')) return true;
+      const alvo=[...document.querySelectorAll('a,button,div,li,span')].find(e=>/^(Exerc[ií]cios|Desempenho|Financeiro)$/.test(e.textContent.trim()) && e.children.length===0);
+      if(!alvo || !alvo.parentElement) return false;
+      const item=alvo.cloneNode(true);
+      item.id='piik-perso-link';
+      item.textContent='🎨 Personalização';
+      item.removeAttribute('onclick');
+      item.style.cursor='pointer';
+      item.addEventListener('click',function(ev){ ev.preventDefault(); ev.stopPropagation(); window.location.href='personalizar.html'; },true);
+      alvo.parentElement.appendChild(item);
+      return true;
+    }
+    if(!inject()){
+      const mo=new MutationObserver(function(){ if(inject()) mo.disconnect(); });
+      mo.observe(document.body,{childList:true,subtree:true});
+      setTimeout(function(){ mo.disconnect(); },15000);
+    }
+  }catch(e){ console.warn('piik perso menu:', e); }
+})();
+</script>
 </body>
 </html>
