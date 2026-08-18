@@ -12,41 +12,63 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:720px;margin:0 auto;padding:24px 18px 80px}
-  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 18px 90px}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
   .brand{font-weight:800;font-style:italic;letter-spacing:1px;font-size:24px}
   .brand i{color:var(--accent);font-style:italic}
   a.voltar{color:var(--dim);text-decoration:none;font-size:14px}
-  h1{font-size:24px;margin:14px 0 4px}
-  .sub{color:var(--mute);font-size:14px;margin-bottom:22px}
+  h1{font-size:24px;margin:12px 0 4px}
+  .sub{color:var(--mute);font-size:14px;margin-bottom:20px}
   .label{font-weight:700;font-size:14px;margin:22px 0 8px}
   .hint{color:var(--mute);font-size:12px;margin-top:6px}
-  .swatches{display:flex;flex-wrap:wrap;gap:10px}
-  .sw{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900}
-  .sw.on{border:2px solid #fff}
-  .hexrow{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .swatches{display:flex;flex-wrap:wrap;gap:7px}
+  .sw{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.14);cursor:pointer;position:relative;padding:0}
+  .sw.on{outline:2px solid #fff;outline-offset:1px}
+  .hexrow{display:flex;align-items:center;gap:10px;margin-top:12px}
   input[type=color]{width:44px;height:44px;border:none;background:none;padding:0;border-radius:10px;cursor:pointer}
   input[type=text]{flex:1;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:0 12px;font-size:15px}
-  .logobox{width:120px;height:70px;border-radius:12px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .logobox{width:120px;height:70px;border-radius:12px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;background:#0f1216}
   .logobox img{max-width:100%;max-height:100%;object-fit:contain}
   .btn{height:50px;border-radius:12px;border:none;background:var(--accent);color:#0a0b0d;font-weight:800;font-size:15px;cursor:pointer;width:100%}
   .btn:disabled{opacity:.6;cursor:default}
   .btn.outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}
   .row{display:flex;gap:12px;align-items:center}
-  /* preview */
-  .previewLbl{color:var(--mute);font-size:12px;letter-spacing:.5px;margin-bottom:8px}
-  .preview{border-radius:22px;border:1px solid var(--border);padding:16px}
-  .pv-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .pv-logo{font-weight:800;font-style:italic;font-size:20px}
-  .pv-dot{width:12px;height:12px;border-radius:6px}
-  .pv-card{border-radius:16px;border:1px solid;padding:14px;background:rgba(255,255,255,.04)}
-  .pv-btn{margin-top:12px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800}
   .msg{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;text-align:center;color:var(--dim)}
   .msg a{color:var(--accent)}
   .toast{position:fixed;left:0;right:0;bottom:20px;display:flex;justify-content:center;pointer-events:none}
   .toast div{background:var(--accent);color:#0a0b0d;font-weight:800;padding:12px 18px;border-radius:999px;opacity:0;transition:opacity .2s}
   .toast.show div{opacity:1}
   .hidden{display:none}
+  /* carrossel de prévia */
+  .previewLbl{color:var(--mute);font-size:12px;letter-spacing:.5px;margin-bottom:10px}
+  .stageWrap{display:flex;align-items:center;justify-content:center;gap:10px}
+  .navbtn{width:40px;height:40px;flex:0 0 40px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .navbtn:active{transform:scale(.94)}
+  .phone{width:300px;height:610px;border-radius:34px;border:8px solid #1a1d22;background:#000;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);position:relative}
+  .screen{width:100%;height:100%;overflow:hidden;display:flex;flex-direction:column}
+  .telaNome{text-align:center;color:var(--mute);font-size:12px;margin-top:10px}
+  .dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--line)}
+  .dot.on{background:var(--accent)}
+  /* elementos internos do mock (usam variáveis --p-*) */
+  .m{--p-bg:#0a0b0d;--p-txt:#fff;--p-acc:#7fff00;--p-accTxt:#0a0b0d;--p-card:#12161b;--p-bd:#1e242c;--p-dim:#c7ccd6;--p-mute:#8a9099;--p-accOnBg:#7fff00;
+     width:100%;height:100%;background:var(--p-bg);color:var(--p-txt);padding:16px;overflow:hidden;font-size:13px}
+  .m-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .m-logo{font-weight:800;font-style:italic;font-size:18px}
+  .m-logo img{height:22px;vertical-align:middle}
+  .m-h1{font-size:19px;font-weight:800;margin:2px 0 12px}
+  .m-card{background:var(--p-card);border:1px solid var(--p-bd);border-radius:14px;padding:12px;margin-bottom:10px}
+  .m-title{font-weight:700;font-size:14px}
+  .m-mut{color:var(--p-mute);font-size:11px;margin-top:2px}
+  .m-btn{height:38px;border-radius:10px;background:var(--p-acc);color:var(--p-accTxt);font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:10px;font-size:13px}
+  .m-pill{display:inline-block;background:var(--p-acc);color:var(--p-accTxt);border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700}
+  .m-bar{height:8px;border-radius:6px;background:var(--p-bd);overflow:hidden;margin-top:8px}
+  .m-bar > i{display:block;height:100%;background:var(--p-acc)}
+  .m-acc{color:var(--p-accOnBg);font-weight:700}
+  .m-av{width:70px;height:70px;border-radius:50%;background:var(--p-card);border:1.5px solid var(--p-acc);display:flex;align-items:center;justify-content:center;margin:0 auto;overflow:hidden}
+  .m-av img{width:100%;height:100%;object-fit:cover}
+  .m-tab{display:flex;justify-content:space-around;border-top:1px solid var(--p-bd);padding-top:8px;margin-top:auto;color:var(--p-mute);font-size:10px}
+  .m-tab .on{color:var(--p-acc)}
 </style>
 </head>
 <body>
@@ -57,26 +79,19 @@
   </div>
 
   <div id="carregando" class="msg">Carregando…</div>
-
   <div id="bloqueio" class="msg hidden"></div>
 
   <div id="painel" class="hidden">
     <h1>Deixe com a sua cara</h1>
-    <div class="sub">Escolha as cores e o logo. O visual vale para você e para os alunos vinculados a você — no app e no site.</div>
+    <div class="sub">Escolha as cores e o logo. Veja na prévia como fica cada tela do app — passe as setas. O visual vale para você e para os alunos vinculados a você.</div>
 
-    <div class="previewLbl">PRÉVIA</div>
-    <div class="preview" id="pv">
-      <div class="pv-head">
-        <span class="pv-logo" id="pvLogo">Piik</span>
-        <span class="pv-dot" id="pvDot"></span>
-      </div>
-      <div class="pv-card" id="pvCard">
-        <div style="font-weight:700" id="pvT1">Treino A · Peito e Tríceps</div>
-        <div style="opacity:.6;font-size:12px;margin-top:2px" id="pvT2">6 exercícios · última: há 2 dias</div>
-        <div class="pv-btn" id="pvBtn">▶ Iniciar treino</div>
-      </div>
-      <div style="font-weight:700;margin-top:12px" id="pvProg">● Progresso da semana</div>
+    <div class="previewLbl">PRÉVIA — <span id="telaLbl">Treinos</span></div>
+    <div class="stageWrap">
+      <button class="navbtn" id="prev">‹</button>
+      <div class="phone"><div class="screen" id="stage"></div></div>
+      <button class="navbtn" id="next">›</button>
     </div>
+    <div class="dots" id="dots"></div>
 
     <div class="label">Cor de destaque</div>
     <div class="swatches" id="swAccent"></div>
@@ -91,16 +106,18 @@
       <input type="color" id="bgColor" />
       <input type="text" id="bgHex" maxlength="7" placeholder="#0a0b0d" />
     </div>
-    <div class="hint">Dica: fundos escuros deixam o app mais legível. O texto se ajusta automaticamente para claro ou escuro.</div>
+    <div class="hint">O texto se ajusta sozinho para claro ou escuro conforme o fundo — nada some.</div>
 
     <div class="label">Logo</div>
     <div class="row">
       <div class="logobox" id="logoBox"><span style="color:var(--mute);font-size:12px">sem logo</span></div>
       <div style="flex:1;display:flex;flex-direction:column;gap:8px">
         <button class="btn outline" id="btnLogo">Enviar logo</button>
+        <button class="btn outline hidden" id="btnCor">🎨 Usar a cor do logo</button>
         <button class="btn outline hidden" id="btnLogoRm" style="border-color:var(--danger);color:var(--danger)">Remover logo</button>
       </div>
     </div>
+    <div class="hint">Ao enviar um logo, sugerimos automaticamente a cor de destaque a partir dele.</div>
     <input type="file" id="logoInput" accept="image/*" class="hidden" />
 
     <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px">
@@ -114,63 +131,160 @@
 
 <script>
 const PADRAO = { accent:'#7fff00', bg:'#0a0b0d', logo_url:null };
-const ACCENTS = ['#7fff00','#00e0ff','#ff5a5a','#ffb020','#a06bff','#ff3ea5','#20e070','#ffffff'];
-const BGS = ['#0a0b0d','#101317','#12161b','#0d1220','#1a1030','#0f1a14'];
 let estado = { ...PADRAO };
-let sb=null, uid=null;
-
+let sb=null, uid=null, tela=0;
 const $ = id => document.getElementById(id);
-function hex6(v){ return /^#[0-9a-fA-F]{6}$/.test((v||'').trim()); }
-function legivel(hexBg){
-  const c=(hexBg||'').replace('#',''); if(c.length<6) return '#fff';
-  const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
-  return (0.299*r+0.587*g+0.114*b)/255>0.6 ? '#0a0b0d' : '#ffffff';
-}
-function toast(m){ $('toastMsg').textContent=m; $('toast').classList.add('show'); setTimeout(()=>$('toast').classList.remove('show'),1800); }
 
-function pintarPreview(){
-  const {accent,bg,logo_url}=estado; const txt=legivel(bg);
-  const pv=$('pv'); pv.style.background=bg;
-  $('pvDot').style.background=accent;
-  $('pvProg').style.color=accent;
-  $('pvT1').style.color=txt; $('pvT2').style.color=txt;
-  $('pvCard').style.borderColor=accent+'55';
-  const b=$('pvBtn'); b.style.background=accent; b.style.color=legivel(accent);
-  const pl=$('pvLogo');
-  if(logo_url){ pl.innerHTML='<img src="'+logo_url+'" style="height:26px" />'; }
-  else { pl.textContent='Piik'; pl.style.color=txt; }
-  // logo box
-  const lb=$('logoBox');
-  if(logo_url){ lb.innerHTML='<img src="'+logo_url+'" />'; $('btnLogoRm').classList.remove('hidden'); $('btnLogo').textContent='Trocar logo'; }
-  else { lb.innerHTML='<span style="color:var(--mute);font-size:12px">sem logo</span>'; $('btnLogoRm').classList.add('hidden'); $('btnLogo').textContent='Enviar logo'; }
-  // inputs
-  if(hex6(accent)){ $('accentColor').value=accent; $('accentHex').value=accent; }
-  if(hex6(bg)){ $('bgColor').value=bg; $('bgHex').value=bg; }
-  marcarSwatches();
+/* ---------- utils de cor ---------- */
+function hex6(v){ return /^#[0-9a-fA-F]{6}$/.test((v||'').trim()); }
+function rgb(h){ h=(h||'').replace('#',''); if(h.length<6) return null; return {r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)}; }
+function hx(n){ return Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,'0'); }
+function toHex(r,g,b){ return '#'+hx(r)+hx(g)+hx(b); }
+function alpha(h,a){ const c=rgb(h); return c?`rgba(${c.r},${c.g},${c.b},${a})`:h; }
+function mix(h1,h2,t){ const a=rgb(h1),b=rgb(h2); if(!a||!b) return h1; return toHex(a.r+(b.r-a.r)*t,a.g+(b.g-a.g)*t,a.b+(b.b-a.b)*t); }
+function lum(h){ const c=rgb(h); if(!c) return 0; return (0.299*c.r+0.587*c.g+0.114*c.b)/255; }
+function legivel(h){ return lum(h)>0.6 ? '#0a0b0d' : '#ffffff'; }
+function contraste(a,b){ return Math.abs(lum(a)-lum(b)); }
+function derive(accent,bg){
+  const txt=legivel(bg);
+  return { accent, bg, txt, accTxt:legivel(accent),
+    card:mix(bg,txt,0.07), bd:mix(bg,txt,0.16), dim:alpha(txt,0.8), mute:alpha(txt,0.5),
+    accOnBg: contraste(accent,bg) > 0.28 ? accent : txt };
 }
-function marcarSwatches(){
+
+/* ---------- paleta ---------- */
+function hsl(h,s,l){ s/=100; l/=100; const k=n=>(n+h/30)%12; const a=s*Math.min(l,1-l);
+  const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
+  return toHex(255*f(0),255*f(8),255*f(4)); }
+const ACCENTS=(function(){ const out=[]; const hues=[0,20,40,60,90,120,150,170,190,210,230,260,290,320,340];
+  hues.forEach(h=>out.push(hsl(h,90,55))); hues.filter((_,i)=>i%2===0).forEach(h=>out.push(hsl(h,75,68)));
+  out.push('#ffffff','#d0d0d0','#0a0b0d'); return out; })();
+const BGS=['#0a0b0d','#0d1117','#101317','#12161b','#0d1220','#161022','#1a1030','#0f1a14','#14110d','#1a1414','#101010','#1c1f26','#ffffff','#f5f5f7','#e9ecf0','#cfcfcf'];
+
+/* ---------- telas mock ---------- */
+function logoTop(t){ return estado.logo_url ? `<img src="${estado.logo_url}" alt="logo"/>` : `Piik`; }
+const TELAS=[
+  { nome:'Treinos', render:t=>`
+    <div class="m" style="--p-bg:${t.bg};--p-txt:${t.txt};--p-acc:${t.accent};--p-accTxt:${t.accTxt};--p-card:${t.card};--p-bd:${t.bd};--p-mute:${t.mute};--p-accOnBg:${t.accOnBg}">
+      <div class="m-hd"><span class="m-logo" style="color:${t.txt}">${logoTop(t)}</span><span class="m-mut">⚙️</span></div>
+      <div class="m-h1">Olá, Laiane 👋</div>
+      <div class="m-mut" style="margin-bottom:8px">MEUS TREINOS</div>
+      <div class="m-card"><div class="m-title">Treino A · Peito e Tríceps</div><div class="m-mut">6 exercícios · último: há 2 dias</div><div class="m-btn">▶ Iniciar treino</div></div>
+      <div class="m-card"><div class="m-title">Treino B · Costas e Bíceps</div><div class="m-mut">7 exercícios · último: há 4 dias</div></div>
+      <div class="m-tab"><span class="on">Treinos</span><span>Avaliações</span><span>Perfil</span></div>
+    </div>` },
+  { nome:'Modo Foco', render:t=>`
+    <div class="m" style="--p-bg:${t.bg};--p-txt:${t.txt};--p-acc:${t.accent};--p-accTxt:${t.accTxt};--p-card:${t.card};--p-bd:${t.bd};--p-mute:${t.mute};--p-accOnBg:${t.accOnBg}">
+      <div class="m-hd"><span class="m-logo" style="color:${t.txt}">${logoTop(t)}</span><span class="m-mut">⏱ 12:40 · 3/9</span></div>
+      <div style="text-align:center;margin-top:20px">
+        <div style="font-size:22px;font-weight:800">Supino reto</div>
+        <div class="m-mut" style="margin-top:6px">3x12 · alvo 40 · última: 37,5</div>
+        <div class="m-card" style="margin-top:16px"><div class="m-mut">carga usada</div><div style="font-size:26px;font-weight:800;margin-top:4px">40</div></div>
+        <div class="m-acc" style="margin-top:14px">🔗 BI-SET — em sequência</div>
+      </div>
+      <div class="m-btn" style="margin-top:20px">✓ Concluir e ir para o próximo</div>
+      <div class="m-mut" style="text-align:center;margin-top:10px">Próximo · Crucifixo</div>
+    </div>` },
+  { nome:'Progresso', render:t=>`
+    <div class="m" style="--p-bg:${t.bg};--p-txt:${t.txt};--p-acc:${t.accent};--p-accTxt:${t.accTxt};--p-card:${t.card};--p-bd:${t.bd};--p-mute:${t.mute};--p-accOnBg:${t.accOnBg}">
+      <div class="m-hd"><span class="m-logo" style="color:${t.txt}">${logoTop(t)}</span></div>
+      <div class="m-h1">Seu progresso</div>
+      <div class="row" style="gap:10px;margin-bottom:10px">
+        <div class="m-card" style="flex:1;text-align:center"><div style="font-size:22px;font-weight:800" class="m-acc">4</div><div class="m-mut">treinos/semana</div></div>
+        <div class="m-card" style="flex:1;text-align:center"><div style="font-size:22px;font-weight:800" class="m-acc">18</div><div class="m-mut">total no mês</div></div>
+      </div>
+      <div class="m-card"><div class="m-title">Meta semanal</div><div class="m-mut">4 de 5 treinos</div><div class="m-bar"><i style="width:80%"></i></div></div>
+      <div class="m-card"><div class="m-title">Evolução de carga</div><div class="m-mut">Supino: 32,5 → 40 kg</div><div class="m-bar"><i style="width:65%"></i></div></div>
+      <div class="m-tab"><span>Treinos</span><span class="on">Progresso</span><span>Perfil</span></div>
+    </div>` },
+  { nome:'Perfil', render:t=>`
+    <div class="m" style="--p-bg:${t.bg};--p-txt:${t.txt};--p-acc:${t.accent};--p-accTxt:${t.accTxt};--p-card:${t.card};--p-bd:${t.bd};--p-mute:${t.mute};--p-accOnBg:${t.accOnBg}">
+      <div class="m-hd"><span class="m-logo" style="color:${t.txt}">${logoTop(t)}</span></div>
+      <div class="m-h1">Perfil</div>
+      <div class="m-av">${estado.logo_url?`<img src="${estado.logo_url}"/>`:'<span style="color:'+t.accent+';font-weight:800;font-size:22px">L</span>'}</div>
+      <div style="text-align:center;margin-top:10px;font-weight:800;font-size:16px">Laiane Silva</div>
+      <div class="m-mut" style="text-align:center">laiane@email.com</div>
+      <div class="m-card" style="margin-top:14px"><span class="m-pill">Piik Personal</span><div class="m-mut" style="margin-top:6px">Plano ativo</div></div>
+      <div class="m-card"><div class="m-title">Avaliações físicas</div><div class="m-mut">Última há 2 semanas</div></div>
+      <div class="m-tab"><span>Treinos</span><span>Progresso</span><span class="on">Perfil</span></div>
+    </div>` },
+];
+
+/* ---------- render ---------- */
+function render(){
+  const t=derive(estado.accent, estado.bg);
+  $('stage').innerHTML = TELAS[tela].render(t);
+  $('telaLbl').textContent = TELAS[tela].nome;
+  // dots
+  $('dots').innerHTML = TELAS.map((_,i)=>`<span class="dot ${i===tela?'on':''}"></span>`).join('');
+  // inputs
+  if(hex6(estado.accent)){ $('accentColor').value=estado.accent; $('accentHex').value=estado.accent; }
+  if(hex6(estado.bg)){ $('bgColor').value=estado.bg; $('bgHex').value=estado.bg; }
   document.querySelectorAll('#swAccent .sw').forEach(el=>el.classList.toggle('on', el.dataset.c.toLowerCase()===estado.accent.toLowerCase()));
   document.querySelectorAll('#swBg .sw').forEach(el=>el.classList.toggle('on', el.dataset.c.toLowerCase()===estado.bg.toLowerCase()));
+  // logo box
+  const lb=$('logoBox');
+  if(estado.logo_url){ lb.innerHTML=`<img src="${estado.logo_url}"/>`; $('btnLogoRm').classList.remove('hidden'); $('btnCor').classList.remove('hidden'); $('btnLogo').textContent='Trocar logo'; }
+  else { lb.innerHTML='<span style="color:var(--mute);font-size:12px">sem logo</span>'; $('btnLogoRm').classList.add('hidden'); $('btnCor').classList.add('hidden'); $('btnLogo').textContent='Enviar logo'; }
 }
 function montarSwatches(){
-  ACCENTS.forEach(c=>{ const d=document.createElement('div'); d.className='sw'; d.dataset.c=c; d.style.background=c;
-    d.onclick=()=>{ estado.accent=c; pintarPreview(); }; $('swAccent').appendChild(d); });
-  BGS.forEach(c=>{ const d=document.createElement('div'); d.className='sw'; d.dataset.c=c; d.style.background=c;
-    d.onclick=()=>{ estado.bg=c; pintarPreview(); }; $('swBg').appendChild(d); });
+  $('swAccent').innerHTML=''; $('swBg').innerHTML='';
+  ACCENTS.forEach(c=>{ const d=document.createElement('button'); d.className='sw'; d.dataset.c=c; d.style.background=c; d.title=c;
+    d.onclick=()=>{ estado.accent=c; render(); }; $('swAccent').appendChild(d); });
+  BGS.forEach(c=>{ const d=document.createElement('button'); d.className='sw'; d.dataset.c=c; d.style.background=c; d.title=c;
+    d.onclick=()=>{ estado.bg=c; render(); }; $('swBg').appendChild(d); });
 }
 
-function ligarInputs(){
-  $('accentColor').oninput=e=>{ estado.accent=e.target.value; pintarPreview(); };
-  $('accentHex').oninput=e=>{ let v=e.target.value; if(!v.startsWith('#'))v='#'+v.replace('#',''); if(hex6(v)){estado.accent=v; pintarPreview();} };
-  $('bgColor').oninput=e=>{ estado.bg=e.target.value; pintarPreview(); };
-  $('bgHex').oninput=e=>{ let v=e.target.value; if(!v.startsWith('#'))v='#'+v.replace('#',''); if(hex6(v)){estado.bg=v; pintarPreview();} };
+/* ---------- extrair cor do logo ---------- */
+function extrairCor(dataUrl){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const s=48, cv=document.createElement('canvas'); cv.width=s; cv.height=s;
+        const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,s,s);
+        const d=ctx.getImageData(0,0,s,s).data;
+        const buckets={};
+        for(let i=0;i<d.length;i+=4){
+          const r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];
+          if(a<128) continue;
+          const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+          const sat=mx===0?0:(mx-mn)/mx; const val=mx/255;
+          if(sat<0.32 || val<0.18 || val>0.96) continue; // ignora cinzas/branco/preto
+          const key=(Math.round(r/24)*24)+','+(Math.round(g/24)*24)+','+(Math.round(b/24)*24);
+          const w=sat*val;
+          if(!buckets[key]) buckets[key]={r:0,g:0,b:0,w:0};
+          buckets[key].r+=r*w; buckets[key].g+=g*w; buckets[key].b+=b*w; buckets[key].w+=w;
+        }
+        let best=null;
+        for(const k in buckets){ if(!best||buckets[k].w>best.w) best=buckets[k]; }
+        if(!best){ res(null); return; }
+        res(toHex(best.r/best.w, best.g/best.w, best.b/best.w));
+      }catch(e){ res(null); }
+    };
+    img.onerror=()=>res(null);
+    img.src=dataUrl;
+  });
+}
+
+/* ---------- interações ---------- */
+function ligar(){
+  $('prev').onclick=()=>{ tela=(tela-1+TELAS.length)%TELAS.length; render(); };
+  $('next').onclick=()=>{ tela=(tela+1)%TELAS.length; render(); };
+  $('accentColor').oninput=e=>{ estado.accent=e.target.value; render(); };
+  $('accentHex').oninput=e=>{ let v=e.target.value; if(!v.startsWith('#'))v='#'+v.replace('#',''); if(hex6(v)){estado.accent=v; render();} };
+  $('bgColor').oninput=e=>{ estado.bg=e.target.value; render(); };
+  $('bgHex').oninput=e=>{ let v=e.target.value; if(!v.startsWith('#'))v='#'+v.replace('#',''); if(hex6(v)){estado.bg=v; render();} };
   $('btnLogo').onclick=()=>$('logoInput').click();
-  $('btnLogoRm').onclick=()=>{ estado.logo_url=null; pintarPreview(); };
+  $('btnLogoRm').onclick=()=>{ estado.logo_url=null; render(); };
+  $('btnCor').onclick=async()=>{ if(!estado.logo_url) return; const c=await extrairCor(estado.logo_url); if(c){ estado.accent=c; render(); toast('Cor do logo aplicada'); } else toast('Não achei uma cor forte no logo'); };
   $('logoInput').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
-    rd.onload=()=>{ estado.logo_url=rd.result; pintarPreview(); }; rd.readAsDataURL(f); };
-  $('btnPadrao').onclick=()=>{ estado={...PADRAO}; pintarPreview(); };
+    rd.onload=async()=>{ estado.logo_url=rd.result; const c=await extrairCor(rd.result); if(c) estado.accent=c; render(); if(c) toast('Logo enviado · cor sugerida'); };
+    rd.readAsDataURL(f); };
+  $('btnPadrao').onclick=()=>{ estado={...PADRAO}; render(); };
   $('btnSalvar').onclick=salvar;
 }
+function toast(m){ $('toastMsg').textContent=m; $('toast').classList.add('show'); setTimeout(()=>$('toast').classList.remove('show'),1800); }
 
 async function salvar(){
   if(!hex6(estado.accent)||!hex6(estado.bg)){ toast('Cor inválida'); return; }
@@ -180,33 +294,26 @@ async function salvar(){
     ativo: true, updated_at: new Date().toISOString()
   }, { onConflict:'professional_id' });
   $('btnSalvar').disabled=false; $('btnSalvar').textContent='Salvar personalização';
-  if(error){ toast('Erro ao salvar'); console.error(error); }
-  else { toast('Personalização salva!'); }
+  if(error){ toast('Erro ao salvar'); console.error(error); } else toast('Personalização salva!');
 }
 
-function bloquear(msgHtml){ $('carregando').classList.add('hidden'); const b=$('bloqueio'); b.innerHTML=msgHtml; b.classList.remove('hidden'); }
+function bloquear(html){ $('carregando').classList.add('hidden'); const b=$('bloqueio'); b.innerHTML=html; b.classList.remove('hidden'); }
 
 async function init(){
   try{
-    // reaproveita a config e o login do próprio site
-    const src = await fetch('app.html').then(r=>r.text());
-    const URL = (src.match(/SUPABASE_URL\s*=\s*["']([^"']+)["']/)||[])[1];
-    const ANON = (src.match(/SUPABASE_ANON\s*=\s*["']([^"']+)["']/)||[])[1];
+    const src = await fetch('app.html',{cache:'no-store'}).then(r=>r.text());
+    const URL=(src.match(/SUPABASE_URL\s*=\s*["']([^"']+)["']/)||[])[1];
+    const ANON=(src.match(/SUPABASE_ANON\s*=\s*["']([^"']+)["']/)||[])[1];
     if(!URL||!ANON){ bloquear('Não consegui carregar a configuração do site.'); return; }
     sb = supabase.createClient(URL, ANON, { auth:{ flowType:'implicit', detectSessionInUrl:true, persistSession:true, autoRefreshToken:true } });
-
     const { data:{ user } } = await sb.auth.getUser();
     if(!user){ bloquear('Você precisa entrar primeiro. <a href="app.html">Abrir o app e fazer login</a>, depois volte aqui.'); return; }
     uid = user.id;
-
     const { data:perfil } = await sb.from('profiles').select('role').eq('id', uid).single();
-    const ehProf = perfil && (perfil.role==='professional' || perfil.role==='creator');
-    if(!ehProf){ bloquear('A personalização é exclusiva para personais. <a href="app.html">Voltar ao app</a>.'); return; }
-
+    if(!perfil || !(perfil.role==='professional' || perfil.role==='creator')){ bloquear('A personalização é exclusiva para personais. <a href="app.html">Voltar ao app</a>.'); return; }
     const { data:pz } = await sb.from('personalizacao').select('accent,bg,logo_url,ativo').eq('professional_id', uid).maybeSingle();
     if(pz && pz.ativo!==false){ estado = { accent: pz.accent||PADRAO.accent, bg: pz.bg||PADRAO.bg, logo_url: pz.logo_url||null }; }
-
-    montarSwatches(); ligarInputs(); pintarPreview();
+    montarSwatches(); ligar(); render();
     $('carregando').classList.add('hidden'); $('painel').classList.remove('hidden');
   }catch(e){ console.error(e); bloquear('Algo deu errado ao carregar. Tente recarregar a página.'); }
 }
