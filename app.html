@@ -517,6 +517,13 @@
   .grp-chip.on{background:var(--accent,var(--pink,#7fff00));border-color:var(--accent,var(--pink,#7fff00));color:#0a0b0d}
   .grp-chip.add{font-weight:800;padding:6px 12px}
   .grp-chip.ghost{background:transparent;color:var(--muted);font-weight:600}
+  .grupos-lista{display:flex;flex-direction:column;gap:8px}
+  .grupo-row{display:flex;align-items:center;gap:8px}
+  .grupo-nome{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--pk-surf2,#1d2027);border:1px solid var(--line,#262a33);border-radius:12px;padding:12px 14px;cursor:pointer;color:var(--txt,#e8eaee)}
+  .gn-nome{font-weight:700;font-size:15px}
+  .gn-count{font-size:12px;color:var(--muted)}
+  .grupo-acao{background:transparent;border:1px solid var(--line,#262a33);border-radius:10px;width:40px;height:40px;cursor:pointer;color:var(--muted);font-size:15px}
+  .grupo-acao:hover{border-color:var(--pink,#7fff00);color:var(--pink,#7fff00)}
   .grupos-aluno-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
   .grupos-aluno{display:inline-flex;gap:6px;flex-wrap:wrap}
   .email-help-wrap{position:relative;display:inline-flex}
@@ -1088,6 +1095,7 @@
     const m = [
       {id:"alunosgrp", label:"Alunos", grupo:true, sub:[
         {id:"alunos",    label:"Meus alunos"},
+        {id:"grupos",    label:"Grupos"},
         {id:"cadastrar", label:"Cadastrar aluno"},
         {id:"inativos",  label:"Alunos inativos"}
       ]}
@@ -1283,8 +1291,10 @@
     document.querySelectorAll(".navitem").forEach(b=>b.classList.remove("active"));
     const nav = document.getElementById("nav_"+id); if(nav) nav.classList.add("active");
     // mantém o grupo "Alunos" aberto quando estiver em qualquer subitem
-    if(["alunos","cadastrar","inativos"].includes(id)){
-      const grp = document.getElementById("grp_alunosgrp"); if(grp) grp.classList.add("open");
+    const grpAl = document.getElementById("grp_alunosgrp");
+    if(grpAl){
+      if(["alunos","grupos","cadastrar","inativos"].includes(id)) grpAl.classList.add("open");
+      else grpAl.classList.remove("open");
     }
     const p = document.getElementById("panel"); if(!p) return;
 
@@ -1296,6 +1306,7 @@
     else if(id === "assinatura"){ p.innerHTML = viewAssinatura(); carregarMinhaAssinatura(); }
     else if(id === "admin")p.innerHTML = viewAdmin();
     else if(id === "alunos"){    if(PENDING_GRUPO===undefined) GRUPO_FILTRO=null; p.innerHTML = viewAlunos();    loadStudents(); }
+    else if(id === "grupos"){    p.innerHTML = viewGrupos(); carregarGruposView(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
     else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); PRAZOS_CARREGADOS=false; carregarDesempenho(); carregarQuemTreinou(); carregarPrazos(); }
@@ -2786,6 +2797,40 @@
   }
 
   /* ================= TELAS: PROFISSIONAL ================= */
+    function viewGrupos(){
+    return `<h2>Grupos</h2>
+      <div class="card">
+        <p class="meta-sm" style="margin:0 0 14px">Organize seus alunos em grupos (ex.: Online, Presencial). Toque num grupo para ver os alunos dele.</p>
+        <div id="listaGrupos"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+  async function carregarGruposView(){
+    await carregarGrupos();
+    renderListaGrupos();
+  }
+  function renderListaGrupos(){
+    const box = document.getElementById("listaGrupos");
+    if(!box) return;
+    let html = "";
+    if(!GRUPOS.length){
+      html += `<div class="empty">Nenhum grupo criado ainda.</div>`;
+    } else {
+      html += `<div class="grupos-lista">` + GRUPOS.map(g=>{
+        const n = (GRUPO_MEMBROS[g.id]||new Set()).size;
+        return `<div class="grupo-row">
+          <button class="grupo-nome" onclick="verGrupo('${g.id}')">
+            <span class="gn-nome">${esc(g.nome)}</span>
+            <span class="gn-count">${n} aluno${n===1?'':'s'}</span>
+          </button>
+          <button class="grupo-acao" title="Renomear" onclick="renomearGrupo('${g.id}')">\u270e</button>
+          <button class="grupo-acao" title="Excluir" onclick="excluirGrupo('${g.id}')">\ud83d\uddd1</button>
+        </div>`;
+      }).join("") + `</div>`;
+    }
+    html += `<button class="btn" style="margin-top:14px;width:100%" onclick="novoGrupo()">\uff0b Novo grupo</button>`;
+    box.innerHTML = html;
+  }
+
   function viewAlunos(){
     return `<h2>Meus alunos</h2>
       <div id="gruposBar" class="grupos-bar"></div>
@@ -3155,13 +3200,6 @@
     const cont = document.querySelector('#grp_alunosgrp .navsubs');
     if(!cont) return;
     cont.querySelectorAll('.navsub-grupo').forEach(e=>e.remove());
-    const html = GRUPOS.map(g=>{
-      const n = (GRUPO_MEMBROS[g.id]||new Set()).size;
-      return `<button class="navitem navsub navsub-grupo" onclick="verGrupo('${g.id}')"><span class="lbl">• ${esc(g.nome)} <span style="opacity:.55">(${n})</span></span></button>`;
-    }).join("") + `<button class="navitem navsub navsub-grupo" onclick="novoGrupo()"><span class="lbl" style="color:var(--accent)">＋ Novo grupo</span></button>`;
-    const primeiro = document.getElementById('nav_alunos');   // subitem "Meus alunos"
-    if(primeiro) primeiro.insertAdjacentHTML('afterend', html);
-    else cont.insertAdjacentHTML('afterbegin', html);
   }
 
   function verGrupo(id){
@@ -3175,16 +3213,12 @@
   function renderGruposBar(){
     const bar = document.getElementById("gruposBar");
     if(!bar) return;
+    if(!GRUPOS.length){ bar.innerHTML = ""; return; }
     let html = `<button class="grp-chip ${!GRUPO_FILTRO?'on':''}" onclick="verTodosAlunos()">Todos</button>`;
     html += GRUPOS.map(g=>{
       const n = (GRUPO_MEMBROS[g.id]||new Set()).size;
       return `<button class="grp-chip ${GRUPO_FILTRO===g.id?'on':''}" onclick="verGrupo('${g.id}')">${esc(g.nome)} <span style="opacity:.55">${n}</span></button>`;
     }).join("");
-    html += `<button class="grp-chip add" onclick="novoGrupo()" title="Novo grupo">＋</button>`;
-    if(GRUPO_FILTRO){
-      html += `<button class="grp-chip ghost" onclick="renomearGrupo('${GRUPO_FILTRO}')">✎ renomear</button>`;
-      html += `<button class="grp-chip ghost" onclick="excluirGrupo('${GRUPO_FILTRO}')">🗑 excluir</button>`;
-    }
     bar.innerHTML = html;
   }
 
@@ -3218,7 +3252,7 @@
     if(error){ levoAlert("Erro ao criar grupo: "+error.message); return; }
     GRUPOS.push({ id:data.id, nome:data.nome });
     GRUPOS.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
-    injetarSubmenuGrupos(); renderGruposBar();
+    injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos();
     if(SELECTED_STUDENT) renderGruposDoAluno(SELECTED_STUDENT);
   }
   async function renomearGrupo(id){
@@ -3228,7 +3262,7 @@
     const { error } = await sb.from("grupos").update({ nome }).eq("id", id);
     if(error){ levoAlert("Erro: "+error.message); return; }
     g.nome = nome; GRUPOS.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
-    injetarSubmenuGrupos(); renderGruposBar();
+    injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos();
     if(SELECTED_STUDENT) renderGruposDoAluno(SELECTED_STUDENT);
   }
   async function excluirGrupo(id){
@@ -3238,7 +3272,7 @@
     if(error){ levoAlert("Erro: "+error.message); return; }
     GRUPOS = GRUPOS.filter(x=>x.id!==id); delete GRUPO_MEMBROS[id];
     if(GRUPO_FILTRO===id){ GRUPO_FILTRO=null; PENDING_GRUPO=undefined; }
-    injetarSubmenuGrupos(); renderStudents();
+    injetarSubmenuGrupos(); renderStudents(); if(VIEW==='grupos') renderListaGrupos();
     if(SELECTED_STUDENT) renderGruposDoAluno(SELECTED_STUDENT);
   }
   async function toggleGrupoAluno(studentId, grupoId){
@@ -3252,7 +3286,7 @@
       if(error){ levoAlert("Erro: "+error.message); return; }
       set.add(studentId);
     }
-    injetarSubmenuGrupos(); renderGruposBar(); renderGruposDoAluno(studentId);
+    injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos(); renderGruposDoAluno(studentId);
     if(GRUPO_FILTRO && !((GRUPO_MEMBROS[GRUPO_FILTRO]||new Set()).has(studentId))) renderStudents();
   }
   function renderGruposDoAluno(studentId){
