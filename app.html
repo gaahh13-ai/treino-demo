@@ -3193,7 +3193,6 @@
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
       o.innerHTML=`<div class="modal-cx" style="max-width:380px">
-        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">P<span style="color:var(--pink,#7fff00)">ii</span>k</div>
         <h3 style="margin:0 0 8px;text-align:center">${opts.titulo||""}</h3>
         ${opts.msg?`<p class="meta-sm" style="margin:0 0 14px;text-align:center">${opts.msg}</p>`:`<div style="height:6px"></div>`}
         <input id="lpIn" type="text" autocomplete="off" placeholder="${opts.placeholder||""}" style="width:100%;background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:12px;font-size:15px;margin-bottom:14px;box-sizing:border-box">
