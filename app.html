@@ -688,7 +688,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style id="levo-theme">
+<style id="piik-theme">
   :root{
     --txt:#e8eaee!important; --muted:#9aa0ab!important; --line:#262a33!important;
     --pink:#7fff00!important; --pink-deep:var(--pink,#7fff00)!important; --pink-soft:var(--pink,#7fff00)!important;
@@ -696,12 +696,12 @@
     color-scheme:dark;
   }
   *{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-  h1,h2,h3,.hello,.section-title,.exec-titulo,.treino-num,.logo-levo,.det-nome,.rc-num{
+  h1,h2,h3,.hello,.section-title,.exec-titulo,.treino-num,.logo-piik,.det-nome,.rc-num{
     font-family:'Rajdhani','Inter',sans-serif!important;letter-spacing:.4px}
   body{background:var(--pk-bg,#0a0b0d)!important;color:var(--txt)!important}
   nav.top{background:var(--pk-nav,rgba(10,11,13,.92))!important;border-bottom:1px solid var(--line,#20242c)!important}
-  .logo-levo{font-weight:700;font-style:italic;font-size:23px;color:var(--txt,#fff);letter-spacing:2px;line-height:1}
-  .logo-levo .ac{color:var(--pink,#7fff00)}
+  .logo-piik{font-weight:700;font-style:italic;font-size:23px;color:var(--txt,#fff);letter-spacing:2px;line-height:1}
+  .logo-piik .ac{color:var(--pink,#7fff00)}
   /* superfícies escuras */
   .card,.sidebar,.aluno-detalhe,.modal-cx,.ex-card,.treino-pill,.ret-row,.ret-card,.tr-ex,
   .fx-row,.student-row,.assess-item,.aval,.med,.proxima,.kpi{
@@ -834,7 +834,7 @@
 </head>
 <body>
 <nav class="top"><div class="in">
-  <a href="index.html"><span class="logo-levo">P<span class="ac">ii</span>k</span></a>
+  <a href="index.html"><span class="logo-piik">P<span class="ac">ii</span>k</span></a>
   <div class="top-acoes" id="topAcoes"></div>
   <button id="navVoltar" class="nav-voltar" onclick="minimizarTreino()">← Voltar</button>
 </div></nav>
@@ -1004,7 +1004,7 @@
     }
     // exclusão pendente (dentro dos 30 dias) → pergunta se quer cancelar e continuar
     if(ME.delecao_solicitada_at){
-      const ok = await levoConfirm({
+      const ok = await piikConfirm({
         titulo:"Exclusão de conta pendente",
         msg:"Você solicitou a exclusão da sua conta. Se prosseguir, a exclusão será <b>cancelada</b> e sua conta volta ao normal.",
         ok:"Prosseguir e cancelar exclusão", cancel:"Sair"
@@ -1074,14 +1074,14 @@
 
   /* profissionais com o módulo de treino habilitado (por enquanto por e-mail).
      Depois vira uma configuração por profissional no banco. */
-  const IS_LEVO = true; // build_levo.sh liga para true na geração do demo Piik
-  function ehProfLevo(){ return IS_LEVO && (ME.role === "professional" || ME.role === "creator"); }
+  const IS_PIIK = true; // build_piik.sh liga para true na geração do demo Piik
+  function ehProfPiik(){ return IS_PIIK && (ME.role === "professional" || ME.role === "creator"); }
   // Exercícios, Desempenho e Treino: liberados p/ todo profissional Piik conhecer a ferramenta antes de assinar.
-  function mostrarExercicios(){ return ehProfLevo(); }
-  function temPlanoTreino(){ return ehProfLevo(); }
-  function temTreino(){ return ehProfLevo(); } // compat com chamadas existentes
+  function mostrarExercicios(){ return ehProfPiik(); }
+  function temPlanoTreino(){ return ehProfPiik(); }
+  function temTreino(){ return ehProfPiik(); } // compat com chamadas existentes
   // Conectar alunos reais (enviar convite / vincular) é a trava: exige plano pago (Piik Fit / You Piik).
-  function podeVincular(){ const p=(ME.plano||"").toLowerCase(); return IS_LEVO && (ME.role === "creator" || p === "fit" || p === "you_levo"); }
+  function podeVincular(){ const p=(ME.plano||"").toLowerCase(); return IS_PIIK && (ME.role === "creator" || p === "fit" || p === "you_piik"); }
 
   /* ================= MENU / LAYOUT ================= */
   function menuFor(role){
@@ -1176,7 +1176,7 @@
   }
 
   // Modal de confirmação com a cara da Piik (substitui o confirm nativo)
-  function levoConfirm(opts){
+  function piikConfirm(opts){
     if(typeof opts === "string") opts = { msg: opts };
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
@@ -1196,7 +1196,7 @@
   }
 
   // Aviso (um botão) com a cara da Piik — substitui o alert nativo
-  function levoAlert(opts){
+  function piikAlert(opts){
     if(typeof opts === "string") opts = { msg: opts };
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
@@ -1214,29 +1214,29 @@
 
   async function aprovarVinculo(id){
     const prof = esc((window.VINC_PEND && window.VINC_PEND.professional_name) || "este profissional");
-    if(!(await levoConfirm({ titulo:"Aprovar vínculo?", msg:`Tem certeza que deseja aprovar o vínculo com <b>${prof}</b>?`, ok:"Sim, aprovar", cancel:"Cancelar" }))) return;
+    if(!(await piikConfirm({ titulo:"Aprovar vínculo?", msg:`Tem certeza que deseja aprovar o vínculo com <b>${prof}</b>?`, ok:"Sim, aprovar", cancel:"Cancelar" }))) return;
     try{
       const { data:{ session } } = await sb.auth.getSession();
-      if(!session){ await levoAlert({ titulo:"Sessão expirada", msg:"Faça login novamente para continuar." }); return; }
+      if(!session){ await piikAlert({ titulo:"Sessão expirada", msg:"Faça login novamente para continuar." }); return; }
       const resp = await fetch(SUPABASE_URL + "/functions/v1/aprovar-vinculo", {
         method:"POST",
         headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+session.access_token },
         body: JSON.stringify({ vinculo_id: id })
       });
       const data = await resp.json().catch(()=>({}));
-      if(!resp.ok || !data.ok){ await levoAlert({ titulo:"Não consegui aprovar", msg:(data.error||("erro "+resp.status)) }); return; }
-      await levoAlert({ emoji:"💪", titulo:"Vínculo aprovado!", msg:`Agora você treina com <b>${prof}</b>.` });
+      if(!resp.ok || !data.ok){ await piikAlert({ titulo:"Não consegui aprovar", msg:(data.error||("erro "+resp.status)) }); return; }
+      await piikAlert({ emoji:"💪", titulo:"Vínculo aprovado!", msg:`Agora você treina com <b>${prof}</b>.` });
       location.reload();
-    }catch(e){ await levoAlert({ titulo:"Erro ao aprovar", msg:e.message }); }
+    }catch(e){ await piikAlert({ titulo:"Erro ao aprovar", msg:e.message }); }
   }
 
   async function recusarVinculo(id){
     const profR = esc((window.VINC_PEND && window.VINC_PEND.professional_name) || "este profissional");
-    if(!(await levoConfirm({ titulo:"Recusar pedido?", msg:`Tem certeza que deseja recusar o pedido de vínculo de <b>${profR}</b>? O profissional não será conectado a você.`, ok:"Sim, recusar", cancel:"Voltar" }))) return;
+    if(!(await piikConfirm({ titulo:"Recusar pedido?", msg:`Tem certeza que deseja recusar o pedido de vínculo de <b>${profR}</b>? O profissional não será conectado a você.`, ok:"Sim, recusar", cancel:"Voltar" }))) return;
     const { error } = await sb.from("vinculos").update({ status:"recusado", updated_at:new Date().toISOString() }).eq("id", id);
-    if(error){ await levoAlert({ titulo:"Erro ao recusar", msg:error.message }); return; }
+    if(error){ await piikAlert({ titulo:"Erro ao recusar", msg:error.message }); return; }
     const box=document.getElementById("vinculoBanner"); if(box) box.innerHTML="";
-    await levoAlert({ titulo:"Pedido recusado", msg:"O pedido de vínculo foi recusado. O profissional não será conectado a você." });
+    await piikAlert({ titulo:"Pedido recusado", msg:"O pedido de vínculo foi recusado. O profissional não será conectado a você." });
   }
 
   function mostrar(){
@@ -1333,7 +1333,7 @@
     renderExecucao(EXEC_DIA, EXEC_EXS);
   }
   async function descartarDoPill(){
-    if(!(await levoConfirm("Descartar este treino em andamento? Nada será registrado."))) return;
+    if(!(await piikConfirm("Descartar este treino em andamento? Nada será registrado."))) return;
     await descartarTreino();
   }
 
@@ -1541,10 +1541,10 @@
   }
 
   async function excluirTreino(id){
-    if(!(await levoConfirm({ titulo:"Excluir este treino?", msg:"O registro deste treino será removido do seu <b>diário</b> e do seu <b>dashboard</b>. Esta ação não pode ser desfeita.", ok:"Excluir", cancel:"Cancelar" }))) return;
+    if(!(await piikConfirm({ titulo:"Excluir este treino?", msg:"O registro deste treino será removido do seu <b>diário</b> e do seu <b>dashboard</b>. Esta ação não pode ser desfeita.", ok:"Excluir", cancel:"Cancelar" }))) return;
     try{ await sb.from("series_feitas").delete().eq("sessao_id", id); }catch(e){}
     const { error } = await sb.from("sessoes").delete().eq("id", id);
-    if(error){ levoAlert("Não consegui excluir: "+error.message); return; }
+    if(error){ piikAlert("Não consegui excluir: "+error.message); return; }
     const box = document.getElementById("histTreinos");
     if(box){ box.dataset.loaded=""; await renderHistorico(); box.dataset.loaded="1"; }
   }
@@ -1720,7 +1720,7 @@
       const { error } = await sb.rpc("aluno_set_carga", { p_ex: exId, p_carga: v });
       if(error) throw error;
       const x = (ALUNO_EXS||[]).find(e=>e.id===exId); if(x) x.carga_alvo = v;
-    }catch(e){ levoAlert("Não consegui salvar a carga: " + (e.message||e)); }
+    }catch(e){ piikAlert("Não consegui salvar a carga: " + (e.message||e)); }
   }
   function renderAlunoExs(){
     const box = document.getElementById("treinoBoxAluno");
@@ -1762,7 +1762,7 @@
   async function iniciarTreino(diaId){
     // já existe um treino rolando? avisa e oferece cancelar o outro (não será salvo)
     if(EXEC_SESSAO){
-      const ok = await levoConfirm({ titulo:"Outro treino em andamento",
+      const ok = await piikConfirm({ titulo:"Outro treino em andamento",
         msg:"Você já tem um treino rolando. Se começar este, o outro será <b>cancelado e não será salvo</b>. Deseja continuar?",
         ok:"Cancelar o outro e começar", cancel:"Voltar" });
       if(!ok) return;
@@ -1774,14 +1774,14 @@
     pedirWakeLock();
     const dia = ALUNO_DIAS.find(d=>d.id===diaId);
     const exs = ALUNO_EXS.filter(x=>x.dia_id===diaId);
-    if(!exs.length){ levoAlert("Este treino não tem exercícios."); return; }
+    if(!exs.length){ piikAlert("Este treino não tem exercícios."); return; }
 
     // cria a sessão
     const { data: sess, error } = await sb.from("sessoes").insert({
       student_id: ME.id, professional_id: dia.professional_id,
       dia_id: diaId, ficha_id: dia.ficha_id, finalizada: false
     }).select().single();
-    if(error){ levoAlert("Erro ao iniciar: "+error.message); return; }
+    if(error){ piikAlert("Erro ao iniciar: "+error.message); return; }
     EXEC_SESSAO = sess;
     EXEC_LOGS = {};
     MODO_FOCO = false; FOCO_IDX = 0;
@@ -2045,15 +2045,15 @@
     const payload = { student_id: ME.id, ficha_exercicio_id: fxId,
       professional_id: ex ? ex.professional_id : null, texto, created_at: new Date().toISOString() };
     const { data, error } = await sb.from("exercicio_comentarios").insert(payload).select("id,created_at").single();
-    if(error){ levoAlert("Não consegui salvar o comentário: " + error.message); return; }
+    if(error){ piikAlert("Não consegui salvar o comentário: " + error.message); return; }
     (COMENTARIOS[fxId] = COMENTARIOS[fxId] || []).push({ id: data.id, texto, created_at: data.created_at });
     renderComentarioModal(fxId);      // reabre com a nova mensagem no histórico e o campo limpo
     atualizarIndicadorComent(fxId);
   }
   async function excluirComentario(fxId, id){
-    if(!(await levoConfirm({ titulo:"Excluir mensagem?", msg:"Tem certeza que deseja excluir esta mensagem?", ok:"Sim, excluir", cancel:"Voltar" }))) return;
+    if(!(await piikConfirm({ titulo:"Excluir mensagem?", msg:"Tem certeza que deseja excluir esta mensagem?", ok:"Sim, excluir", cancel:"Voltar" }))) return;
     const { error } = await sb.from("exercicio_comentarios").delete().eq("id", id);
-    if(error){ levoAlert("Não consegui excluir: " + error.message); return; }
+    if(error){ piikAlert("Não consegui excluir: " + error.message); return; }
     COMENTARIOS[fxId] = (COMENTARIOS[fxId] || []).filter(c=>c.id!==id);
     renderComentarioModal(fxId);
     atualizarIndicadorComent(fxId);
@@ -2437,14 +2437,14 @@
   function fecharEmailHelp(){ const el=document.getElementById("emailInfo"); if(el) el.classList.remove("show"); }
 
   async function excluirMinhaConta(){
-    const ok = await levoConfirm({
+    const ok = await piikConfirm({
       titulo:"Excluir sua conta?",
       msg:"Sua conta ficará <b>30 dias</b> guardada. Se você não acessar nesse período, ela será <b>excluída</b> e seus dados apagados de vez. Se entrar de novo antes disso, a exclusão é cancelada.<br><br>Deseja continuar?",
       ok:"Sim, excluir minha conta", cancel:"Não"
     });
     if(!ok) return;
     try{ await sb.rpc("solicitar_exclusao_conta"); }
-    catch(e){ levoAlert("Não foi possível agora: "+(e.message||"")); return; }
+    catch(e){ piikAlert("Não foi possível agora: "+(e.message||"")); return; }
     await sb.auth.signOut();
     location.href = "login.html?conta=exclusao_solicitada";
   }
@@ -2555,7 +2555,7 @@
     ]
   };
 
-  const PLANO_LABEL = { pro:"Piik Pro", fit:"Piik Fit", you_levo:"You Piik", light:"Piik Light" };
+  const PLANO_LABEL = { pro:"Piik Pro", fit:"Piik Fit", you_piik:"You Piik", light:"Piik Light" };
   const ASSIN_STATUS = {
     authorized:{txt:"Ativa",     cls:"pg"},
     pending:   {txt:"Pendente",  cls:"pe"},
@@ -2602,10 +2602,10 @@
   // aluno encerra o próprio vínculo com o professor (volta a ser conta livre)
   async function sairDoProfessor(){
     const prof = esc((window.MEU_PROF && window.MEU_PROF.nome) || "seu professor");
-    if(!(await levoConfirm({ titulo:"Sair deste professor?", msg:`Deseja encerrar seu acompanhamento com <b>${prof}</b>?<br><br>Você volta a ter uma conta livre e pode montar seu próprio treino ou buscar outro professor. Seu histórico fica guardado.`, ok:"Sim, sair", cancel:"Cancelar" }))) return;
+    if(!(await piikConfirm({ titulo:"Sair deste professor?", msg:`Deseja encerrar seu acompanhamento com <b>${prof}</b>?<br><br>Você volta a ter uma conta livre e pode montar seu próprio treino ou buscar outro professor. Seu histórico fica guardado.`, ok:"Sim, sair", cancel:"Cancelar" }))) return;
     const { error } = await sb.rpc("sair_do_professor");
-    if(error){ await levoAlert({ titulo:"Erro ao sair", msg:error.message }); return; }
-    await levoAlert({ titulo:"Acompanhamento encerrado", msg:`Você saiu de <b>${prof}</b>. Agora sua conta está livre.` });
+    if(error){ await piikAlert({ titulo:"Erro ao sair", msg:error.message }); return; }
+    await piikAlert({ titulo:"Acompanhamento encerrado", msg:`Você saiu de <b>${prof}</b>. Agora sua conta está livre.` });
     location.reload();
   }
 
@@ -2720,14 +2720,14 @@
   }
 
   async function assinarPlano(nome){
-    const mapa = { "Piik Pro":"pro", "Piik Fit":"fit", "You Piik":"you_levo" };
+    const mapa = { "Piik Pro":"pro", "Piik Fit":"fit", "You Piik":"you_piik" };
     const plano = mapa[nome];
-    if(!plano){ levoAlert("O Piik Light é gratuito — não há o que pagar. 🙂"); return; }
+    if(!plano){ piikAlert("O Piik Light é gratuito — não há o que pagar. 🙂"); return; }
     try{
       const { data:{ session } } = await sb.auth.getSession();
-      if(!session){ levoAlert("Faça login para assinar."); return; }
+      if(!session){ piikAlert("Faça login para assinar."); return; }
       // planos de personal tornam a conta profissional
-      if((plano==="fit" || plano==="you_levo") && ME && ME.role!=="professional"){
+      if((plano==="fit" || plano==="you_piik") && ME && ME.role!=="professional"){
         try{ await sb.from("profiles").update({ role:"professional" }).eq("id", ME.id); ME.role="professional"; }catch(e){}
       }
       const resp = await fetch(SUPABASE_URL + "/functions/v1/criar-assinatura", {
@@ -2740,12 +2740,12 @@
       });
       const data = await resp.json().catch(()=>({}));
       if(!resp.ok || !data.init_point){
-        levoAlert("Não consegui iniciar a assinatura: " + (data.error || ("erro "+resp.status)));
+        piikAlert("Não consegui iniciar a assinatura: " + (data.error || ("erro "+resp.status)));
         return;
       }
       // redireciona para o checkout do Mercado Pago
       window.location.href = data.init_point;
-    }catch(e){ levoAlert("Erro ao assinar: " + e.message); }
+    }catch(e){ piikAlert("Erro ao assinar: " + e.message); }
   }
 
   // Número de suporte (formato internacional, só dígitos). Ex.: 55 + DDD + número.
@@ -3116,7 +3116,7 @@
     } else {
       FAVORITOS.add(id); renderExercicios();
       const { error } = await sb.from("exercicio_favoritos").insert({ professional_id: ME.id, exercicio_id: id });
-      if(error){ FAVORITOS.delete(id); renderExercicios(); levoAlert("Não consegui favoritar agora. Tente novamente."); }
+      if(error){ FAVORITOS.delete(id); renderExercicios(); piikAlert("Não consegui favoritar agora. Tente novamente."); }
     }
   }
 
@@ -3141,9 +3141,9 @@
   }
 
   async function excluirExercicio(id){
-    if(!(await levoConfirm("Excluir este exercício da sua biblioteca?"))) return;
+    if(!(await piikConfirm("Excluir este exercício da sua biblioteca?"))) return;
     const { error } = await sb.from("exercicios").delete().eq("id", id);
-    if(error){ levoAlert("Erro: "+error.message); return; }
+    if(error){ piikAlert("Erro: "+error.message); return; }
     loadExercicios();
   }
 
@@ -3166,7 +3166,7 @@
     }
     let lista = studs || [];
     // aluno(s) demo — só para profissional SEM assinatura conhecer o app; some quando ele assina um plano
-    if(ehProfLevo() && !podeVincular()){
+    if(ehProfPiik() && !podeVincular()){
       const { data: demo } = await sb.from("profiles").select("*").eq("is_demo", true);
       if(demo && demo.length){
         const ids = new Set(lista.map(s => s.id));
@@ -3222,7 +3222,7 @@
     bar.innerHTML = html;
   }
 
-    function levoPrompt(opts){
+    function piikPrompt(opts){
     if(typeof opts === "string") opts = { titulo: opts };
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
@@ -3246,10 +3246,10 @@
   }
 
   async function novoGrupo(){
-    const nome = ((await levoPrompt({ titulo:"Novo grupo", msg:"Dê um nome para o grupo.", placeholder:"Ex.: Online, Presencial, Iniciantes", ok:"Criar" }))||"").trim();
+    const nome = ((await piikPrompt({ titulo:"Novo grupo", msg:"Dê um nome para o grupo.", placeholder:"Ex.: Online, Presencial, Iniciantes", ok:"Criar" }))||"").trim();
     if(!nome) return;
     const { data, error } = await sb.from("grupos").insert({ professional_id: ME.id, nome }).select().single();
-    if(error){ levoAlert("Erro ao criar grupo: "+error.message); return; }
+    if(error){ piikAlert("Erro ao criar grupo: "+error.message); return; }
     GRUPOS.push({ id:data.id, nome:data.nome });
     GRUPOS.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
     injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos();
@@ -3257,19 +3257,19 @@
   }
   async function renomearGrupo(id){
     const g = GRUPOS.find(x=>x.id===id); if(!g) return;
-    const nome = ((await levoPrompt({ titulo:"Renomear grupo", valor:g.nome, ok:"Salvar" }))||"").trim();
+    const nome = ((await piikPrompt({ titulo:"Renomear grupo", valor:g.nome, ok:"Salvar" }))||"").trim();
     if(!nome || nome===g.nome) return;
     const { error } = await sb.from("grupos").update({ nome }).eq("id", id);
-    if(error){ levoAlert("Erro: "+error.message); return; }
+    if(error){ piikAlert("Erro: "+error.message); return; }
     g.nome = nome; GRUPOS.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
     injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos();
     if(SELECTED_STUDENT) renderGruposDoAluno(SELECTED_STUDENT);
   }
   async function excluirGrupo(id){
     const g = GRUPOS.find(x=>x.id===id); if(!g) return;
-    if(!(await levoConfirm(`Excluir o grupo "${esc(g.nome)}"? Os alunos continuam cadastrados; só a marcação deste grupo é removida.`))) return;
+    if(!(await piikConfirm(`Excluir o grupo "${esc(g.nome)}"? Os alunos continuam cadastrados; só a marcação deste grupo é removida.`))) return;
     const { error } = await sb.from("grupos").delete().eq("id", id);
-    if(error){ levoAlert("Erro: "+error.message); return; }
+    if(error){ piikAlert("Erro: "+error.message); return; }
     GRUPOS = GRUPOS.filter(x=>x.id!==id); delete GRUPO_MEMBROS[id];
     if(GRUPO_FILTRO===id){ GRUPO_FILTRO=null; PENDING_GRUPO=undefined; }
     injetarSubmenuGrupos(); renderStudents(); if(VIEW==='grupos') renderListaGrupos();
@@ -3279,11 +3279,11 @@
     const set = GRUPO_MEMBROS[grupoId] = GRUPO_MEMBROS[grupoId] || new Set();
     if(set.has(studentId)){
       const { error } = await sb.from("aluno_grupos").delete().eq("grupo_id",grupoId).eq("student_id",studentId);
-      if(error){ levoAlert("Erro: "+error.message); return; }
+      if(error){ piikAlert("Erro: "+error.message); return; }
       set.delete(studentId);
     } else {
       const { error } = await sb.from("aluno_grupos").insert({ professional_id: ME.id, grupo_id: grupoId, student_id: studentId });
-      if(error){ levoAlert("Erro: "+error.message); return; }
+      if(error){ piikAlert("Erro: "+error.message); return; }
       set.add(studentId);
     }
     injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos(); renderGruposDoAluno(studentId);
@@ -3416,7 +3416,7 @@
     let dia = Math.round(Number(dEl && dEl.value)||5); dia = Math.min(28, Math.max(1, dia));
     const { error } = await sb.from("mensalidades")
       .upsert({ student_id:sid, professional_id:ME.id, valor, dia_venc:dia }, { onConflict:"student_id" });
-    if(error){ levoAlert("Não consegui salvar: "+error.message); return; }
+    if(error){ piikAlert("Não consegui salvar: "+error.message); return; }
     FIN_MENS[sid] = { student_id:sid, valor, dia_venc:dia };
     renderFinanceiro();
   }
@@ -3428,14 +3428,14 @@
       .upsert({ student_id:sid, professional_id:ME.id, competencia:FIN_COMP, valor, pago_em:new Date().toISOString() },
               { onConflict:"student_id,competencia" })
       .select().single();
-    if(error){ levoAlert("Não consegui registrar: "+error.message); return; }
+    if(error){ piikAlert("Não consegui registrar: "+error.message); return; }
     FIN_PAGS[sid] = data;
     renderFinanceiro();
   }
 
   async function desfazerPagamento(sid){
     const { error } = await sb.from("pagamentos").delete().eq("student_id", sid).eq("competencia", FIN_COMP);
-    if(error){ levoAlert("Não consegui desfazer: "+error.message); return; }
+    if(error){ piikAlert("Não consegui desfazer: "+error.message); return; }
     delete FIN_PAGS[sid];
     renderFinanceiro();
   }
@@ -3506,7 +3506,7 @@
     let d = Math.round(Number((document.getElementById("finAlDia_"+id)||{}).value)||5); d = Math.min(28, Math.max(1, d));
     const { error } = await sb.from("mensalidades")
       .upsert({ student_id:id, professional_id:ME.id, valor:v, dia_venc:d }, { onConflict:"student_id" });
-    if(error){ levoAlert("Não consegui salvar: "+error.message); return; }
+    if(error){ piikAlert("Não consegui salvar: "+error.message); return; }
     FIN_AL.mens = { student_id:id, valor:v, dia_venc:d };
     renderFinAluno(id);
   }
@@ -3516,12 +3516,12 @@
       const { data, error } = await sb.from("pagamentos")
         .upsert({ student_id:id, professional_id:ME.id, competencia:FIN_AL.comp, valor, pago_em:new Date().toISOString() },
                 { onConflict:"student_id,competencia" }).select().single();
-      if(error){ levoAlert("Não consegui registrar: "+error.message); return; }
+      if(error){ piikAlert("Não consegui registrar: "+error.message); return; }
       FIN_AL.pags = FIN_AL.pags.filter(p=>p.competencia!==FIN_AL.comp); FIN_AL.pags.unshift(data);
       FIN_AL.pags.sort((a,b)=>b.competencia.localeCompare(a.competencia));
     }else{
       const { error } = await sb.from("pagamentos").delete().eq("student_id", id).eq("competencia", FIN_AL.comp);
-      if(error){ levoAlert("Não consegui desfazer: "+error.message); return; }
+      if(error){ piikAlert("Não consegui desfazer: "+error.message); return; }
       FIN_AL.pags = FIN_AL.pags.filter(p=>p.competencia!==FIN_AL.comp);
     }
     renderFinAluno(id);
@@ -3922,7 +3922,7 @@
   }
 
   function alunoEhDemo(id){ const s = STUDENTS.find(x=>x.id===(id||SELECTED_STUDENT)); return !!(s && (s.demo || s.is_demo)); }
-  function bloqueiaDemo(id){ if(alunoEhDemo(id)){ levoAlert("Este é o aluno demo (somente leitura). Use um aluno real para editar."); return true; } return false; }
+  function bloqueiaDemo(id){ if(alunoEhDemo(id)){ piikAlert("Este é o aluno demo (somente leitura). Use um aluno real para editar."); return true; } return false; }
   function selecionarAluno(id){
     if(id !== SELECTED_STUDENT) fecharTodasJanelas();  // troca de aluno fecha janelas antigas
     SELECTED_STUDENT = id;
@@ -4071,9 +4071,9 @@
   }
 
   async function removerConvite(email){
-    if(!(await levoConfirm("Remover o cadastro de "+email+"?<br><br>(não apaga a conta já criada, apenas o cadastro do e-mail)"))) return;
+    if(!(await piikConfirm("Remover o cadastro de "+email+"?<br><br>(não apaga a conta já criada, apenas o cadastro do e-mail)"))) return;
     const { error } = await sb.from("invites").delete().eq("email", email).eq("professional_id", ME.id);
-    if(error){ levoAlert("Erro ao remover: "+error.message); return; }
+    if(error){ piikAlert("Erro ao remover: "+error.message); return; }
     loadInvites();
   }
 
@@ -4126,26 +4126,26 @@
   async function arquivarAluno(id){
     if(bloqueiaDemo(id)) return;
     const s = STUDENTS.find(x=>x.id===id);
-    if(!(await levoConfirm({ titulo:"Arquivar aluno?", msg:`Certeza que deseja arquivar <b>${esc(nomeAluno(s))}</b>?<br><br>Ao arquivar, o aluno é <b>desvinculado automaticamente</b> — o acompanhamento é encerrado e ele perde o acesso ao painel. Todo o histórico fica guardado e você pode reativar depois.`, ok:"Sim, arquivar", cancel:"Cancelar" }))) return;
+    if(!(await piikConfirm({ titulo:"Arquivar aluno?", msg:`Certeza que deseja arquivar <b>${esc(nomeAluno(s))}</b>?<br><br>Ao arquivar, o aluno é <b>desvinculado automaticamente</b> — o acompanhamento é encerrado e ele perde o acesso ao painel. Todo o histórico fica guardado e você pode reativar depois.`, ok:"Sim, arquivar", cancel:"Cancelar" }))) return;
     const { error } = await sb.rpc("arquivar_aluno", { p_student: id });
-    if(error){ await levoAlert({ titulo:"Erro ao arquivar", msg:error.message }); return; }
+    if(error){ await piikAlert({ titulo:"Erro ao arquivar", msg:error.message }); return; }
     loadStudents();
   }
 
   async function desvincularAluno(id){
     if(bloqueiaDemo(id)) return;
     const s = STUDENTS.find(x=>x.id===id);
-    if(!(await levoConfirm({ titulo:"Desvincular aluno?", msg:`Deseja desvincular <b>${esc(nomeAluno(s))}</b>?<br><br>O acompanhamento é encerrado e o aluno volta a ser uma <b>conta livre</b>, podendo buscar outro professor. O histórico dele fica guardado.`, ok:"Sim, desvincular", cancel:"Cancelar" }))) return;
+    if(!(await piikConfirm({ titulo:"Desvincular aluno?", msg:`Deseja desvincular <b>${esc(nomeAluno(s))}</b>?<br><br>O acompanhamento é encerrado e o aluno volta a ser uma <b>conta livre</b>, podendo buscar outro professor. O histórico dele fica guardado.`, ok:"Sim, desvincular", cancel:"Cancelar" }))) return;
     const { error } = await sb.rpc("desvincular_aluno", { p_student: id });
-    if(error){ await levoAlert({ titulo:"Erro ao desvincular", msg:error.message }); return; }
-    await levoAlert({ titulo:"Aluno desvinculado", msg:`O vínculo com <b>${esc(nomeAluno(s))}</b> foi encerrado.` });
+    if(error){ await piikAlert({ titulo:"Erro ao desvincular", msg:error.message }); return; }
+    await piikAlert({ titulo:"Aluno desvinculado", msg:`O vínculo com <b>${esc(nomeAluno(s))}</b> foi encerrado.` });
     await loadStudents();
     go("alunos");
   }
 
   async function reativarAluno(id){
     const { error } = await sb.from("profiles").update({ status:"active", archived_at:null }).eq("id", id);
-    if(error){ levoAlert("Erro ao reativar: "+error.message); return; }
+    if(error){ piikAlert("Erro ao reativar: "+error.message); return; }
     loadStudents();
   }
 
@@ -4428,9 +4428,9 @@
   }
 
   async function excluirAvaliacao(avalId, studentId){
-    if(!(await levoConfirm("Excluir esta avaliação?<br><br>Todos os dados dela serão apagados. Não dá para desfazer."))) return;
+    if(!(await piikConfirm("Excluir esta avaliação?<br><br>Todos os dados dela serão apagados. Não dá para desfazer."))) return;
     const { error } = await sb.from("assessments").delete().eq("id", avalId);
-    if(error){ levoAlert("Erro ao excluir: "+error.message); return; }
+    if(error){ piikAlert("Erro ao excluir: "+error.message); return; }
     await loadStudents();
     const lista = document.getElementById("assessList_"+studentId);
     if(lista){ lista.innerHTML=""; verAvaliacoes(studentId); }
@@ -4438,7 +4438,7 @@
 
   async function editarAvaliacao(avalId, studentId){
     const { data: a, error } = await sb.from("assessments").select("*").eq("id", avalId).single();
-    if(error || !a){ levoAlert("Não consegui carregar esta avaliação."+(error?" "+error.message:"")); return; }
+    if(error || !a){ piikAlert("Não consegui carregar esta avaliação."+(error?" "+error.message:"")); return; }
     montarCamposMedidas();
     EDIT_ID = avalId;
     const s = STUDENTS.find(x=>x.id===studentId);
@@ -4557,7 +4557,7 @@
     if(!FICHA) return;
     const meses = parseInt(v,10) || null;
     const { error } = await sb.from("fichas").update({ duracao_meses:meses }).eq("id", FICHA.id);
-    if(error){ levoAlert("Erro ao salvar o prazo: "+error.message); return; }
+    if(error){ piikAlert("Erro ao salvar o prazo: "+error.message); return; }
     FICHA.duracao_meses = meses;
     const f = FICHAS_TODAS.find(x=>x.id===FICHA.id); if(f) f.duracao_meses = meses;
     const el = document.getElementById("fichaVence"); if(el) el.innerHTML = textoVencimento(FICHA);
@@ -4639,13 +4639,13 @@
 
   async function marcarPresenca(diaId){
     const dia = FICHA_DIAS.find(d=>d.id===diaId); if(!dia) return;
-    if(!(await levoConfirm(`Marcar "${dia.label}" como treinado hoje?`))) return;
+    if(!(await piikConfirm(`Marcar "${dia.label}" como treinado hoje?`))) return;
     const { error } = await sb.from("sessoes").insert({
       student_id: FICHA.student_id, professional_id: ME.id,
       dia_id: diaId, ficha_id: FICHA.id, finalizada: true, data: new Date().toISOString()
     });
-    if(error){ levoAlert("Erro ao registrar: "+error.message); return; }
-    levoAlert(`Presença de "${dia.label}" registrada para hoje! ✅`);
+    if(error){ piikAlert("Erro ao registrar: "+error.message); return; }
+    piikAlert(`Presença de "${dia.label}" registrada para hoje! ✅`);
   }
 
   function novoTreino(){
@@ -4678,7 +4678,7 @@
     await sb.from("fichas").update({ ativa:false }).eq("id", origem.id);
     const { data: nova, error } = await sb.from("fichas")
       .insert({ student_id:studentId, professional_id:ME.id, nome:"Treino", ativa:true, duracao_meses:meses }).select().single();
-    if(error){ levoAlert("Erro: "+error.message); return; }
+    if(error){ piikAlert("Erro: "+error.message); return; }
     if(duplicar){
       const { data: dias } = await sb.from("ficha_dias").select("*").eq("ficha_id", origem.id).order("ordem");
       for(const d of (dias||[])){
@@ -4737,7 +4737,7 @@
     const { data, error } = await sb.from("ficha_dias").insert({
       ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id, label, ordem:FICHA_DIAS.length
     }).select().single();
-    if(error){ levoAlert("Erro: "+error.message); return; }
+    if(error){ piikAlert("Erro: "+error.message); return; }
     FICHA_DIAS.push(data); FICHA_DIA = data.id;
     renderDias();
   }
@@ -4745,7 +4745,7 @@
   async function removerDia(){
     if(!FICHA_DIA) return;
     const d = FICHA_DIAS.find(x=>x.id===FICHA_DIA);
-    if(!(await levoConfirm(`Remover ${d?d.label:"este dia"} e seus exercícios?`))) return;
+    if(!(await piikConfirm(`Remover ${d?d.label:"este dia"} e seus exercícios?`))) return;
     await sb.from("ficha_dias").delete().eq("id", FICHA_DIA);
     FICHA_DIAS = FICHA_DIAS.filter(x=>x.id!==FICHA_DIA);
     FICHA_DIA = FICHA_DIAS.length ? FICHA_DIAS[0].id : null;
@@ -4951,7 +4951,7 @@
       exercicio_id:exId, nome_cache: ex?ex.nome:null,
       series:null, reps:"3 x 12", descanso_seg:60, ordem:(exs?exs.length:0)
     });
-    if(error){ levoAlert("Erro: "+error.message); return; }
+    if(error){ piikAlert("Erro: "+error.message); return; }
     (window.FX_JATEM = window.FX_JATEM || new Set()).add(exId);
     renderPicker();  // remove o adicionado da lista do popup
   }
@@ -4994,7 +4994,7 @@
       exercicio_id:exId, nome_cache: ex?ex.nome:null,
       series:null, reps:"3 x 12", descanso_seg:60, ordem:(exs?exs.length:0)
     });
-    if(error){ levoAlert("Erro: "+error.message); return; }
+    if(error){ piikAlert("Erro: "+error.message); return; }
     await renderConteudoDia();
     window.scrollTo(0, y);                     // mantém a tela na mesma posição
   }
@@ -5010,7 +5010,7 @@
       exercicio_id:exId, nome_cache: ex?ex.nome:null,
       series:null, reps:"3 x 12", descanso_seg:60, ordem:(exs?exs.length:0)
     });
-    if(error){ levoAlert("Erro: "+error.message); return; }
+    if(error){ piikAlert("Erro: "+error.message); return; }
     renderConteudoDia();
   }
 
@@ -5142,9 +5142,9 @@
   }
 
   async function excluirConsulta(id, studentId){
-    if(!(await levoConfirm("Remover esta consulta?"))) return;
+    if(!(await piikConfirm("Remover esta consulta?"))) return;
     const { error } = await sb.from("consultations").delete().eq("id", id);
-    if(error){ levoAlert("Erro ao remover: "+error.message); return; }
+    if(error){ piikAlert("Erro ao remover: "+error.message); return; }
     listarConsultas(studentId);
   }
 
@@ -5240,7 +5240,7 @@
   function aplicarLogo(url){
     if(!url)return;
     var safe=String(url).replace(/"/g,'&quot;');
-    var els=document.querySelectorAll('.logo-levo');
+    var els=document.querySelectorAll('.logo-piik');
     for(var i=0;i<els.length;i++){
       var el=els[i];
       if(el.getAttribute('data-piik-logo'))continue;
