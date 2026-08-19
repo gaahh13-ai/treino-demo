@@ -3188,8 +3188,32 @@
     bar.innerHTML = html;
   }
 
+    function levoPrompt(opts){
+    if(typeof opts === "string") opts = { titulo: opts };
+    return new Promise(res=>{
+      const o=document.createElement("div"); o.className="modal-ov";
+      o.innerHTML=`<div class="modal-cx" style="max-width:380px">
+        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">P<span style="color:var(--pink,#7fff00)">ii</span>k</div>
+        <h3 style="margin:0 0 8px;text-align:center">${opts.titulo||""}</h3>
+        ${opts.msg?`<p class="meta-sm" style="margin:0 0 14px;text-align:center">${opts.msg}</p>`:`<div style="height:6px"></div>`}
+        <input id="lpIn" type="text" autocomplete="off" placeholder="${opts.placeholder||""}" style="width:100%;background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:12px;font-size:15px;margin-bottom:14px;box-sizing:border-box">
+        <button class="btn" style="width:100%;margin-bottom:8px" id="lpOk">${opts.ok||"Salvar"}</button>
+        <button class="btn ghost" style="width:100%" id="lpNo">${opts.cancel||"Cancelar"}</button>
+      </div>`;
+      document.body.appendChild(o);
+      const inp=o.querySelector("#lpIn");
+      if(opts.valor) inp.value=opts.valor;
+      const done=v=>{ o.remove(); res(v); };
+      o.querySelector("#lpOk").onclick=()=>done(inp.value);
+      o.querySelector("#lpNo").onclick=()=>done(null);
+      o.addEventListener("click",e=>{ if(e.target===o) done(null); });
+      inp.addEventListener("keydown",e=>{ if(e.key==="Enter") done(inp.value); if(e.key==="Escape") done(null); });
+      setTimeout(()=>{ inp.focus(); if(opts.valor) inp.select(); }, 30);
+    });
+  }
+
   async function novoGrupo(){
-    const nome = (window.prompt("Nome do novo grupo (ex.: Online, Presencial, Iniciantes):")||"").trim();
+    const nome = ((await levoPrompt({ titulo:"Novo grupo", msg:"Dê um nome para o grupo.", placeholder:"Ex.: Online, Presencial, Iniciantes", ok:"Criar" }))||"").trim();
     if(!nome) return;
     const { data, error } = await sb.from("grupos").insert({ professional_id: ME.id, nome }).select().single();
     if(error){ levoAlert("Erro ao criar grupo: "+error.message); return; }
@@ -3200,7 +3224,7 @@
   }
   async function renomearGrupo(id){
     const g = GRUPOS.find(x=>x.id===id); if(!g) return;
-    const nome = (window.prompt("Novo nome do grupo:", g.nome)||"").trim();
+    const nome = ((await levoPrompt({ titulo:"Renomear grupo", valor:g.nome, ok:"Salvar" }))||"").trim();
     if(!nome || nome===g.nome) return;
     const { error } = await sb.from("grupos").update({ nome }).eq("id", id);
     if(error){ levoAlert("Erro: "+error.message); return; }
