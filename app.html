@@ -102,6 +102,7 @@
   .acc.open .acc-chev{transform:rotate(90deg)}
   .acc-body{display:none;padding:0 16px 16px}
   .acc.open .acc-body{display:block}
+    .acc-dados.open .acc-sub{display:none}
   .wrap{max-width:1040px;margin:0 auto;padding:26px 20px 60px}
   .hello{font-size:21px;font-weight:800;margin-bottom:4px}
   .role-chip{display:inline-block;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;margin-bottom:18px}
@@ -2364,9 +2365,9 @@
         <div class="msg" id="fotoMsg" style="text-align:center"></div>
       </div>
 
-      <div class="acc">
+      <div class="acc acc-dados">
         <button class="acc-head" onclick="toggleAcc('accDados')">
-          <span class="acc-txt"><span class="acc-tit">Seus dados</span></span>
+          <span class="acc-txt"><span class="acc-tit">Seus dados</span><span class="acc-sub">${resumo}</span></span>
           <span class="acc-chev">›</span>
         </button>
         <div class="acc-body" id="accDados">
