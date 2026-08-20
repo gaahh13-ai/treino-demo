@@ -1083,6 +1083,24 @@
   // Conectar alunos reais (enviar convite / vincular) é a trava: exige plano pago (Piik Fit / You Piik).
   function podeVincular(){ const p=(ME.plano||"").toLowerCase(); return IS_PIIK && (ME.role === "creator" || p === "fit" || p === "you_piik"); }
 
+  /* ===== Travas por plano (Fase 2) ===== */
+  const LIMITE_ALUNOS_FIT = 40; // limite de alunos ATIVOS no Piik Fit (You Piik = ilimitado). Mudar aqui altera em todo o site.
+  function planoAtual(){ return (ME && ME.plano || "").toLowerCase(); }
+  function statusAssinatura(){ return (ME && ME.assinatura_status || "").toLowerCase(); }
+  function alunosAtivosCount(){ return (STUDENTS||[]).filter(s => (s.status||"active")==="active" && !(s.demo||s.is_demo)).length; }
+  function limiteAlunos(){ if(ME && ME.role==="creator") return Infinity; const p=planoAtual(); if(p==="you_piik") return Infinity; if(p==="fit") return LIMITE_ALUNOS_FIT; return 0; }
+  function atingiuLimiteAlunos(){ return alunosAtivosCount() >= limiteAlunos(); }
+  function checarInadimplencia(){
+    if(!ehProfPiik()) return;
+    if(statusAssinatura() === "inadimplente"){
+      piikConfirm({
+        titulo:"Pagamento em atraso",
+        msg:"Identificamos um atraso no pagamento da sua assinatura. Regularize para não perder o vínculo com seus alunos.",
+        ok:"Ir para Assinatura", cancel:"Agora não"
+      }).then(ok=>{ if(ok) go("assinatura"); });
+    }
+  }
+
   /* ================= MENU / LAYOUT ================= */
   function menuFor(role){
     if(role === "student"){
@@ -1150,6 +1168,7 @@
     const inicial = !first ? "perfil" : (role === "student" ? "dash" : "alunos");
     go(inicial);
     carregarVinculoPendente();
+    checarInadimplencia();
   }
 
   async function carregarVinculoPendente(){
@@ -4035,7 +4054,16 @@
     const nome  = document.getElementById("inviteName").value.trim();
     const email = document.getElementById("inviteEmail").value.trim().toLowerCase();
     const msg = document.getElementById("inviteMsg"), btn = document.getElementById("inviteBtn");
-    if(!podeVincular()){ msg.className="msg warn"; msg.textContent="Conectar alunos é um recurso dos planos pagos. Assine o Piik Fit ou You Piik para cadastrar e vincular seus alunos."; return; }
+    if(!podeVincular()){
+      msg.className="msg warn";
+      msg.innerHTML = 'Conectar alunos é um recurso dos planos pagos. Assine o Piik Fit ou You Piik para cadastrar e vincular seus alunos. <button class="btn small" style="margin-top:8px" onclick="go(\'assinatura\')">Ver planos e assinar</button>';
+      return;
+    }
+    if(atingiuLimiteAlunos()){
+      msg.className="msg warn";
+      msg.innerHTML = 'Você atingiu o limite de '+LIMITE_ALUNOS_FIT+' alunos ativos do Piik Fit. Faça upgrade para o You Piik e tenha alunos ilimitados. <button class="btn small" style="margin-top:8px" onclick="go(\'assinatura\')">Fazer upgrade</button>';
+      return;
+    }
     if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do aluno."; return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
@@ -4141,6 +4169,10 @@
   }
 
   async function reativarAluno(id){
+    if(atingiuLimiteAlunos()){
+      piikAlert("Você atingiu o limite de "+LIMITE_ALUNOS_FIT+" alunos ativos do Piik Fit. Para reativar este aluno, faça upgrade para o You Piik (alunos ilimitados) ou arquive outro aluno antes.");
+      return;
+    }
     const { error } = await sb.from("profiles").update({ status:"active", archived_at:null }).eq("id", id);
     if(error){ piikAlert("Erro ao reativar: "+error.message); return; }
     loadStudents();
