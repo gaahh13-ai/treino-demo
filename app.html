@@ -2531,9 +2531,6 @@
         {ok:true,  t:"Dashboard com metas, progresso e avaliações"},
         {ok:true,  t:"Avaliações físicas completas (composição corporal, RCQ)"},
         {ok:true,  t:"Acompanhamento com comentários do personal"}
-      ]},
-      { nome:"Piik Pro", preco:"Em breve", sub:"", destaque:false, itens:[
-        {ok:true,  t:"Novidades chegando em breve"}
       ]}
     ],
     personal: [
@@ -2720,7 +2717,7 @@
   }
 
   async function assinarPlano(nome){
-    const mapa = { "Piik Pro":"pro", "Piik Fit":"fit", "You Piik":"you_piik" };
+    const mapa = { "Piik Fit":"fit", "You Piik":"you_piik" };
     const plano = mapa[nome];
     if(!plano){ piikAlert("O Piik Light é gratuito — não há o que pagar. 🙂"); return; }
     try{
