@@ -3227,6 +3227,12 @@
       return;
     }
     let lista = studs || [];
+    // ex-alunos desvinculados: aparecem só nos ARQUIVADOS (histórico), marcados com desvinculado=true
+    try{
+      const { data: exs } = await sb.from("profiles").select("*").eq("ex_professional_id", ME.id);
+      const jaTem = new Set(lista.map(s=>s.id));
+      (exs||[]).forEach(e=>{ if(!jaTem.has(e.id)){ e.desvinculado = true; lista.push(e); } });
+    }catch(e){}
     // aluno(s) demo — só para profissional SEM assinatura conhecer o app; some quando ele assina um plano
     if(ehProfPiik() && !podeVincular()){
       const { data: demo } = await sb.from("profiles").select("*").eq("is_demo", true);
@@ -3864,10 +3870,13 @@
   function linhaAluno(s, arquivado){
     const nome = nomeAluno(s);
     const n = ASSESS.filter(a=>a.student_id===s.id).length;
-    const sub = (s.email && s.email!==nome) ? `${esc(s.email)} · ${n} avaliação(ões)` : `${n} avaliação(ões)`;
+    const tagDesv = s.desvinculado ? ` · <span class="tag" style="background:#241016;color:#e06a8a;border-color:#5c1530">desvinculado</span>` : "";
+    const sub = ((s.email && s.email!==nome) ? `${esc(s.email)} · ${n} avaliação(ões)` : `${n} avaliação(ões)`) + tagDesv;
     const acoes = arquivado
-      ? `<button class="btn small ghost" onclick="verAvaliacoes('${s.id}')">Ver histórico</button>
-         <button class="btn small" onclick="reativarAluno('${s.id}')">Reativar</button>`
+      ? (s.desvinculado
+          ? `<button class="btn small ghost" onclick="verAvaliacoes('${s.id}')">Ver histórico</button>`
+          : `<button class="btn small ghost" onclick="verAvaliacoes('${s.id}')">Ver histórico</button>
+             <button class="btn small" onclick="reativarAluno('${s.id}')">Reativar</button>`)
       : `<a class="btn small ghost" title="Ver dashboard" href="dashboard.html?aluno=${s.id}">📊</a>
          <button class="btn small ghost" onclick="verAvaliacoes('${s.id}')">Ver</button>
          <button class="btn small ghost" title="Agendar consulta" onclick="novaConsulta('${s.id}')">📅</button>
@@ -3890,13 +3899,13 @@
 
   function renderStudents(){
     if(PENDING_GRUPO !== undefined){ GRUPO_FILTRO = PENDING_GRUPO; PENDING_GRUPO = undefined; }
-    let ativos = STUDENTS.filter(s => (s.status||"active") === "active")
+    let ativos = STUDENTS.filter(s => (s.status||"active") === "active" && !s.desvinculado)
                          .sort((a,b)=> nomeAluno(a).localeCompare(nomeAluno(b),"pt-BR"));
     if(GRUPO_FILTRO){
       const set = GRUPO_MEMBROS[GRUPO_FILTRO] || new Set();
       ativos = ativos.filter(s => set.has(s.id));
     }
-    const arqs   = STUDENTS.filter(s => s.status === "archived" || s.status === "deleted");
+    const arqs   = STUDENTS.filter(s => s.status === "archived" || s.status === "deleted" || s.desvinculado);
     ATIVOS_CACHE = ativos;
     renderGruposBar();
 
@@ -4122,7 +4131,7 @@
     }
     if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do aluno."; return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
-    if(cpf && cpf.length!==11){ msg.className="msg err"; msg.textContent="CPF deve ter 11 dígitos (ou deixe em branco)."; return; }
+    if(cpf && !cpfValido(cpf)){ msg.className="msg err"; msg.textContent="CPF inválido. Confira os números (ou deixe em branco)."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="Criando conta do aluno…";
 
     const resp = await sb.functions.invoke("criar-aluno", {
@@ -4304,10 +4313,12 @@
   async function desvincularAluno(id){
     if(bloqueiaDemo(id)) return;
     const s = STUDENTS.find(x=>x.id===id);
-    if(!(await piikConfirm({ titulo:"Desvincular aluno?", msg:`Deseja desvincular <b>${esc(nomeAluno(s))}</b>?<br><br>O acompanhamento é encerrado e o aluno volta a ser uma <b>conta livre</b>, podendo buscar outro professor. O histórico dele fica guardado.`, ok:"Sim, desvincular", cancel:"Cancelar" }))) return;
+    if(!(await piikConfirm({ titulo:"Desvincular aluno?", msg:`Deseja desvincular <b>${esc(nomeAluno(s))}</b>?<br><br>O acompanhamento é encerrado e o aluno volta a ser uma <b>conta livre</b>, podendo buscar outro professor. O histórico de vocês fica guardado nos seus <b>arquivados</b>.`, ok:"Sim, desvincular", cancel:"Cancelar" }))) return;
+    // guarda este personal como "ex-professor" ANTES de liberar (mantém o histórico do lado dele)
+    try{ await sb.from("profiles").update({ ex_professional_id: ME.id, desvinculado_em: new Date().toISOString() }).eq("id", id); }catch(e){}
     const { error } = await sb.rpc("desvincular_aluno", { p_student: id });
     if(error){ await piikAlert({ titulo:"Erro ao desvincular", msg:error.message }); return; }
-    await piikAlert({ titulo:"Aluno desvinculado", msg:`O vínculo com <b>${esc(nomeAluno(s))}</b> foi encerrado.` });
+    await piikAlert({ titulo:"Aluno desvinculado", msg:`O vínculo com <b>${esc(nomeAluno(s))}</b> foi encerrado. O histórico ficou nos seus arquivados.` });
     await loadStudents();
     go("alunos");
   }
