@@ -963,7 +963,41 @@
   }
 
   /* ================= INÍCIO ================= */
+  function telaPrimeiroAcesso(token){
+    const o = document.createElement("div"); o.className="modal-ov"; o.style.zIndex="99999";
+    o.innerHTML = `<div class="modal-cx" style="max-width:400px">
+      <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">P<span style="color:var(--pink,#7fff00)">ii</span>k</div>
+      <h3 style="margin:0 0 6px;text-align:center">Bem-vindo! Defina sua senha</h3>
+      <p class="meta-sm" style="margin:0 0 14px;text-align:center">Crie uma senha para acessar seu treino. Da próxima vez, você entra com seu e-mail e essa senha.</p>
+      <div class="field"><label>Nova senha</label><input id="pa1" type="password" placeholder="mín. 6 caracteres"></div>
+      <div class="field" style="margin-top:8px"><label>Confirmar senha</label><input id="pa2" type="password" placeholder="repita a senha"></div>
+      <button class="btn" style="width:100%;margin-top:12px" id="paBtn">Definir senha e entrar</button>
+      <div class="msg" id="paMsg" style="margin-top:8px"></div>
+    </div>`;
+    document.body.appendChild(o);
+    const btn=o.querySelector("#paBtn"), msg=o.querySelector("#paMsg");
+    btn.onclick = async ()=>{
+      const p1=o.querySelector("#pa1").value, p2=o.querySelector("#pa2").value;
+      if(p1.length<6){ msg.className="msg err"; msg.textContent="A senha precisa ter ao menos 6 caracteres."; return; }
+      if(p1!==p2){ msg.className="msg err"; msg.textContent="As senhas não coincidem."; return; }
+      btn.disabled=true; msg.className="msg"; msg.textContent="Definindo…";
+      const resp = await sb.functions.invoke("ativar-acesso", { body:{ token, senha:p1 } });
+      let errMsg="";
+      if(resp.data && resp.data.error) errMsg=resp.data.error;
+      if(resp.error){ try{ const b=await resp.error.context.json(); if(b&&b.error) errMsg=b.error; }catch(_){}; if(!errMsg) errMsg=resp.error.message; }
+      if(errMsg || !(resp.data && resp.data.ok)){ btn.disabled=false; msg.className="msg err"; msg.textContent=errMsg||"Não consegui ativar o acesso."; return; }
+      const emailAluno = resp.data.email;
+      const { error: eLogin } = await sb.auth.signInWithPassword({ email: emailAluno, password: p1 });
+      if(eLogin){ btn.disabled=false; msg.className="msg err"; msg.textContent="Senha definida! Vá para a tela de login e entre com seu e-mail e a senha que você criou."; return; }
+      location.href = location.origin + location.pathname;
+    };
+  }
+
   async function init(){
+    // Primeiro acesso por link (aluno pré-criado pelo personal): ?acesso=<token>
+    const _acesso = new URLSearchParams(location.search).get("acesso");
+    if(_acesso){ telaPrimeiroAcesso(_acesso); return; }
+
     let { data:{ session } } = await sb.auth.getSession();
     if(!session){
       session = await new Promise(res=>{
@@ -3005,18 +3039,30 @@
     return `<h2>Cadastrar aluno</h2>
       <div class="card">
         <h3>➕ Novo aluno</h3>
-        <p>Informe nome e e-mail. Só depois disso o aluno consegue fazer o "primeiro acesso" na página de login — e já entra com o nome preenchido.</p>
+        <p>Preencha os dados do aluno para já criar a conta dele. Você pode <b>montar o treino antes</b> — o aluno aparece na sua lista de alunos com o selo "aguardando 1º acesso". Depois é só gerar o link de acesso e enviar pra ele.</p>
         <div class="form-grid" style="margin-top:12px">
           <div class="field"><label>Nome e sobrenome</label><input id="inviteName" type="text" placeholder="ex: Maria Silva"></div>
           <div class="field"><label>E-mail</label><input id="inviteEmail" type="email" placeholder="email@exemplo.com"></div>
+          <div class="field"><label>CPF <span class="meta-sm">(opcional)</span></label><input id="inviteCpf" type="text" inputmode="numeric" placeholder="000.000.000-00" oninput="mascaraCpfInput(this)"></div>
+          <div class="field"><label>Nascimento <span class="meta-sm">(opcional)</span></label><input id="inviteNasc" type="date"></div>
+          <div class="field"><label>Sexo <span class="meta-sm">(opcional)</span></label>
+            <select id="inviteSexo"><option value="">—</option><option value="M">Masculino</option><option value="F">Feminino</option></select></div>
+          <div class="field"><label>Modalidade <span class="meta-sm">(opcional)</span></label><input id="inviteModal" type="text" placeholder="ex: online, presencial"></div>
         </div>
-        <button class="btn small" id="inviteBtn" onclick="cadastrarAluno()">Cadastrar aluno</button>
+        <button class="btn small" id="inviteBtn" onclick="criarAlunoCompleto()">Criar aluno</button>
         <div class="msg" id="inviteMsg"></div>
       </div>
       <div class="card">
-        <h3>📋 Cadastrados</h3>
+        <h3>📋 Convites por e-mail (modo antigo)</h3>
+        <p class="meta-sm">Convites em que o próprio aluno cria a conta. Novos cadastros usam o formulário acima.</p>
         <div id="invitesBox"><div class="empty">Carregando…</div></div>
       </div>`;
+  }
+
+  function mascaraCpfInput(el){
+    let v = (el.value||"").replace(/\D/g,"").slice(0,11);
+    v = v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");
+    el.value = v;
   }
 
   /* ================= BIBLIOTECA DE EXERCÍCIOS ================= */
@@ -3966,6 +4012,12 @@
           </span>
         </span>
       </div>
+      ${(s.pre_cadastro && !s.primeiro_acesso_em) ? `
+      <div class="preacc-box" style="background:#161611;border:1px solid #4a3f12;border-radius:12px;padding:12px;margin:8px 0">
+        <div><span class="tag" style="background:#2a2410;color:#e0b83a;border-color:#5c4d15">⏳ aguardando 1º acesso</span></div>
+        <div class="meta-sm" style="margin:6px 0 10px">Monte o treino normalmente. Quando quiser liberar pro aluno, gere o link de acesso e envie pra ele.</div>
+        <button class="btn small" onclick="gerarAcesso('${id}')">🔑 Gerar acesso</button>
+      </div>` : ""}
       ${temTreino()?`<div class="treino-resumo-al" id="treinoResumo_${id}">🏋️ carregando treino…</div>`:""}
       <div class="det-acoes">
         <a class="btn small ghost" href="dashboard.html?aluno=${id}">Dashboard</a>
@@ -4050,6 +4102,55 @@
     }).join("");
   }
 
+  async function criarAlunoCompleto(){
+    const nome  = document.getElementById("inviteName").value.trim();
+    const email = document.getElementById("inviteEmail").value.trim().toLowerCase();
+    const cpf   = (document.getElementById("inviteCpf").value||"").replace(/\D/g,"");
+    const nasc  = document.getElementById("inviteNasc").value || null;
+    const sexo  = document.getElementById("inviteSexo").value || null;
+    const modal = (document.getElementById("inviteModal").value||"").trim() || null;
+    const msg = document.getElementById("inviteMsg"), btn = document.getElementById("inviteBtn");
+    if(!podeVincular()){
+      msg.className="msg warn";
+      msg.innerHTML = 'Conectar alunos é um recurso dos planos pagos. Assine o Piik Fit ou You Piik para cadastrar e vincular seus alunos. <button class="btn small" style="margin-top:8px" onclick="go(\'assinatura\')">Ver planos e assinar</button>';
+      return;
+    }
+    if(atingiuLimiteAlunos()){
+      msg.className="msg warn";
+      msg.innerHTML = 'Você atingiu o limite de '+LIMITE_ALUNOS_FIT+' alunos ativos do Piik Fit. Faça upgrade para o You Piik e tenha alunos ilimitados. <button class="btn small" style="margin-top:8px" onclick="go(\'assinatura\')">Fazer upgrade</button>';
+      return;
+    }
+    if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do aluno."; return; }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
+    if(cpf && cpf.length!==11){ msg.className="msg err"; msg.textContent="CPF deve ter 11 dígitos (ou deixe em branco)."; return; }
+    btn.disabled=true; msg.className="msg"; msg.textContent="Criando conta do aluno…";
+
+    const resp = await sb.functions.invoke("criar-aluno", {
+      body: { email, nome, cpf, birth_date: nasc, sex: sexo, modalidade: modal }
+    });
+    btn.disabled=false;
+    let errMsg = "";
+    if(resp.data && resp.data.error) errMsg = resp.data.error;
+    if(resp.error){
+      try{ const b = await resp.error.context.json(); if(b && b.error) errMsg = b.error; }catch(_){}
+      if(!errMsg) errMsg = resp.error.message;
+    }
+    const ok = !errMsg && resp.data && resp.data.ok;
+    if(!ok){
+      // e-mail já tem conta → cai no fluxo antigo de vínculo/convite por e-mail
+      if(/já existe uma conta|convite comum/i.test(errMsg||"")){
+        msg.className="msg warn"; msg.textContent = "Esse e-mail já tem conta no Piik. Usando o convite por e-mail…";
+        return cadastrarAluno();
+      }
+      msg.className="msg err"; msg.textContent = errMsg || "Não foi possível criar o aluno.";
+      return;
+    }
+    msg.className="msg ok";
+    msg.innerHTML = esc(nome)+" criado! Ele já está na sua lista de <b>Alunos</b> com o selo \"aguardando 1º acesso\". Monte o treino e depois clique em <b>Gerar acesso</b> no aluno.";
+    ["inviteName","inviteEmail","inviteCpf","inviteNasc","inviteSexo","inviteModal"].forEach(idc=>{ const e=document.getElementById(idc); if(e) e.value=""; });
+    loadStudents();
+  }
+
   async function cadastrarAluno(){
     const nome  = document.getElementById("inviteName").value.trim();
     const email = document.getElementById("inviteEmail").value.trim().toLowerCase();
@@ -4100,6 +4201,49 @@
     const { error } = await sb.from("invites").delete().eq("email", email).eq("professional_id", ME.id);
     if(error){ piikAlert("Erro ao remover: "+error.message); return; }
     loadInvites();
+  }
+
+  async function gerarAcesso(alunoId){
+    const s = STUDENTS.find(x=>x.id===alunoId);
+    const nome = s ? nomeAluno(s) : "aluno";
+    const emailAluno = s ? (s.email||"") : "";
+    const resp = await sb.functions.invoke("gerar-acesso", { body: { aluno_id: alunoId } });
+    let errMsg = "";
+    if(resp.data && resp.data.error) errMsg = resp.data.error;
+    if(resp.error){
+      try{ const b = await resp.error.context.json(); if(b && b.error) errMsg = b.error; }catch(_){}
+      if(!errMsg) errMsg = resp.error.message;
+    }
+    if(errMsg || !(resp.data && resp.data.ok)){ piikAlert("Não consegui gerar o acesso: "+(errMsg||"erro desconhecido")); return; }
+    const link = location.origin + location.pathname + "?acesso=" + resp.data.token;
+    mostrarLinkAcesso(nome, emailAluno, link);
+  }
+
+  function mostrarLinkAcesso(nome, emailAluno, link){
+    const corpo = "Ola! Seu personal criou seu acesso ao Piik. Clique no link para definir sua senha e entrar (seu treino ja esta pronto):\n\n" + link + "\n\nAte ja!";
+    const mailto = "mailto:" + encodeURIComponent(emailAluno) + "?subject=" + encodeURIComponent("Seu acesso ao Piik") + "&body=" + encodeURIComponent(corpo);
+    const o = document.createElement("div"); o.className = "modal-ov";
+    o.innerHTML = `<div class="modal-cx" style="max-width:460px">
+      <h3 style="margin:0 0 6px;text-align:center">🔑 Acesso de ${esc(nome)}</h3>
+      <p class="meta-sm" style="margin:0 0 12px;text-align:center">Envie este link pro aluno. Ele abre, define a senha e entra. O link vale 14 dias e some depois de usado.</p>
+      <input id="acessoLinkInput" type="text" readonly value="${esc(link)}" style="width:100%;box-sizing:border-box">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn small" id="copiarLinkBtn" style="flex:1">📋 Copiar link</button>
+        <a class="btn small ghost" id="emailLinkBtn" href="${mailto}" style="flex:1;text-align:center">✉️ Enviar por e-mail</a>
+      </div>
+      <div class="meta-sm" id="copiadoMsg" style="margin-top:8px;text-align:center;color:var(--pink,#7fff00)"></div>
+      <button class="btn ghost" style="width:100%;margin-top:10px" id="fecharAcessoBtn">Fechar</button>
+    </div>`;
+    document.body.appendChild(o);
+    const inp = o.querySelector("#acessoLinkInput");
+    o.querySelector("#copiarLinkBtn").onclick = async ()=>{
+      try{ await navigator.clipboard.writeText(link); }
+      catch(_){ inp.select(); try{ document.execCommand("copy"); }catch(e){} }
+      o.querySelector("#copiadoMsg").textContent = "Link copiado! ✅";
+    };
+    o.querySelector("#fecharAcessoBtn").onclick = ()=> o.remove();
+    o.addEventListener("click",(e)=>{ if(e.target===o) o.remove(); });
+    setTimeout(()=>{ inp.focus(); inp.select(); }, 50);
   }
 
   function abrirMenu(ev, id){
