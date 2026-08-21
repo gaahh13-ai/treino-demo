@@ -3051,11 +3051,6 @@
         </div>
         <button class="btn small" id="inviteBtn" onclick="criarAlunoCompleto()">Criar aluno</button>
         <div class="msg" id="inviteMsg"></div>
-      </div>
-      <div class="card">
-        <h3>📋 Convites por e-mail (modo antigo)</h3>
-        <p class="meta-sm">Convites em que o próprio aluno cria a conta. Novos cadastros usam o formulário acima.</p>
-        <div id="invitesBox"><div class="empty">Carregando…</div></div>
       </div>`;
   }
 
@@ -5398,7 +5393,7 @@
       item.id='piik-perso-link';
       item.removeAttribute('onclick');
       const lbl = item.querySelector('.lbl') || item;
-      lbl.textContent='🎨 Personalização';
+      lbl.textContent='Personalização';
       item.addEventListener('click',function(ev){ ev.preventDefault(); ev.stopPropagation(); window.location.href='personalizar.html'; },true);
       base.parentElement.appendChild(item);
       return true;
