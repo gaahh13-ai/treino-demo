@@ -2776,6 +2776,15 @@
     try{
       const { data:{ session } } = await sb.auth.getSession();
       if(!session){ piikAlert("Faça login para assinar."); return; }
+      // Já assina esse MESMO plano (ativo)? Não manda pro Mercado Pago de novo.
+      try{
+        const { data: jaAtiva } = await sb.from("assinaturas")
+          .select("plano").eq("user_id", ME.id).eq("status","authorized").limit(20);
+        if(Array.isArray(jaAtiva) && jaAtiva.some(a => String(a.plano||"").toLowerCase() === plano)){
+          piikAlert("Você já tem o plano " + nome + " ativo. 🙂 Não é preciso assinar de novo.");
+          return;
+        }
+      }catch(e){ /* se a checagem falhar, segue o fluxo normal */ }
       // planos de personal tornam a conta profissional
       if((plano==="fit" || plano==="you_piik") && ME && ME.role!=="professional"){
         try{ await sb.from("profiles").update({ role:"professional" }).eq("id", ME.id); ME.role="professional"; }catch(e){}
