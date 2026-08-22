@@ -1790,7 +1790,7 @@
     box.innerHTML = titulo + btnIniciar + agruparBiset(lista).map(g=>{
       const inner = g.map((x,idx)=>{
         const esq = esquemaPresc(x);
-        const img = x.media_url ? `<img src="${esc(x.media_url)}" alt="">` : iconeExercicio(x);
+        const img = x.media_url ? midiaThumbHTML(x.media_url, "") : iconeExercicio(x);
         const ultimo = idx === g.length-1;
         return `<div class="tr-ex">
           <div class="tr-ex-row">
@@ -3134,6 +3134,7 @@
           </div>
           <div class="field"><label>Equipamento</label><input id="ex_equip" type="text" placeholder="ex: Barra, Halter, Máquina…"></div>
           <div class="field"><label>Link de GIF/vídeo (opcional)</label><input id="ex_media" type="text" placeholder="cole aqui"></div>
+          <div class="field"><label>🎬 Ou envie um vídeo próprio (até 50MB)</label><input id="ex_video" type="file" accept="video/*"></div>
         </div>
         <div class="field"><label>Instrução (opcional)</label><textarea id="ex_instr" rows="2" placeholder="dica de execução"></textarea></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -3200,9 +3201,7 @@
     box.innerHTML = lista.map(e=>{
       const meu = e.professional_id === ME.id;
       const fav = FAVORITOS.has(e.id);
-      const thumb = e.media_url
-        ? `<img class="ex-thumb" src="${esc(e.media_url)}" alt="" onerror="this.style.display='none'">`
-        : `<div class="ex-thumb ph">🏋️</div>`;
+      const thumb = midiaThumbHTML(e.media_url, "ex-thumb");
       return `<div class="ex-row">
         ${thumb}
         <div class="ex-info">
@@ -3238,18 +3237,27 @@
     const msg = document.getElementById("exMsg"), btn = document.getElementById("exBtn");
     if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do exercício."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
+    let media = document.getElementById("ex_media").value.trim() || null;
+    const vf = document.getElementById("ex_video");
+    const file = (vf && vf.files) ? vf.files[0] : null;
+    if(file){
+      msg.textContent="Enviando vídeo… (pode levar alguns segundos)";
+      try{ media = await uploadMidiaEx(file); }
+      catch(e){ btn.disabled=false; msg.className="msg err"; msg.textContent=e.message||"Falha no upload."; return; }
+    }
     const { error } = await sb.from("exercicios").insert({
       professional_id: ME.id,
       nome,
       grupo: document.getElementById("ex_grupo").value,
       equipamento: document.getElementById("ex_equip").value.trim() || null,
-      media_url: document.getElementById("ex_media").value.trim() || null,
+      media_url: media,
       instrucao: document.getElementById("ex_instr").value.trim() || null
     });
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
     msg.className="msg ok"; msg.textContent="✅ Exercício adicionado!";
     ["ex_nome","ex_equip","ex_media","ex_instr"].forEach(id=>document.getElementById(id).value="");
+    if(vf) vf.value="";
     loadExercicios();
   }
 
@@ -5094,13 +5102,21 @@
       gi += g.length;
     });
     box.innerHTML = `
-      <div class="fx-edit-top">
-        <button class="btn small" onclick="abrirPickerPopup()">＋ Adicionar exercícios</button>
-        <button class="btn small ghost" onclick="concluirDia()">✓ Concluir ${esc(nomeDia)}</button>
-      </div>
-      ${lista.length?`<div class="tr-head">${esc(nomeDia)} · ${lista.length} exercício${lista.length===1?"":"s"}</div>`:""}
-      <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício ainda. Toque em “Adicionar exercícios”.</div>`}</div>
-      <div style="margin-top:12px"><button class="btn small ghost" onclick="removerDia()">Remover dia</button></div>`;
+      <div class="montador">
+        <div class="montador-esq">
+          <div class="fx-edit-top">
+            <button class="btn small ghost" onclick="concluirDia()">✓ Concluir ${esc(nomeDia)}</button>
+            <button class="btn small ghost" onclick="removerDia()">Remover dia</button>
+          </div>
+          ${lista.length?`<div class="tr-head">${esc(nomeDia)} · ${lista.length} exercício${lista.length===1?"":"s"}</div>`:""}
+          <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício ainda. Escolha na biblioteca ao lado →</div>`}</div>
+        </div>
+        <aside class="montador-dir">
+          <button id="libToggle" class="lib-toggle" onclick="toggleLibMobile()">📚 Abrir biblioteca</button>
+          <div id="libPane" class="lib-pane"></div>
+        </aside>
+      </div>`;
+    pintarLibPane();
   }
 
   async function editarDia(){ MODO_EDICAO = true; const y=window.scrollY; await renderConteudoDia(); window.scrollTo(0,y); }
@@ -5242,6 +5258,144 @@
     if(error){ piikAlert("Erro: "+error.message); return; }
     await renderConteudoDia();
     window.scrollTo(0, y);                     // mantém a tela na mesma posição
+  }
+
+  /* ===== Biblioteca embutida no montador (painel de duas colunas) + player de vídeo ===== */
+  let FX_LIB_Q = "";
+  let LIB_UP_FILE = null;
+
+  function midiaEhVideo(url){ return /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url||""); }
+  function midiaThumbHTML(url, cls){
+    cls = cls || "";
+    if(!url) return `<span class="${cls} ph">🏋️</span>`;
+    if(midiaEhVideo(url))
+      return `<video src="${esc(url)}#t=0.1" class="${cls}" muted loop playsinline preload="metadata" onclick="event.stopPropagation(); abrirVideoFull('${esc(url)}')"></video>`;
+    return `<img src="${esc(url)}" class="${cls}" loading="lazy" onclick="event.stopPropagation(); abrirVideoFull('${esc(url)}')" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'${cls} ph',textContent:'🏋️'}))">`;
+  }
+  function abrirVideoFull(url){
+    if(!url || document.getElementById("vidFullOv")) return;
+    const ov = document.createElement("div"); ov.id="vidFullOv"; ov.className="vidfull-ov";
+    ov.onclick = (e)=>{ if(e.target===ov) ov.remove(); };
+    const inner = midiaEhVideo(url)
+      ? `<video src="${esc(url)}" class="vidfull-el" controls autoplay playsinline></video>`
+      : `<img src="${esc(url)}" class="vidfull-el">`;
+    ov.innerHTML = `<div class="vidfull-cx"><button class="vidfull-x" onclick="this.closest('.vidfull-ov').remove()">✕</button>${inner}</div>`;
+    document.body.appendChild(ov);
+  }
+
+  function libListaHTML(){
+    const jaTem = window.FX_JATEM || new Set();
+    let lista = (EXERCICIOS||[]).filter(e=>!jaTem.has(e.id));
+    if(FX_GRUPO) lista = lista.filter(e=>e.grupo===FX_GRUPO);
+    const q = FX_LIB_Q.toLowerCase().trim();
+    if(q) lista = lista.filter(e=>(e.nome||"").toLowerCase().includes(q));
+    lista = [...lista].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"","pt",{sensitivity:"base"}));
+    if(!lista.length) return `<div class="empty" style="padding:16px">Nenhum exercício disponível${FX_GRUPO?" em "+esc(FX_GRUPO):""}. Crie um novo ali em cima. 👆</div>`;
+    return lista.map(e=>`
+      <button class="lib-item" onclick="addExDaLib('${e.id}')">
+        ${midiaThumbHTML(e.media_url,"lib-thumb")}
+        <span class="lib-item-txt">
+          <span class="lib-item-nome">${esc(e.nome)}</span>
+          <span class="lib-item-grp">${esc(e.grupo||"")}${e.equipamento?" · "+esc(e.equipamento):""}</span>
+        </span>
+        <span class="lib-add">＋</span>
+      </button>`).join("");
+  }
+  function pintarLibPane(){
+    const pane = document.getElementById("libPane"); if(!pane) return;
+    const jaTem = window.FX_JATEM || new Set();
+    const disp = (EXERCICIOS||[]).filter(e=>!jaTem.has(e.id));
+    const gset = [...new Set(disp.map(e=>e.grupo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt",{sensitivity:"base"}));
+    const grupos = gset.filter(g=>g!=="Outro").concat(gset.includes("Outro")?["Outro"]:[]);
+    const chips = [`<button class="chip-f ${FX_GRUPO===""?"sel":""}" onclick="setLibGrupo('')">Todos</button>`]
+      .concat(grupos.map(g=>`<button class="chip-f ${FX_GRUPO===g?"sel":""}" onclick="setLibGrupo('${esc(g)}')">${g==="Outro"?"Outros":esc(g)}</button>`)).join("");
+    pane.innerHTML = `
+      <div class="lib-head"><b>📚 Biblioteca</b>
+        <button class="btn small" onclick="toggleLibForm()">➕ Criar exercício</button></div>
+      <div class="lib-form" id="libForm" style="display:none">
+        <div class="lib-form-grid">
+          <input id="lib_nome" type="text" placeholder="Nome (ex: Supino inclinado)">
+          <select id="lib_grupo">${GRUPOS_MUSC.map(g=>`<option value="${g}">${g}</option>`).join("")}</select>
+          <input id="lib_equip" type="text" placeholder="Equipamento (opcional)">
+          <input id="lib_link" type="text" placeholder="Link de vídeo/GIF (opcional)">
+        </div>
+        <label class="lib-up"><span>🎬 Ou envie um vídeo próprio (até 50MB)</span>
+          <input id="lib_video" type="file" accept="video/*" onchange="LIB_UP_FILE = (this.files&&this.files[0])||null"></label>
+        <div class="lib-form-acoes">
+          <button class="btn small" id="libSalvarBtn" onclick="salvarExercicioInline()">Salvar e adicionar</button>
+          <button class="btn small ghost" onclick="toggleLibForm(false)">Cancelar</button>
+        </div>
+        <div class="msg" id="libFormMsg"></div>
+      </div>
+      <input id="libBusca" class="aluno-search" style="max-width:none;margin:0 0 8px" placeholder="Buscar exercício…" value="${esc(FX_LIB_Q)}" oninput="filtLib()">
+      <div class="fx-grupos" style="margin-bottom:8px">${chips}</div>
+      <div id="libLista" class="lib-lista">${libListaHTML()}</div>`;
+  }
+  function filtLib(){ const i=document.getElementById("libBusca"); FX_LIB_Q = i?i.value:""; const l=document.getElementById("libLista"); if(l) l.innerHTML = libListaHTML(); }
+  function setLibGrupo(g){ FX_GRUPO = g; pintarLibPane(); }
+  function toggleLibMobile(){ const p=document.getElementById("libPane"); const t=document.getElementById("libToggle"); if(!p) return; p.classList.toggle("aberta"); if(t) t.textContent = p.classList.contains("aberta") ? "📚 Fechar biblioteca" : "📚 Abrir biblioteca"; }
+  function toggleLibForm(forcar){
+    const f=document.getElementById("libForm"); if(!f) return;
+    const abrir = (forcar===undefined) ? (f.style.display==="none") : !!forcar;
+    f.style.display = abrir ? "block" : "none";
+    if(abrir){ const n=document.getElementById("lib_nome"); if(n) n.focus(); }
+  }
+  async function addExDaLib(exId){
+    if(!exId || !FICHA_DIA) return;
+    const y = window.scrollY;
+    const ex = (EXERCICIOS||[]).find(e=>e.id===exId);
+    const { data: exs } = await sb.from("ficha_exercicios").select("id").eq("dia_id", FICHA_DIA);
+    const { error } = await sb.from("ficha_exercicios").insert({
+      dia_id:FICHA_DIA, ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id,
+      exercicio_id:exId, nome_cache: ex?ex.nome:null, series:null, reps:"3 x 12", descanso_seg:60, ordem:(exs?exs.length:0)
+    });
+    if(error){ piikAlert("Erro: "+error.message); return; }
+    (window.FX_JATEM = window.FX_JATEM || new Set()).add(exId);
+    await renderConteudoDia();
+    window.scrollTo(0, y);
+  }
+  async function uploadMidiaEx(file){
+    if(!file) return null;
+    if(file.size > 50*1024*1024) throw new Error("O vídeo passa de 50MB. Escolha um arquivo menor ou use um link.");
+    const ext = (file.name.split(".").pop()||"mp4").toLowerCase().replace(/[^a-z0-9]/g,"") || "mp4";
+    const path = ME.id + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,8) + "." + ext;
+    const { error } = await sb.storage.from("exercicios-media").upload(path, file, { cacheControl:"3600", upsert:false, contentType:file.type||undefined });
+    if(error) throw new Error(error.message || "Falha no upload do vídeo.");
+    const { data } = sb.storage.from("exercicios-media").getPublicUrl(path);
+    return data.publicUrl;
+  }
+  async function salvarExercicioInline(){
+    const nome = (document.getElementById("lib_nome")||{}).value?.trim() || "";
+    const msg = document.getElementById("libFormMsg"), btn = document.getElementById("libSalvarBtn");
+    if(!nome){ if(msg){ msg.className="msg err"; msg.textContent="Digite o nome do exercício."; } return; }
+    if(btn) btn.disabled = true; if(msg){ msg.className="msg"; msg.textContent="Salvando…"; }
+    try{
+      let media = (document.getElementById("lib_link")||{}).value?.trim() || null;
+      if(LIB_UP_FILE){ if(msg) msg.textContent="Enviando vídeo… (pode levar alguns segundos)"; media = await uploadMidiaEx(LIB_UP_FILE); }
+      const { data: novo, error } = await sb.from("exercicios").insert({
+        professional_id: ME.id, nome,
+        grupo: (document.getElementById("lib_grupo")||{}).value || "Outro",
+        equipamento: (document.getElementById("lib_equip")||{}).value?.trim() || null,
+        media_url: media
+      }).select().single();
+      if(error) throw new Error(error.message);
+      LIB_UP_FILE = null;
+      if(novo){ if(!EXERCICIOS) EXERCICIOS = []; EXERCICIOS.push(novo); }
+      if(novo && FICHA_DIA){
+        const { data: exs } = await sb.from("ficha_exercicios").select("id").eq("dia_id", FICHA_DIA);
+        await sb.from("ficha_exercicios").insert({
+          dia_id:FICHA_DIA, ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id,
+          exercicio_id:novo.id, nome_cache:novo.nome, series:null, reps:"3 x 12", descanso_seg:60, ordem:(exs?exs.length:0)
+        });
+        (window.FX_JATEM = window.FX_JATEM || new Set()).add(novo.id);
+      }
+      const y = window.scrollY;
+      await renderConteudoDia();
+      window.scrollTo(0, y);
+    }catch(e){
+      if(msg){ msg.className="msg err"; msg.textContent = e.message || "Erro ao salvar."; }
+      if(btn) btn.disabled = false;
+    }
   }
 
   async function addEx(){
@@ -5606,5 +5760,42 @@
 })();
 </script>
 
+<style>
+/* ===== Montador em duas colunas + biblioteca embutida + player de vídeo ===== */
+.montador{display:flex;gap:16px;align-items:flex-start}
+.montador-esq{flex:1 1 56%;min-width:0}
+.montador-dir{flex:1 1 44%;min-width:0;position:sticky;top:10px}
+.lib-toggle{display:none}
+.lib-pane{background:var(--card,#12161b);border:1px solid var(--line,#2a2f37);border-radius:14px;padding:12px}
+.lib-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.lib-lista{max-height:62vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.lib-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2,#171c22);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:7px 10px;cursor:pointer;color:inherit;font:inherit}
+.lib-item:hover{border-color:var(--accent,#7fff00)}
+.lib-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex:0 0 auto;background:var(--elev,#0e1216);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.lib-thumb.ph{font-size:20px}
+.lib-item-txt{display:flex;flex-direction:column;min-width:0;flex:1}
+.lib-item-nome{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-item-grp{font-size:12px;opacity:.7}
+.lib-add{font-size:18px;font-weight:800;color:var(--accent,#7fff00);flex:0 0 auto}
+.lib-form{background:var(--card2,#171c22);border:1px solid var(--line,#2a2f37);border-radius:12px;padding:12px;margin-bottom:10px}
+.lib-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.lib-form-grid input,.lib-form-grid select{width:100%;background:var(--elev,#0e1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:9px;padding:8px 9px;font-size:13px}
+.lib-up{display:flex;flex-direction:column;gap:4px;font-size:12px;opacity:.9;margin-bottom:8px}
+.lib-form-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.ex-thumb-al video,.ex-thumb-al img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+video.ex-thumb{object-fit:cover}
+.vidfull-ov{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:2147483200;display:flex;align-items:center;justify-content:center;padding:16px}
+.vidfull-cx{position:relative;max-width:92vw;max-height:88vh}
+.vidfull-el{max-width:92vw;max-height:88vh;border-radius:12px;background:#000;display:block}
+.vidfull-x{position:absolute;top:-14px;right:-14px;width:36px;height:36px;border-radius:50%;border:none;background:#fff;color:#000;font-size:16px;cursor:pointer}
+@media(max-width:820px){
+  .montador{flex-direction:column}
+  .montador-dir{width:100%;position:static}
+  .lib-toggle{display:block;width:100%;margin-bottom:8px}
+  .lib-pane{display:none}
+  .lib-pane.aberta{display:block}
+  .lib-form-grid{grid-template-columns:1fr}
+}
+</style>
 </body>
 </html>
