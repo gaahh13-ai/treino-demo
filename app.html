@@ -2753,15 +2753,19 @@
     </div>`;
   }
 
-  function planoCard(p){
+  function planoCard(p, podeAssinar){
     const lis = p.itens.map(it=>
       `<li class="${it.ok?"ok":"no"}"><span class="pl-ic">${it.ok?"✓":"✗"}</span><span>${esc(it.t)}</span></li>`).join("");
+    // O botão "Assinar" só aparece para o público certo (personal vê planos de personal; aluno vê planos de aluno).
+    const btn = podeAssinar
+      ? `<button class="btn pl-btn" onclick="assinarPlano('${esc(p.nome)}')">Assinar ${esc(p.nome)}</button>`
+      : "";
     return `<div class="plano-card${p.destaque?" destaque":""}">
       ${p.destaque?`<span class="pl-badge">Mais completo</span>`:""}
       <div class="pl-nome">${esc(p.nome)}</div>
       <div class="pl-preco">${esc(p.preco)}<span class="pl-preco-sub">${esc(p.sub||"")}</span></div>
       <ul class="pl-lista">${lis}</ul>
-      <button class="btn pl-btn" onclick="assinarPlano('${esc(p.nome)}')">Assinar ${esc(p.nome)}</button>
+      ${btn}
     </div>`;
   }
 
@@ -2770,7 +2774,11 @@
       const b=document.getElementById("assinTab_"+q); if(b) b.classList.toggle("active", q===qual);
     });
     const box=document.getElementById("assinConteudo"); if(!box) return;
-    box.innerHTML = `<div class="plano-grid">${PLANOS[qual].map(planoCard).join("")}</div>`;
+    // só mostra o botão de assinar na aba que corresponde ao papel do usuário
+    const ehAluno = !!(ME && ME.role === "student");
+    const ehProf  = !!(ME && (ME.role === "professional" || ME.role === "creator"));
+    const podeAssinar = (qual === "alunos" && ehAluno) || (qual === "personal" && ehProf);
+    box.innerHTML = `<div class="plano-grid">${PLANOS[qual].map(p=>planoCard(p, podeAssinar)).join("")}</div>`;
   }
 
   async function assinarPlano(nome){
@@ -4177,8 +4185,12 @@
     if(cpf && !cpfValido(cpf)){ msg.className="msg err"; msg.textContent="CPF inválido. Confira os números (ou deixe em branco)."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="Criando conta do aluno…";
 
+    // manda o token de login ATUALIZADO explicitamente (evita "Não autenticado" por token vencido)
+    const { data:{ session: _sessC } } = await sb.auth.getSession();
+    if(!_sessC){ btn.disabled=false; msg.className="msg err"; msg.textContent="Sua sessão expirou. Entre novamente para cadastrar."; return; }
     const resp = await sb.functions.invoke("criar-aluno", {
-      body: { email, nome, cpf, birth_date: nasc, sex: sexo, modalidade: modal }
+      body: { email, nome, cpf, birth_date: nasc, sex: sexo, modalidade: modal },
+      headers: { Authorization: "Bearer " + _sessC.access_token }
     });
     btn.disabled=false;
     let errMsg = "";
@@ -4259,7 +4271,13 @@
     const s = STUDENTS.find(x=>x.id===alunoId);
     const nome = s ? nomeAluno(s) : "aluno";
     const emailAluno = s ? (s.email||"") : "";
-    const resp = await sb.functions.invoke("gerar-acesso", { body: { aluno_id: alunoId } });
+    // manda o token de login ATUALIZADO explicitamente (evita "Não autenticado" por token vencido)
+    const { data:{ session: _sess1 } } = await sb.auth.getSession();
+    if(!_sess1){ piikAlert("Sua sessão expirou. Entre novamente para gerar o acesso."); return; }
+    const resp = await sb.functions.invoke("gerar-acesso", {
+      body: { aluno_id: alunoId },
+      headers: { Authorization: "Bearer " + _sess1.access_token }
+    });
     let errMsg = "";
     if(resp.data && resp.data.error) errMsg = resp.data.error;
     if(resp.error){
