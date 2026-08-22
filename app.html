@@ -2711,7 +2711,10 @@
         <span class="fin-tag pg">ativo</span>
       </div>`;
     }
-    const hist = ASSIN_ROWS.map(r=>{
+    // Só mostra assinaturas que de fato FECHARAM (ativa/pausada/cancelada).
+    // "pending" = tentativa que não virou pagamento — nunca aparece no histórico.
+    const visiveis = ASSIN_ROWS.filter(r => r.status && r.status !== "pending");
+    const hist = visiveis.map(r=>{
       const nome = PLANO_LABEL[r.plano] || r.plano;
       const st = ASSIN_STATUS[r.status] || {txt:r.status, cls:"pe"};
       return `<div class="assin-hist-row">
@@ -2721,7 +2724,7 @@
         <span class="fin-tag ${st.cls}">${st.txt}</span>
       </div>`;
     }).join("");
-    if(!vinc && !ASSIN_ROWS.length){
+    if(!vinc && !visiveis.length){
       return `<div class="empty">Nenhum registro de assinatura ainda.</div>`;
     }
     return `<div class="assin-hist">
