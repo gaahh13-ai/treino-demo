@@ -110,7 +110,8 @@
   .chip-professional{background:var(--pk-surf2,#1d2027);color:#1d4ed8}
   .chip-student{background:var(--pk-surf2,#1d2027);color:var(--pink,#7fff00)}
 
-  .shell{display:grid;grid-template-columns:212px 1fr;gap:20px;align-items:start}
+  .shell{display:grid;grid-template-columns:212px minmax(0,1fr);gap:20px;align-items:start}
+  .panel{min-width:0}
   .sidebar{background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:18px;padding:10px;
            box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px}
   .navitem{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
