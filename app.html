@@ -5383,8 +5383,12 @@
     const _sb=window.supabase.createClient(_URL,_ANON,{auth:{flowType:'implicit',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
     const { data:{ user } } = await _sb.auth.getUser();
     if(!user) return;
-    const { data:perfil } = await _sb.from('profiles').select('role').eq('id',user.id).single();
+    const { data:perfil } = await _sb.from('profiles').select('role,plano').eq('id',user.id).single();
     if(!perfil || !(perfil.role==='professional'||perfil.role==='creator')) return;
+    // Personalização (white-label) é exclusiva do plano mais caro (You Piik). Creator sempre tem.
+    const _plano = (perfil.plano||'').toLowerCase();
+    const _podePerso = perfil.role==='creator' || _plano==='you_piik' || _plano==='pro';
+    if(!_podePerso) return;
     function inject(){
       if(document.getElementById('piik-perso-link')) return true;
       const base = document.getElementById('nav_financeiro') || document.getElementById('nav_desempenho') || document.getElementById('nav_exercicios');
@@ -5473,6 +5477,12 @@
       var perfil=pr.data; if(!perfil)return;
       var profId=(perfil.role==='professional'||perfil.role==='creator')?user.id:perfil.professional_id;
       if(!profId)return;
+      // A marca (white-label) só é aplicada se o profissional dono estiver no plano You Piik (mais caro).
+      var ppr=await _sb.from('profiles').select('plano,role').eq('id',profId).maybeSingle();
+      var pprof=ppr&&ppr.data?ppr.data:null;
+      var pplano=(pprof&&pprof.plano||'').toLowerCase();
+      var ppodePerso=(pprof&&pprof.role==='creator')||pplano==='you_piik'||pplano==='pro';
+      if(!ppodePerso)return;
       var pzr=await _sb.from('personalizacao').select('accent,bg,text1,text2,logo_url,ativo').eq('professional_id',profId).maybeSingle();
       var pz=pzr.data; if(!pz||pz.ativo===false)return;
       aplicar(pz);

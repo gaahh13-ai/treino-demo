@@ -342,8 +342,11 @@ async function init(){
     const { data:{ user } }=await sb.auth.getUser();
     if(!user){ bloquear('Você precisa entrar primeiro. <a href="app.html">Abrir o app e fazer login</a>, depois volte aqui.'); return; }
     uid=user.id;
-    const { data:perfil }=await sb.from('profiles').select('role').eq('id',uid).single();
+    const { data:perfil }=await sb.from('profiles').select('role,plano').eq('id',uid).single();
     if(!perfil || !(perfil.role==='professional'||perfil.role==='creator')){ bloquear('A personalização é exclusiva para personais. <a href="app.html">Voltar ao app</a>.'); return; }
+    const plano=(perfil.plano||'').toLowerCase();
+    const podePerso = perfil.role==='creator' || plano==='you_piik' || plano==='pro';
+    if(!podePerso){ bloquear('A personalização (seu logo e suas cores) faz parte do plano <b>You Piik</b>. Faça o upgrade para liberar. <a href="app.html">Voltar ao app</a>.'); return; }
     const { data:pz }=await sb.from('personalizacao').select('accent,bg,text1,text2,logo_url,ativo').eq('professional_id',uid).maybeSingle();
     if(pz && pz.ativo!==false){
       const bg=pz.bg||PADRAO.bg;

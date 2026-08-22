@@ -8,433 +8,435 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{color-scheme:light;--txt:#334155;--muted:#64748b;--line:#e5e7eb;--pink:#7fff00;--pink-deep:#5fbf00}
-  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-  body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
-    background:linear-gradient(140deg,#0a0b0d,#15171c 55%,#15171c);color:var(--txt)}
-  .card{background:#15171c;border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(30,41,59,.14);width:100%;max-width:400px;padding:34px}
-  .logo{height:34px;display:block;margin:0 auto 18px}
-  h1{font-size:20px;font-weight:800;text-align:center;margin-bottom:4px}
-  .sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:20px;line-height:1.45}
-  .field{margin-bottom:12px}
-  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
-  .field input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:14px}
-  .field input:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
-  .btn{width:100%;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:15px;color:#fff;cursor:pointer;
-    background:linear-gradient(120deg,#7fff00,#5fbf00);box-shadow:0 8px 20px rgba(79,70,229,.22);margin-top:6px}
-  .btn:disabled{opacity:.6;cursor:default}
-  .btn.alt{background:transparent;color:#7fff00;border:1.5px solid #34401f;box-shadow:none}
-  .plan-pick{display:flex;flex-direction:column;gap:8px;margin-top:6px}
-  .pp-grp{font-size:11px;font-weight:800;color:#8a9099;text-transform:uppercase;letter-spacing:.4px;margin-top:8px}
-  .pp-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
-    border:1.5px solid #262a33;border-radius:12px;padding:13px 14px;background:#15171c;color:#e8eaee;cursor:pointer;text-align:left}
-  .pp-opt:hover{border-color:#7fff00}
-  .pp-opt b{font-size:14px}
-  .pp-opt span{font-size:13px;font-weight:700;color:#7fff00}
-  .su-plano{font-size:13px;color:#c7ccd6;background:#15171c;border:1px solid #262a33;border-radius:10px;padding:9px 12px;margin-bottom:12px}
-  .su-plano b{color:#7fff00}
-  .links{display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}
-  .link{font-size:13px;color:var(--pink-deep);font-weight:600;text-decoration:none;cursor:pointer}
-  .link.muted{color:var(--muted);font-weight:500}
-  .msg{margin-top:14px;font-size:13px;text-align:center;padding:10px;border-radius:10px;display:none;line-height:1.45}
-  .msg.err{display:block;background:#2a1416;color:#c0392b}
-  .msg.ok{display:block;background:#122110;color:#1a8a4a}
-  .msg.warn{display:block;background:#2a2410;color:#b45309}
-  .back{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:none}
+:root{color-scheme:light;--txt:#334155;--muted:#64748b;--line:#e5e7eb;--pink:#7fff00;--pink-deep:#5fbf00}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+background:linear-gradient(140deg,#0a0b0d,#15171c 55%,#15171c);color:var(--txt)}
+.card{background:#15171c;border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 60px rgba(30,41,59,.14);width:100%;max-width:400px;padding:34px}
+.logo{height:34px;display:block;margin:0 auto 18px}
+h1{font-size:20px;font-weight:800;text-align:center;margin-bottom:4px}
+.sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:20px;line-height:1.45}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.field input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:14px}
+.field input:focus{outline:2px solid #a5b4fc;border-color:#a5b4fc}
+.btn{width:100%;border:none;border-radius:14px;padding:13px;font-weight:800;font-size:15px;color:#fff;cursor:pointer;
+background:linear-gradient(120deg,#7fff00,#5fbf00);box-shadow:0 8px 20px rgba(79,70,229,.22);margin-top:6px}
+.btn:disabled{opacity:.6;cursor:default}
+.btn.alt{background:transparent;color:#7fff00;border:1.5px solid #34401f;box-shadow:none}
+.plan-pick{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.pp-grp{font-size:11px;font-weight:800;color:#8a9099;text-transform:uppercase;letter-spacing:.4px;margin-top:8px}
+.pp-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+border:1.5px solid #262a33;border-radius:12px;padding:13px 14px;background:#15171c;color:#e8eaee;cursor:pointer;text-align:left}
+.pp-opt:hover{border-color:#7fff00}
+.pp-opt b{font-size:14px}
+.pp-opt span{font-size:13px;font-weight:700;color:#7fff00}
+.su-plano{font-size:13px;color:#c7ccd6;background:#15171c;border:1px solid #262a33;border-radius:10px;padding:9px 12px;margin-bottom:12px}
+.su-plano b{color:#7fff00}
+.links{display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}
+.link{font-size:13px;color:var(--pink-deep);font-weight:600;text-decoration:none;cursor:pointer}
+.link.muted{color:var(--muted);font-weight:500}
+.msg{margin-top:14px;font-size:13px;text-align:center;padding:10px;border-radius:10px;display:none;line-height:1.45}
+.msg.err{display:block;background:#2a1416;color:#c0392b}
+.msg.ok{display:block;background:#122110;color:#1a8a4a}
+.msg.warn{display:block;background:#2a2410;color:#b45309}
+.back{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:none}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style id="levo-theme">
-  :root{
-    --txt:#e8eaee!important; --muted:#9aa0ab!important; --line:#262a33!important;
-    --pink:#7fff00!important; --pink-deep:#7fff00!important; --pink-soft:#7fff00!important;
-    --blue:#7fff00!important; --blue-deep:#7fff00!important; --lilac:#7fff00!important;
-    color-scheme:dark;
-  }
-  *{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-  h1,h2,h3,.hello,.section-title,.exec-titulo,.treino-num,.logo-levo,.det-nome,.rc-num{
-    font-family:'Rajdhani','Inter',sans-serif!important;letter-spacing:.4px}
-  body{background:#0a0b0d!important;color:var(--txt)!important}
-  nav.top{background:rgba(10,11,13,.92)!important;border-bottom:1px solid #20242c!important}
-  .logo-levo{font-weight:700;font-style:italic;font-size:23px;color:#fff;letter-spacing:2px;line-height:1}
-  .logo-levo .ac{color:#7fff00}
-  /* superfícies escuras */
-  .card,.sidebar,.aluno-detalhe,.modal-cx,.ex-card,.treino-pill,.ret-row,.ret-card,.tr-ex,
-  .fx-row,.student-row,.assess-item,.aval,.med,.proxima,.kpi{
-    background:#15171c!important;border-color:#262a33!important;box-shadow:none!important}
-  .panel h2,h2,.hello,.section-title,.det-nome{color:#fff!important}
-  .card h3,.card h3 *{color:#7fff00!important}
-  .muted,.meta-sm,.empty,.sub,.tl-ult,.rr-sub,.det-sub,.updated,.med span{color:#9aa0ab!important}
-  .empty{border-color:#2a2e37!important}
-  /* menu lateral */
-  .navitem{color:#c7ccd6!important}
-  .navitem:hover{background:#1d2027!important}
-  .navitem.active{background:#7fff00!important;color:#0a0b0d!important}
-  /* botões */
-  .btn{background:#7fff00!important;color:#0a0b0d!important;border:none!important;font-weight:800!important}
-  .btn.alt{background:transparent!important;color:#7fff00!important;border:1.5px solid #34401f!important}
-  .btn.ghost,.nbtn,.logout,.ver-mais,.chev{background:transparent!important;color:#7fff00!important;border:1.5px solid #3a3f4a!important}
-  .nbtn.solid{background:#7fff00!important;color:#0a0b0d!important;border:none!important}
-  .dots,.close-x,.seta{color:#9aa0ab!important}
-  /* campos */
-  input,select,textarea{background:#0f1116!important;color:#e8eaee!important;border-color:#2a2e37!important}
-  input::placeholder,textarea::placeholder{color:#6b7079!important}
-  input[readonly]{background:#0c0d10!important;color:#9aa0ab!important}
-  /* chips e etiquetas */
-  .role-chip,.chip-student,.chip-professional,.chip-creator,.tag{background:#1d2027!important;color:#7fff00!important;border-color:#2a2e37!important}
-  .chip-f{background:#0f1116!important;color:#c7ccd6!important;border-color:#2a2e37!important}
-  /* seletor de papel no cadastro */
-  .role-pick{display:flex;gap:8px}
-  .role-opt{flex:1;padding:11px 8px;border-radius:12px;border:1.5px solid #2a2e37;background:#0f1116;color:#c7ccd6;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
-  .role-opt:hover{border-color:#3a3f4a}
-  .role-opt.sel{background:rgba(127,255,0,.14);border-color:#7fff00;color:#7fff00}
-  .role-hint{font-size:12px;color:#9aa0ab;margin-top:8px;line-height:1.5}
-  .chip-f.sel,.treino-linha.sel{background:#7fff00!important;color:#0a0b0d!important;border-color:transparent!important}
-  .treino-linha{background:#0f1116!important;border-color:#2a2e37!important}
-  .treino-linha .tl-nome,.aluno-item{color:#e8eaee!important}
-  .aluno-item{background:#0f1116!important;border-color:#2a2e37!important}
-  .aluno-item.sel{background:#7fff00!important;color:#0a0b0d!important}
-  /* barras de progresso */
-  .bar-track,.ades-bar{background:#0f1116!important}
-  .bar-fill,.ades-fill{background:#7fff00!important}
-  /* execução */
-  .exec-top{background:transparent!important}
-  .exec-crono{background:#15171c!important;border-color:#2a2e37!important;color:#7fff00!important}
-  .ser-in,.carga-in{background:#0f1116!important;color:#fff!important}
-  .ser-head{color:#9aa0ab!important}
-  .ex-check{background:#0f1116!important;border-color:#2a2e37!important;color:#9aa0ab!important}
-  .ex-card.done{background:#12160b!important;border-color:#3a4a12!important}
-  .ex-card.done .ex-check{background:#7fff00!important;border-color:#7fff00!important;color:#0a0b0d!important}
-  .ex-card.done .ex-card-nome{color:#7fff00!important}
-  .ex-thumb-al{background:#1d2027!important}
-  .tr-obs{background:#12140b!important;border-color:#7fff00!important;color:#cfd3da!important}
-  .desc-btn{background:#0f1116!important;color:#7fff00!important;border-color:#3a3f4a!important}
-  /* comentários */
-  .cmt,.cmt.reply{background:#0f1116!important;border-color:#2a2e37!important}
-  .cmt.reply{border-left:3px solid #7fff00!important}
-  .cmt-txt{color:#e8eaee!important}
-  .cmt-input,.rate-txt,.cmt-reply-info{background:#0f1116!important;color:#e8eaee!important}
-  /* metas / kpis */
-  .metas div{border-color:#2a2e37!important}
-  .metas b,.med b{color:#7fff00!important}
-  .kpi .val{color:#fff!important}
-  /* mensagens */
-  .msg.ok{background:#122110!important;color:#bff08a!important}
-  .msg.err{background:#2a1416!important;color:#ff9aa2!important}
-  .msg.warn{background:#2a2410!important;color:#ffd98a!important}
-  /* menu de contexto (3 pontinhos) */
-  .menu-drop{background:#15171c!important;border-color:#2a2e37!important}
-  .menu-drop button{color:#e8eaee!important}
-  .menu-drop button:hover{background:#1d2027!important}
-  /* modal de confirmação estilizado (Piik) */
-  .piik-ov{position:fixed;inset:0;background:rgba(5,6,8,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9999}
-  .piik-modal{background:#15171c;border:1px solid #262a33;border-radius:18px;max-width:340px;width:100%;padding:24px 22px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
-  .piik-modal h3{font-size:17px;font-weight:800;color:#fff;margin:0 0 8px;text-align:center}
-  .piik-modal-txt{font-size:13.5px;line-height:1.5;color:#c7ccd6;text-align:center;margin-bottom:16px}
-  .piik-modal .btn{margin-top:8px}
+:root{
+--txt:#e8eaee!important; --muted:#9aa0ab!important; --line:#262a33!important;
+--pink:#7fff00!important; --pink-deep:#7fff00!important; --pink-soft:#7fff00!important;
+--blue:#7fff00!important; --blue-deep:#7fff00!important; --lilac:#7fff00!important;
+color-scheme:dark;
+}
+*{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+h1,h2,h3,.hello,.section-title,.exec-titulo,.treino-num,.logo-levo,.det-nome,.rc-num{
+font-family:'Rajdhani','Inter',sans-serif!important;letter-spacing:.4px}
+body{background:#0a0b0d!important;color:var(--txt)!important}
+nav.top{background:rgba(10,11,13,.92)!important;border-bottom:1px solid #20242c!important}
+.logo-levo{font-weight:700;font-style:italic;font-size:23px;color:#fff;letter-spacing:2px;line-height:1}
+.logo-levo .ac{color:#7fff00}
+/* superfícies escuras */
+.card,.sidebar,.aluno-detalhe,.modal-cx,.ex-card,.treino-pill,.ret-row,.ret-card,.tr-ex,
+.fx-row,.student-row,.assess-item,.aval,.med,.proxima,.kpi{
+background:#15171c!important;border-color:#262a33!important;box-shadow:none!important}
+.panel h2,h2,.hello,.section-title,.det-nome{color:#fff!important}
+.card h3,.card h3 *{color:#7fff00!important}
+.muted,.meta-sm,.empty,.sub,.tl-ult,.rr-sub,.det-sub,.updated,.med span{color:#9aa0ab!important}
+.empty{border-color:#2a2e37!important}
+/* menu lateral */
+.navitem{color:#c7ccd6!important}
+.navitem:hover{background:#1d2027!important}
+.navitem.active{background:#7fff00!important;color:#0a0b0d!important}
+/* botões */
+.btn{background:#7fff00!important;color:#0a0b0d!important;border:none!important;font-weight:800!important}
+.btn.alt{background:transparent!important;color:#7fff00!important;border:1.5px solid #34401f!important}
+.btn.ghost,.nbtn,.logout,.ver-mais,.chev{background:transparent!important;color:#7fff00!important;border:1.5px solid #3a3f4a!important}
+.nbtn.solid{background:#7fff00!important;color:#0a0b0d!important;border:none!important}
+.dots,.close-x,.seta{color:#9aa0ab!important}
+/* campos */
+input,select,textarea{background:#0f1116!important;color:#e8eaee!important;border-color:#2a2e37!important}
+input::placeholder,textarea::placeholder{color:#6b7079!important}
+input[readonly]{background:#0c0d10!important;color:#9aa0ab!important}
+/* chips e etiquetas */
+.role-chip,.chip-student,.chip-professional,.chip-creator,.tag{background:#1d2027!important;color:#7fff00!important;border-color:#2a2e37!important}
+.chip-f{background:#0f1116!important;color:#c7ccd6!important;border-color:#2a2e37!important}
+/* seletor de papel no cadastro */
+.role-pick{display:flex;gap:8px}
+.role-opt{flex:1;padding:11px 8px;border-radius:12px;border:1.5px solid #2a2e37;background:#0f1116;color:#c7ccd6;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+.role-opt:hover{border-color:#3a3f4a}
+.role-opt.sel{background:rgba(127,255,0,.14);border-color:#7fff00;color:#7fff00}
+.role-hint{font-size:12px;color:#9aa0ab;margin-top:8px;line-height:1.5}
+.chip-f.sel,.treino-linha.sel{background:#7fff00!important;color:#0a0b0d!important;border-color:transparent!important}
+.treino-linha{background:#0f1116!important;border-color:#2a2e37!important}
+.treino-linha .tl-nome,.aluno-item{color:#e8eaee!important}
+.aluno-item{background:#0f1116!important;border-color:#2a2e37!important}
+.aluno-item.sel{background:#7fff00!important;color:#0a0b0d!important}
+/* barras de progresso */
+.bar-track,.ades-bar{background:#0f1116!important}
+.bar-fill,.ades-fill{background:#7fff00!important}
+/* execução */
+.exec-top{background:transparent!important}
+.exec-crono{background:#15171c!important;border-color:#2a2e37!important;color:#7fff00!important}
+.ser-in,.carga-in{background:#0f1116!important;color:#fff!important}
+.ser-head{color:#9aa0ab!important}
+.ex-check{background:#0f1116!important;border-color:#2a2e37!important;color:#9aa0ab!important}
+.ex-card.done{background:#12160b!important;border-color:#3a4a12!important}
+.ex-card.done .ex-check{background:#7fff00!important;border-color:#7fff00!important;color:#0a0b0d!important}
+.ex-card.done .ex-card-nome{color:#7fff00!important}
+.ex-thumb-al{background:#1d2027!important}
+.tr-obs{background:#12140b!important;border-color:#7fff00!important;color:#cfd3da!important}
+.desc-btn{background:#0f1116!important;color:#7fff00!important;border-color:#3a3f4a!important}
+/* comentários */
+.cmt,.cmt.reply{background:#0f1116!important;border-color:#2a2e37!important}
+.cmt.reply{border-left:3px solid #7fff00!important}
+.cmt-txt{color:#e8eaee!important}
+.cmt-input,.rate-txt,.cmt-reply-info{background:#0f1116!important;color:#e8eaee!important}
+/* metas / kpis */
+.metas div{border-color:#2a2e37!important}
+.metas b,.med b{color:#7fff00!important}
+.kpi .val{color:#fff!important}
+/* mensagens */
+.msg.ok{background:#122110!important;color:#bff08a!important}
+.msg.err{background:#2a1416!important;color:#ff9aa2!important}
+.msg.warn{background:#2a2410!important;color:#ffd98a!important}
+/* menu de contexto (3 pontinhos) */
+.menu-drop{background:#15171c!important;border-color:#2a2e37!important}
+.menu-drop button{color:#e8eaee!important}
+.menu-drop button:hover{background:#1d2027!important}
+/* modal de confirmação estilizado (Piik) */
+.piik-ov{position:fixed;inset:0;background:rgba(5,6,8,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9999}
+.piik-modal{background:#15171c;border:1px solid #262a33;border-radius:18px;max-width:340px;width:100%;padding:24px 22px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.piik-modal h3{font-size:17px;font-weight:800;color:#fff;margin:0 0 8px;text-align:center}
+.piik-modal-txt{font-size:13.5px;line-height:1.5;color:#c7ccd6;text-align:center;margin-bottom:16px}
+.piik-modal .btn{margin-top:8px}
 </style>
 
 </head>
 <body>
 <div class="card">
-  <a href="index.html" style="display:block"><span class="logo-levo">P<span class="ac">ii</span>k</span></a>
+<a href="index.html" style="display:block"><span class="logo-levo">P<span class="ac">ii</span>k</span></a>
 
-  <!-- ENTRAR -->
-  <div id="viewLogin">
-    <h1>Área do aluno</h1>
-    <div class="sub">Acompanhe sua evolução com a Piik.</div>
-    <div class="field"><label>E-mail</label><input id="email" type="email" placeholder="voce@email.com" autocomplete="email"></div>
-    <div class="field"><label>Senha</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
-    <button class="btn" id="loginBtn" onclick="entrar()">Entrar</button>
-    <button class="btn alt" id="goSignupBtn" onclick="showView('signup')">Criar conta</button>
-    <div class="links">
-      <a class="link" onclick="showView('first')">Primeiro acesso</a>
-      <a class="link muted" onclick="irParaEsqueci()">Esqueci minha senha</a>
-    </div>
-  </div>
+<!-- ENTRAR -->
+<div id="viewLogin">
+<h1>Área do aluno</h1>
+<div class="sub">Acompanhe sua evolução com a Piik.</div>
+<div class="field"><label>E-mail</label><input id="email" type="email" placeholder="voce@email.com" autocomplete="email"></div>
+<div class="field"><label>Senha</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+<button class="btn" id="loginBtn" onclick="entrar()">Entrar</button>
+<button class="btn alt" id="goSignupBtn" onclick="showView('signup')">Criar conta</button>
+<div class="links">
+<a class="link" onclick="showView('first')">Primeiro acesso</a>
+<a class="link muted" onclick="irParaEsqueci()">Esqueci minha senha</a>
+</div>
+</div>
 
-  <!-- CRIAR CONTA -->
-  <div id="viewSignup" style="display:none">
-    <h1>Criar conta</h1>
-    <div class="sub">Preencha seus dados. Enviaremos um e-mail para confirmar e continuar.</div>
-    <div class="field"><label>Você é</label>
-      <div class="role-pick">
-        <button type="button" class="role-opt sel" id="roleAluno" onclick="pickRole('student')">Aluno</button>
-        <button type="button" class="role-opt" id="rolePersonal" onclick="pickRole('professional')">Personal Trainer</button>
-      </div>
-      <div class="role-hint" id="roleHint">Como aluno você entra no plano gratuito e pode se vincular ao seu personal.</div>
-    </div>
-    <div class="field"><label>Nome completo</label><input id="suNome" type="text" placeholder="Seu nome" autocomplete="name"></div>
-    <div class="field"><label>CPF</label><input id="suCpf" type="text" inputmode="numeric" placeholder="000.000.000-00" autocomplete="off" maxlength="14" oninput="mascaraCpf(this)"></div>
-    <div class="field"><label>E-mail</label><input id="suEmail" type="email" placeholder="voce@email.com" autocomplete="email"></div>
-    <div class="field"><label>Senha</label><input id="suPass" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
-    <button class="btn" id="suBtn" onclick="criarConta()">Criar conta</button>
-    <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
-  </div>
+<!-- CRIAR CONTA -->
+<div id="viewSignup" style="display:none">
+<h1>Criar conta</h1>
+<div class="sub">Preencha seus dados. Enviaremos um e-mail para confirmar e continuar.</div>
+<div class="field"><label>Você é</label>
+<div class="role-pick">
+<button type="button" class="role-opt sel" id="roleAluno" onclick="pickRole('student')">Aluno</button>
+<button type="button" class="role-opt" id="rolePersonal" onclick="pickRole('professional')">Personal Trainer</button>
+</div>
+<div class="role-hint" id="roleHint">Como aluno você entra no plano gratuito e pode se vincular ao seu personal.</div>
+</div>
+<div class="field"><label>Nome completo</label><input id="suNome" type="text" placeholder="Seu nome" autocomplete="name"></div>
+<div class="field"><label>CPF</label><input id="suCpf" type="text" inputmode="numeric" placeholder="000.000.000-00" autocomplete="off" maxlength="14" oninput="mascaraCpf(this)"></div>
+<div class="field"><label>E-mail</label><input id="suEmail" type="email" placeholder="voce@email.com" autocomplete="email"></div>
+<div class="field"><label>Senha</label><input id="suPass" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"></div>
+<button class="btn" id="suBtn" onclick="criarConta()">Criar conta</button>
+<div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
+</div>
 
-  <!-- CONFIRME O E-MAIL -->
-  <div id="viewConfirma" style="display:none">
-    <div style="font-size:40px;text-align:center;margin-bottom:6px">✉️</div>
-    <h1>Confirme seu e-mail</h1>
-    <div class="sub">Enviamos um link de confirmação para <b id="confEmail">seu e-mail</b>.
-      Abra a mensagem (confira o spam) e clique no link para continuar o cadastro e escolher seu plano.</div>
-    <div class="links" style="justify-content:center"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
-  </div>
+<!-- CONFIRME O E-MAIL -->
+<div id="viewConfirma" style="display:none">
+<div style="font-size:40px;text-align:center;margin-bottom:6px">✉️</div>
+<h1>Verifique seu e-mail</h1>
+<div class="sub">Se este e-mail ainda não estiver em uso, você receberá um link de confirmação em <b id="confEmail">seu e-mail</b> para abrir sua conta. Abra a mensagem (confira também o spam) e clique no link para continuar e escolher seu plano.<br><br>Se você já tem uma conta com este e-mail, é só <a class="link" onclick="showView('login')">entrar normalmente</a>.</div>
+<div class="links" style="justify-content:center"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
+</div>
 
-  <!-- PRIMEIRO ACESSO -->
-  <div id="viewFirst" style="display:none">
-    <h1>Primeiro acesso</h1>
-    <div class="sub">Digite o e-mail que seu profissional cadastrou. Enviaremos um link de acesso para você entrar e criar sua senha.</div>
-    <div class="field"><label>E-mail</label><input id="emailFirst" type="email" placeholder="voce@email.com" autocomplete="email"></div>
-    <button class="btn" id="firstBtn" onclick="primeiroAcesso()">Enviar link de acesso</button>
-    <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
-  </div>
+<!-- PRIMEIRO ACESSO -->
+<div id="viewFirst" style="display:none">
+<h1>Primeiro acesso</h1>
+<div class="sub">Digite o e-mail que seu profissional cadastrou. Enviaremos um link de acesso para você entrar e criar sua senha.</div>
+<div class="field"><label>E-mail</label><input id="emailFirst" type="email" placeholder="voce@email.com" autocomplete="email"></div>
+<button class="btn" id="firstBtn" onclick="primeiroAcesso()">Enviar link de acesso</button>
+<div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
+</div>
 
-  <!-- ESQUECI MINHA SENHA -->
-  <div id="viewForgot" style="display:none">
-    <h1>Redefinir senha</h1>
-    <div class="sub" id="forgotSub">Enviaremos um link para o seu e-mail para você criar uma senha nova.</div>
-    <div class="field"><label>E-mail</label><input id="emailForgot" type="email" placeholder="voce@email.com" autocomplete="email"></div>
-    <button class="btn" id="forgotBtn" onclick="enviarReset()">Enviar link de redefinição</button>
-    <div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
-  </div>
+<!-- ESQUECI MINHA SENHA -->
+<div id="viewForgot" style="display:none">
+<h1>Redefinir senha</h1>
+<div class="sub" id="forgotSub">Enviaremos um link para o seu e-mail para você criar uma senha nova.</div>
+<div class="field"><label>E-mail</label><input id="emailForgot" type="email" placeholder="voce@email.com" autocomplete="email"></div>
+<button class="btn" id="forgotBtn" onclick="enviarReset()">Enviar link de redefinição</button>
+<div class="links"><a class="link muted" onclick="showView('login')">← Voltar para entrar</a></div>
+</div>
 
-  <div class="msg" id="msg"></div>
-  <a class="back" href="index.html">← Voltar ao site</a>
+<div class="msg" id="msg"></div>
+<a class="back" href="index.html">← Voltar ao site</a>
 </div>
 
 <script>
-  const SUPABASE_URL = "https://qpsraxnzgybehbwrtqjd.supabase.co";
-  const SUPABASE_ANON = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
-  const APP_URL   = "https://gaahh13-ai.github.io/treino-demo/app.html";
-  const RESET_URL = "https://gaahh13-ai.github.io/treino-demo/reset.html";
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-    auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
-  });
+const SUPABASE_URL = "https://qpsraxnzgybehbwrtqjd.supabase.co";
+const SUPABASE_ANON = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
+const APP_URL = "https://gaahh13-ai.github.io/treino-demo/app.html";
+const RESET_URL = "https://gaahh13-ai.github.io/treino-demo/reset.html";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+});
 
-  const MAX_TENTATIVAS = 5;
-  const JANELA_MIN = 15;   // o bloqueio expira depois de 15 minutos
+const MAX_TENTATIVAS = 5;
+const JANELA_MIN = 15; // o bloqueio expira depois de 15 minutos
 
-  sb.auth.getSession().then(({data})=>{ if(data.session) location.href = "app.html"; });
+sb.auth.getSession().then(({data})=>{ if(data.session) location.href = "app.html"; });
 
-  if(new URLSearchParams(location.search).get("expirou")){
-    localStorage.removeItem("sessao_inicio");
-    setTimeout(()=>showMsg("Sua sessão expirou por segurança. Entre novamente para continuar.","warn"), 200);
-  }
-  {
-    const c = new URLSearchParams(location.search).get("conta");
-    if(c==="excluida") setTimeout(()=>showMsg("Esta conta foi excluída. Para voltar, crie uma nova conta com o mesmo CPF.","warn"), 200);
-    else if(c==="exclusao_solicitada") setTimeout(()=>showMsg("Recebemos seu pedido de exclusão. Você tem 30 dias para reativar — é só entrar de novo nesse período.","warn"), 200);
-  }
+if(new URLSearchParams(location.search).get("expirou")){
+localStorage.removeItem("sessao_inicio");
+setTimeout(()=>showMsg("Sua sessão expirou por segurança. Entre novamente para continuar.","warn"), 200);
+}
+{
+const c = new URLSearchParams(location.search).get("conta");
+if(c==="excluida") setTimeout(()=>showMsg("Esta conta foi excluída. Para voltar, crie uma nova conta com o mesmo CPF.","warn"), 200);
+else if(c==="exclusao_solicitada") setTimeout(()=>showMsg("Recebemos seu pedido de exclusão. Você tem 30 dias para reativar — é só entrar de novo nesse período.","warn"), 200);
+}
 
-  /* ---------- contador de tentativas ---------- */
-  function chave(email){ return "tent_" + email.trim().toLowerCase(); }
-  function lerTentativas(email){
-    try{
-      const raw = localStorage.getItem(chave(email));
-      if(!raw) return 0;
-      const o = JSON.parse(raw);
-      if(Date.now() - o.ts > JANELA_MIN*60*1000){ localStorage.removeItem(chave(email)); return 0; }
-      return o.n || 0;
-    }catch(e){ return 0; }
-  }
-  function somarTentativa(email){
-    const n = lerTentativas(email) + 1;
-    try{ localStorage.setItem(chave(email), JSON.stringify({n, ts:Date.now()})); }catch(e){}
-    return n;
-  }
-  function zerarTentativas(email){ try{ localStorage.removeItem(chave(email)); }catch(e){} }
+/* ---------- contador de tentativas ---------- */
+function chave(email){ return "tent_" + email.trim().toLowerCase(); }
+function lerTentativas(email){
+try{
+const raw = localStorage.getItem(chave(email));
+if(!raw) return 0;
+const o = JSON.parse(raw);
+if(Date.now() - o.ts > JANELA_MIN*60*1000){ localStorage.removeItem(chave(email)); return 0; }
+return o.n || 0;
+}catch(e){ return 0; }
+}
+function somarTentativa(email){
+const n = lerTentativas(email) + 1;
+try{ localStorage.setItem(chave(email), JSON.stringify({n, ts:Date.now()})); }catch(e){}
+return n;
+}
+function zerarTentativas(email){ try{ localStorage.removeItem(chave(email)); }catch(e){} }
 
-  /* ---------- telas ---------- */
-  function showMsg(text, tipo){
-    const el = document.getElementById("msg");
-    el.className = "msg" + (text ? " " + (tipo||"err") : "");
-    el.textContent = text;
-  }
-  let SIGNUP_ROLE = "student";
-  function pickRole(r){
-    SIGNUP_ROLE = r;
-    const al = document.getElementById("roleAluno"), pe = document.getElementById("rolePersonal");
-    if(al) al.classList.toggle("sel", r === "student");
-    if(pe) pe.classList.toggle("sel", r === "professional");
-    const h = document.getElementById("roleHint");
-    if(h) h.textContent = r === "professional"
-      ? "Como personal você conhece a ferramenta inteira de graça. Para conectar seus alunos, é só assinar um plano."
-      : "Como aluno você entra no plano gratuito e pode se vincular ao seu personal.";
-  }
-  function showView(v){
-    document.getElementById("viewLogin").style.display  = v==="login"  ? "block" : "none";
-    document.getElementById("viewFirst").style.display  = v==="first"  ? "block" : "none";
-    document.getElementById("viewForgot").style.display = v==="forgot" ? "block" : "none";
-    const su = document.getElementById("viewSignup"); if(su) su.style.display = v==="signup" ? "block" : "none";
-    const cf = document.getElementById("viewConfirma"); if(cf) cf.style.display = v==="confirma" ? "block" : "none";
-    showMsg("");
-  }
-  function irParaEsqueci(){
-    document.getElementById("emailForgot").value = document.getElementById("email").value.trim();
-    showView("forgot");
-  }
+/* ---------- telas ---------- */
+function showMsg(text, tipo){
+const el = document.getElementById("msg");
+el.className = "msg" + (text ? " " + (tipo||"err") : "");
+el.textContent = text;
+}
+let SIGNUP_ROLE = "student";
+function pickRole(r){
+SIGNUP_ROLE = r;
+const al = document.getElementById("roleAluno"), pe = document.getElementById("rolePersonal");
+if(al) al.classList.toggle("sel", r === "student");
+if(pe) pe.classList.toggle("sel", r === "professional");
+const h = document.getElementById("roleHint");
+if(h) h.textContent = r === "professional"
+? "Como personal você conhece a ferramenta inteira de graça. Para conectar seus alunos, é só assinar um plano."
+: "Como aluno você entra no plano gratuito e pode se vincular ao seu personal.";
+}
+function showView(v){
+document.getElementById("viewLogin").style.display = v==="login" ? "block" : "none";
+document.getElementById("viewFirst").style.display = v==="first" ? "block" : "none";
+document.getElementById("viewForgot").style.display = v==="forgot" ? "block" : "none";
+const su = document.getElementById("viewSignup"); if(su) su.style.display = v==="signup" ? "block" : "none";
+const cf = document.getElementById("viewConfirma"); if(cf) cf.style.display = v==="confirma" ? "block" : "none";
+showMsg("");
+}
+function irParaEsqueci(){
+document.getElementById("emailForgot").value = document.getElementById("email").value.trim();
+showView("forgot");
+}
 
-  function soDigitos(v){ return (v||"").replace(/\D/g,""); }
-  function cpfValido(cpf){
-    cpf = soDigitos(cpf);
-    if(cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-    let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i);
-    let d1=(s*10)%11; if(d1===10) d1=0; if(d1!==parseInt(cpf[9])) return false;
-    s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i);
-    let d2=(s*10)%11; if(d2===10) d2=0; return d2===parseInt(cpf[10]);
-  }
-  function mascaraCpf(el){
-    let v = soDigitos(el.value).slice(0,11);
-    v = v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");
-    el.value = v;
-  }
+function soDigitos(v){ return (v||"").replace(/\D/g,""); }
+function cpfValido(cpf){
+cpf = soDigitos(cpf);
+if(cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i);
+let d1=(s*10)%11; if(d1===10) d1=0; if(d1!==parseInt(cpf[9])) return false;
+s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i);
+let d2=(s*10)%11; if(d2===10) d2=0; return d2===parseInt(cpf[10]);
+}
+function mascaraCpf(el){
+let v = soDigitos(el.value).slice(0,11);
+v = v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");
+el.value = v;
+}
 
-  async function criarConta(){
-    const nome  = document.getElementById("suNome").value.trim();
-    const cpf   = soDigitos(document.getElementById("suCpf").value);
-    const email = document.getElementById("suEmail").value.trim();
-    const pass  = document.getElementById("suPass").value;
-    const btn   = document.getElementById("suBtn");
-    if(!nome){ showMsg("Digite seu nome."); return; }
-    if(!cpfValido(cpf)){ showMsg("Digite um CPF válido."); return; }
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
-    if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
-    if(!(await piikConfirm({
-      titulo: "Confirme seu CPF",
-      html: `Seu CPF é <b style="color:#7fff00">${document.getElementById("suCpf").value}</b>?<br><br>Depois do cadastro, a alteração do CPF é feita <b>somente pelo suporte</b>. Confira com atenção antes de continuar.`,
-      ok: "Confirmar e criar conta",
-      cancel: "Corrigir"
-    }))) return;
-    btn.disabled = true; showMsg("Criando conta…", "warn");
-    try{
-      const { data, error } = await sb.auth.signUp({
-        email, password: pass,
-        // ao confirmar o e-mail, cai no app já na tela de planos
-        options: { data: { full_name: nome, role: SIGNUP_ROLE, cpf }, emailRedirectTo: APP_URL + "?planos=1" }
-      });
-      if(error) throw error;
-      btn.disabled = false;
-      if(data.session){
-        // sem confirmação de e-mail (já logado) → vai direto aos planos
-        location.href = "app.html?planos=1";
-      }else{
-        // com confirmação → tela "confirme seu e-mail"
-        const ce = document.getElementById("confEmail"); if(ce) ce.textContent = email;
-        showView("confirma");
-      }
-    }catch(e){
-      const m = e.message || "";
-      showMsg(/already registered|exists/i.test(m) ? "Esse e-mail já tem conta. Use Entrar." : traduz(m));
-      btn.disabled = false;
-    }
-  }
-  function bloquear(email, aviso){
-    document.getElementById("emailForgot").value = email;
-    document.getElementById("forgotSub").textContent =
-      "Por segurança, o acesso com senha foi bloqueado após 5 tentativas. Envie um link para criar uma senha nova.";
-    showView("forgot");
-    showMsg(aviso, "warn");
-  }
+async function criarConta(){
+const nome = document.getElementById("suNome").value.trim();
+const cpf = soDigitos(document.getElementById("suCpf").value);
+const email = document.getElementById("suEmail").value.trim();
+const pass = document.getElementById("suPass").value;
+const btn = document.getElementById("suBtn");
+if(!nome){ showMsg("Digite seu nome."); return; }
+if(!cpfValido(cpf)){ showMsg("Digite um CPF válido."); return; }
+if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
+if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
+if(!(await piikConfirm({
+titulo: "Confirme seu CPF",
+html: `Seu CPF é <b style="color:#7fff00">${document.getElementById("suCpf").value}</b>?<br><br>Depois do cadastro, a alteração do CPF é feita <b>somente pelo suporte</b>. Confira com atenção antes de continuar.`,
+ok: "Confirmar e criar conta",
+cancel: "Corrigir"
+}))) return;
+btn.disabled = true; showMsg("Criando conta…", "warn");
+try{
+const { data, error } = await sb.auth.signUp({
+email, password: pass,
+// ao confirmar o e-mail, cai no app já na tela de planos
+options: { data: { full_name: nome, role: SIGNUP_ROLE, cpf }, emailRedirectTo: APP_URL + "?planos=1" }
+});
+btn.disabled = false;
+// já logado (sem exigência de confirmação) → vai direto aos planos
+if(!error && data && data.session){
+location.href = "app.html?planos=1";
+return;
+}
+// erro real (que NÃO seja "e-mail já em uso") → mostra o erro
+if(error && !/already registered|already been registered|exists|registered/i.test(error.message||"")){
+throw error;
+}
+// Demais casos — aguardando confirmação OU e-mail já em uso →
+// mensagem NEUTRA e padrão (não revela se o e-mail já tem conta)
+const ce = document.getElementById("confEmail"); if(ce) ce.textContent = email;
+showView("confirma");
+}catch(e){
+showMsg(traduz(e.message));
+btn.disabled = false;
+}
+}
+function bloquear(email, aviso){
+document.getElementById("emailForgot").value = email;
+document.getElementById("forgotSub").textContent =
+"Por segurança, o acesso com senha foi bloqueado após 5 tentativas. Envie um link para criar uma senha nova.";
+showView("forgot");
+showMsg(aviso, "warn");
+}
 
-  /* ---------- entrar ---------- */
-  async function entrar(){
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    const btn = document.getElementById("loginBtn");
-    if(!email || !password){ showMsg("Preencha e-mail e senha."); return; }
+/* ---------- entrar ---------- */
+async function entrar(){
+const email = document.getElementById("email").value.trim();
+const password = document.getElementById("password").value;
+const btn = document.getElementById("loginBtn");
+if(!email || !password){ showMsg("Preencha e-mail e senha."); return; }
 
-    if(lerTentativas(email) >= MAX_TENTATIVAS){
-      bloquear(email, "Você atingiu o limite de 5 tentativas. Redefina sua senha para continuar.");
-      return;
-    }
+if(lerTentativas(email) >= MAX_TENTATIVAS){
+bloquear(email, "Você atingiu o limite de 5 tentativas. Redefina sua senha para continuar.");
+return;
+}
 
-    btn.disabled = true; showMsg("");
-    try{
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if(error) throw error;
-      zerarTentativas(email);
-      location.href = "app.html";
-    } catch(e){
-      const senhaErrada = /Invalid login/i.test(e.message || "");
-      if(senhaErrada){
-        const usadas = somarTentativa(email);
-        const restam = MAX_TENTATIVAS - usadas;
-        if(restam <= 0){
-          bloquear(email, "Senha incorreta 5 vezes. Enviamos você para a redefinição de senha.");
-        } else {
-          document.getElementById("password").value = "";
-          showMsg(`E-mail ou senha incorretos. ${restam} tentativa${restam>1?"s":""} restante${restam>1?"s":""}.`);
-        }
-      } else {
-        showMsg(traduz(e.message));
-      }
-    } finally { btn.disabled = false; }
-  }
+btn.disabled = true; showMsg("");
+try{
+const { error } = await sb.auth.signInWithPassword({ email, password });
+if(error) throw error;
+zerarTentativas(email);
+location.href = "app.html";
+} catch(e){
+const senhaErrada = /Invalid login/i.test(e.message || "");
+if(senhaErrada){
+const usadas = somarTentativa(email);
+const restam = MAX_TENTATIVAS - usadas;
+if(restam <= 0){
+bloquear(email, "Senha incorreta 5 vezes. Enviamos você para a redefinição de senha.");
+} else {
+document.getElementById("password").value = "";
+showMsg(`E-mail ou senha incorretos. ${restam} tentativa${restam>1?"s":""} restante${restam>1?"s":""}.`);
+}
+} else {
+showMsg(traduz(e.message));
+}
+} finally { btn.disabled = false; }
+}
 
-  /* ---------- primeiro acesso ---------- */
-  async function primeiroAcesso(){
-    const email = document.getElementById("emailFirst").value.trim();
-    const btn = document.getElementById("firstBtn");
-    if(!email){ showMsg("Digite seu e-mail."); return; }
-    btn.disabled = true; showMsg("Verificando…", "warn");
-    try{
-      const { data: invited, error: e1 } = await sb.rpc("is_invited", { p_email: email });
-      if(e1) throw e1;
-      if(!invited){
-        showMsg("Este e-mail ainda não foi liberado. Peça para seu profissional cadastrá-lo no painel dele.");
-        btn.disabled = false; return;
-      }
-      const { error: e2 } = await sb.auth.signInWithOtp({
-        email, options: { shouldCreateUser: true, emailRedirectTo: APP_URL }
-      });
-      if(e2) throw e2;
-      showMsg("Pronto! Enviamos um link de acesso para " + email + ". Abra seu e-mail (confira o spam) e clique para entrar.", "ok");
-    } catch(e){ showMsg(traduz(e.message)); btn.disabled = false; }
-  }
+/* ---------- primeiro acesso ---------- */
+async function primeiroAcesso(){
+const email = document.getElementById("emailFirst").value.trim();
+const btn = document.getElementById("firstBtn");
+if(!email){ showMsg("Digite seu e-mail."); return; }
+btn.disabled = true; showMsg("Verificando…", "warn");
+try{
+const { data: invited, error: e1 } = await sb.rpc("is_invited", { p_email: email });
+if(e1) throw e1;
+if(!invited){
+showMsg("Este e-mail ainda não foi liberado. Peça para seu profissional cadastrá-lo no painel dele.");
+btn.disabled = false; return;
+}
+const { error: e2 } = await sb.auth.signInWithOtp({
+email, options: { shouldCreateUser: true, emailRedirectTo: APP_URL }
+});
+if(e2) throw e2;
+showMsg("Pronto! Enviamos um link de acesso para " + email + ". Abra seu e-mail (confira o spam) e clique para entrar.", "ok");
+} catch(e){ showMsg(traduz(e.message)); btn.disabled = false; }
+}
 
-  /* ---------- redefinir senha ---------- */
-  async function enviarReset(){
-    const email = document.getElementById("emailForgot").value.trim();
-    const btn = document.getElementById("forgotBtn");
-    if(!email){ showMsg("Digite seu e-mail."); return; }
-    btn.disabled = true; showMsg("Enviando…", "warn");
-    try{
-      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: RESET_URL });
-      if(error) throw error;
-      zerarTentativas(email);
-      showMsg("Se este e-mail tiver uma conta na Piik, você receberá um link para redefinir a senha. Confira sua caixa de entrada (e o spam).", "ok");
-    } catch(e){ showMsg(traduz(e.message)); btn.disabled = false; }
-  }
+/* ---------- redefinir senha ---------- */
+async function enviarReset(){
+const email = document.getElementById("emailForgot").value.trim();
+const btn = document.getElementById("forgotBtn");
+if(!email){ showMsg("Digite seu e-mail."); return; }
+btn.disabled = true; showMsg("Enviando…", "warn");
+try{
+const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: RESET_URL });
+if(error) throw error;
+zerarTentativas(email);
+showMsg("Se este e-mail tiver uma conta na Piik, você receberá um link para redefinir a senha. Confira sua caixa de entrada (e o spam).", "ok");
+} catch(e){ showMsg(traduz(e.message)); btn.disabled = false; }
+}
 
-  function traduz(m){
-    if(/Invalid login/i.test(m)) return "E-mail ou senha incorretos.";
-    if(/Email not confirmed/i.test(m)) return "Confirme seu e-mail antes de entrar.";
-    if(/rate limit|too many|after/i.test(m)) return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
-    return m || "Ocorreu um erro. Tente de novo.";
-  }
+function traduz(m){
+if(/Invalid login/i.test(m)) return "E-mail ou senha incorretos.";
+if(/Email not confirmed/i.test(m)) return "Confirme seu e-mail antes de entrar.";
+if(/rate limit|too many|after/i.test(m)) return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
+return m || "Ocorreu um erro. Tente de novo.";
+}
 
-  /* ---------- modal de confirmação estilizado ---------- */
-  function piikConfirm({titulo, html, ok, cancel}){
-    return new Promise((resolve)=>{
-      const ov = document.createElement("div");
-      ov.className = "piik-ov";
-      ov.innerHTML = `
-        <div class="piik-modal">
-          <h3>${titulo||"Confirmar"}</h3>
-          <div class="piik-modal-txt">${html||""}</div>
-          <button class="btn" id="pkOk">${ok||"Confirmar"}</button>
-          <button class="btn alt" id="pkNo">${cancel||"Cancelar"}</button>
-        </div>`;
-      document.body.appendChild(ov);
-      const done = (v)=>{ ov.remove(); resolve(v); };
-      ov.querySelector("#pkOk").onclick = ()=>done(true);
-      ov.querySelector("#pkNo").onclick = ()=>done(false);
-      ov.addEventListener("click", (e)=>{ if(e.target===ov) done(false); });
-    });
-  }
-  document.getElementById("password").addEventListener("keydown", e=>{ if(e.key==="Enter") entrar(); });
+/* ---------- modal de confirmação estilizado ---------- */
+function piikConfirm({titulo, html, ok, cancel}){
+return new Promise((resolve)=>{
+const ov = document.createElement("div");
+ov.className = "piik-ov";
+ov.innerHTML = `
+<div class="piik-modal">
+<h3>${titulo||"Confirmar"}</h3>
+<div class="piik-modal-txt">${html||""}</div>
+<button class="btn" id="pkOk">${ok||"Confirmar"}</button>
+<button class="btn alt" id="pkNo">${cancel||"Cancelar"}</button>
+</div>`;
+document.body.appendChild(ov);
+const done = (v)=>{ ov.remove(); resolve(v); };
+ov.querySelector("#pkOk").onclick = ()=>done(true);
+ov.querySelector("#pkNo").onclick = ()=>done(false);
+ov.addEventListener("click", (e)=>{ if(e.target===ov) done(false); });
+});
+}
+document.getElementById("password").addEventListener("keydown", e=>{ if(e.key==="Enter") entrar(); });
 </script>
 </body>
 </html>
