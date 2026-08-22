@@ -2812,9 +2812,17 @@
   }
 
   async function cancelarAssinatura(){
+    // dentro de 7 dias do início? (direito de arrependimento — art. 49 do CDC)
+    const ativaC = Array.isArray(ASSIN_ROWS) ? ASSIN_ROWS.find(r=>r.status==="authorized") : null;
+    let diasC = null;
+    if(ativaC && ativaC.created_at){ diasC = (Date.now() - new Date(ativaC.created_at).getTime())/86400000; }
+    const dentro7 = (diasC !== null && diasC <= 7);
+    const notaEstorno = dentro7
+      ? "<br><br>💚 Como você assinou há <b>menos de 7 dias</b>, ao cancelar o valor pago é <b>estornado automaticamente</b> (direito de arrependimento — art. 49 do CDC)."
+      : "<br><br><span style='opacity:.8'>Obs.: o estorno automático vale apenas quando a assinatura tem menos de 7 dias.</span>";
     const ok = await piikConfirm({
       titulo: "Cancelar assinatura?",
-      msg: "Sua assinatura será encerrada e <b>não haverá novas cobranças</b>. Você continua com o plano até o fim do período que já pagou; depois disso a conta volta para o <b>Piik Light</b> (gratuito).<br><br>Deseja continuar?",
+      msg: "Sua assinatura será encerrada e <b>não haverá novas cobranças</b>. Você continua com o plano até o fim do período que já pagou; depois disso a conta volta para o <b>Piik Light</b> (gratuito)." + notaEstorno + "<br><br>Deseja continuar?",
       ok: "Sim, cancelar", cancel: "Voltar"
     });
     if(!ok) return;
