@@ -3085,6 +3085,16 @@
         <h3>🏋️ Treino — <span id="fichaAluno"></span></h3>
         <p>Monte o treino do aluno em dias (A, B, C…). Ele vê tudo no app, na aba "Meu treino".</p>
         <input type="hidden" id="fichaStudentId">
+        <div class="nota-aluno">
+          <button class="nota-toggle" onclick="toggleNotaAluno()">📝 Minhas anotações sobre o aluno <span class="meta-sm" style="opacity:.75">(só você vê)</span> <span id="notaChev">▾</span></button>
+          <div id="notaBox" class="nota-box" style="display:none">
+            <textarea id="notaAlunoTxt" rows="4" placeholder="Anotações particulares sobre o aluno: lesões, restrições, preferências, objetivos, observações da avaliação… Isso fica guardado só para você — o aluno não vê."></textarea>
+            <div class="nota-acoes">
+              <button class="btn small" onclick="salvarNotaAluno()">Salvar anotação</button>
+              <span class="msg" id="notaMsg"></span>
+            </div>
+          </div>
+        </div>
         <div id="fichaHeader" class="ficha-head"></div>
         <div id="fichaDias" style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0"></div>
         <div id="fichaConteudo"></div>
@@ -4768,6 +4778,7 @@
     const s = STUDENTS.find(x=>x.id===studentId);
     document.getElementById("fichaStudentId").value = studentId;
     document.getElementById("fichaAluno").textContent = nomeAluno(s);
+    carregarNotaAluno(studentId);
     document.getElementById("fichaDias").innerHTML = "";
     document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Carregando…</div>`;
     const card = document.getElementById("fichaCard");
@@ -5108,6 +5119,10 @@
             <button class="btn small ghost" onclick="concluirDia()">✓ Concluir ${esc(nomeDia)}</button>
             <button class="btn small ghost" onclick="removerDia()">Remover dia</button>
           </div>
+          ${lista.length>=2 ? `<div class="fx-replicar">
+            <button class="btn small ghost" onclick="replicarSeriesDescanso()" title="Copia séries e descanso do 1º exercício para todos deste dia">⤵ Replicar séries/descanso</button>
+            <button class="btn small ghost" onclick="replicarObs()" title="Copia a observação do 1º exercício para todos deste dia">⤵ Replicar observação</button>
+          </div>` : ""}
           ${lista.length?`<div class="tr-head">${esc(nomeDia)} · ${lista.length} exercício${lista.length===1?"":"s"}</div>`:""}
           <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício ainda. Escolha na biblioteca ao lado →</div>`}</div>
         </div>
@@ -5426,6 +5441,98 @@
     await sb.from("ficha_exercicios").delete().eq("id", id);
     await renderConteudoDia();
     window.scrollTo(0, y);
+  }
+
+  // Replicar SÉRIES e DESCANSO do 1º exercício para todos os outros do dia.
+  // (bi-sets mantêm descanso 0 entre eles, pra não quebrar o encadeamento)
+  async function replicarSeriesDescanso(){
+    if(!FICHA_DIA) return;
+    const { data: exs } = await sb.from("ficha_exercicios")
+      .select("id,reps,descanso_seg,biset").eq("dia_id", FICHA_DIA)
+      .order("ordem",{ascending:true,nullsFirst:false}).order("id",{ascending:true});
+    if(!exs || exs.length < 2){ piikAlert("Adicione ao menos 2 exercícios."); return; }
+    const base = exs[0];
+    const ok = await piikConfirm({
+      titulo:"Replicar séries e descanso?",
+      msg:`Vou copiar as <b>séries</b> (${esc(base.reps||"—")}) e o <b>descanso</b> (${base.descanso_seg!=null?base.descanso_seg+"s":"—"}) do 1º exercício para <b>todos os outros</b> deste dia.<br><br>Continuar?`,
+      ok:"Replicar", cancel:"Cancelar"
+    });
+    if(!ok) return;
+    const y = window.scrollY;
+    const updates = exs.slice(1).map(e=>{
+      const patch = { reps: base.reps };
+      patch.descanso_seg = e.biset ? 0 : base.descanso_seg;  // preserva bi-sets
+      return sb.from("ficha_exercicios").update(patch).eq("id", e.id);
+    });
+    await Promise.all(updates);
+    await renderConteudoDia();
+    window.scrollTo(0, y);
+  }
+
+  // Replicar a OBSERVAÇÃO do 1º exercício para todos os outros do dia.
+  async function replicarObs(){
+    if(!FICHA_DIA) return;
+    const { data: exs } = await sb.from("ficha_exercicios")
+      .select("id,obs").eq("dia_id", FICHA_DIA)
+      .order("ordem",{ascending:true,nullsFirst:false}).order("id",{ascending:true});
+    if(!exs || exs.length < 2){ piikAlert("Adicione ao menos 2 exercícios."); return; }
+    const base = exs[0];
+    const previa = (base.obs||"").trim();
+    const ok = await piikConfirm({
+      titulo:"Replicar observação?",
+      msg: previa
+        ? `Vou copiar esta observação do 1º exercício para <b>todos os outros</b> deste dia:<br><br>“${esc(previa)}”<br><br>Continuar?`
+        : `O 1º exercício está <b>sem observação</b>. Isso vai <b>limpar</b> a observação de todos os outros deste dia. Continuar?`,
+      ok:"Replicar", cancel:"Cancelar"
+    });
+    if(!ok) return;
+    const y = window.scrollY;
+    const val = previa || null;
+    const updates = exs.slice(1).map(e=> sb.from("ficha_exercicios").update({ obs: val }).eq("id", e.id));
+    await Promise.all(updates);
+    await renderConteudoDia();
+    window.scrollTo(0, y);
+  }
+
+  // ===== Anotação PRIVADA do personal sobre o aluno (o aluno NÃO vê) =====
+  async function carregarNotaAluno(studentId){
+    const t = document.getElementById("notaAlunoTxt");
+    const box = document.getElementById("notaBox"), chev = document.getElementById("notaChev");
+    const msg = document.getElementById("notaMsg");
+    if(t) t.value = "";
+    if(box) box.style.display = "none";
+    if(chev) chev.textContent = "▾";
+    if(msg){ msg.className="msg"; msg.textContent=""; }
+    if(!studentId || !t) return;
+    try{
+      const { data } = await sb.from("aluno_notas").select("nota")
+        .eq("professional_id", ME.id).eq("student_id", studentId).maybeSingle();
+      if(data && data.nota){ t.value = data.nota; }
+    }catch(e){}
+  }
+  function toggleNotaAluno(){
+    const box = document.getElementById("notaBox"), chev = document.getElementById("notaChev");
+    if(!box) return;
+    const abrir = box.style.display === "none";
+    box.style.display = abrir ? "block" : "none";
+    if(chev) chev.textContent = abrir ? "▴" : "▾";
+    if(abrir){ const t=document.getElementById("notaAlunoTxt"); if(t) t.focus(); }
+  }
+  async function salvarNotaAluno(){
+    const sid = (document.getElementById("fichaStudentId")||{}).value;
+    const t = document.getElementById("notaAlunoTxt");
+    const msg = document.getElementById("notaMsg");
+    if(!sid || !t) return;
+    const nota = t.value.trim();
+    if(msg){ msg.className="msg"; msg.textContent="Salvando…"; }
+    const { error } = await sb.from("aluno_notas").upsert(
+      { professional_id: ME.id, student_id: sid, nota: nota || null, updated_at: new Date().toISOString() },
+      { onConflict: "professional_id,student_id" }
+    );
+    if(msg){
+      if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; }
+      else { msg.className="msg ok"; msg.textContent="✅ Salvo — só você vê."; }
+    }
   }
 
   /* ---------- PROFISSIONAL: METAS ---------- */
@@ -5796,6 +5903,13 @@ video.ex-thumb{object-fit:cover}
   .lib-pane.aberta{display:block}
   .lib-form-grid{grid-template-columns:1fr}
 }
+.fx-replicar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.nota-aluno{margin:6px 0 14px;border:1px solid var(--line,#2a2f37);border-radius:12px;overflow:hidden}
+.nota-toggle{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--card2,#171c22);border:none;color:var(--txt,#e8eaee);font:inherit;font-weight:700;font-size:14px;padding:11px 14px;cursor:pointer}
+.nota-toggle #notaChev{margin-left:auto;opacity:.7}
+.nota-box{padding:12px 14px;background:var(--card,#12161b)}
+.nota-box textarea{width:100%;background:var(--elev,#0e1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:10px;font:inherit;font-size:14px;resize:vertical}
+.nota-acoes{display:flex;align-items:center;gap:10px;margin-top:8px}
 </style>
 </body>
 </html>
