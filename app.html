@@ -2695,7 +2695,8 @@
       <div class="aa-plano">${esc(nome)}</div>
       ${gratis
         ? `<div class="aa-sub">Plano gratuito — abra <b>Planos</b> ao lado para fazer upgrade. 👉</div>`
-        : `<div class="aa-info">${fmtBRL(ativa.valor)}<span class="aa-mes">/mês</span></div>`}
+        : `<div class="aa-info">${fmtBRL(ativa.valor)}<span class="aa-mes">/mês</span></div>
+           <button class="btn small ghost" style="margin-top:16px" onclick="cancelarAssinatura()">Cancelar assinatura</button>`}
     </div>`;
   }
 
@@ -2808,6 +2809,33 @@
       // redireciona para o checkout do Mercado Pago
       window.location.href = data.init_point;
     }catch(e){ piikAlert("Erro ao assinar: " + e.message); }
+  }
+
+  async function cancelarAssinatura(){
+    const ok = await piikConfirm({
+      titulo: "Cancelar assinatura?",
+      msg: "Sua assinatura será encerrada e <b>não haverá novas cobranças</b>. Você continua com o plano até o fim do período que já pagou; depois disso a conta volta para o <b>Piik Light</b> (gratuito).<br><br>Deseja continuar?",
+      ok: "Sim, cancelar", cancel: "Voltar"
+    });
+    if(!ok) return;
+    try{
+      const { data:{ session } } = await sb.auth.getSession();
+      if(!session){ piikAlert("Faça login para cancelar."); return; }
+      const resp = await fetch(SUPABASE_URL + "/functions/v1/cancelar-assinatura", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + session.access_token }
+      });
+      const data = await resp.json().catch(()=>({}));
+      if(!resp.ok || !data.ok){
+        piikAlert("Não consegui cancelar: " + (data.error || ("erro "+resp.status)));
+        return;
+      }
+      if(Array.isArray(ASSIN_ROWS)) ASSIN_ROWS.forEach(r=>{ if(r.status==="authorized") r.status="cancelled"; });
+      if(ME) ME.assinatura_status = "cancelado";
+      const extra = data.estornado ? "<br><br>Como você assinou há menos de 7 dias, o valor pago foi <b>estornado</b> automaticamente." : "";
+      await piikAlert({ titulo:"Assinatura cancelada", msg:"Pronto! Não haverá novas cobranças. Seu plano segue ativo até o fim do período já pago." + extra });
+      if(typeof carregarMinhaAssinatura==="function") carregarMinhaAssinatura(); else assinSec("atual");
+    }catch(e){ piikAlert("Erro ao cancelar: " + e.message); }
   }
 
   // Número de suporte (formato internacional, só dígitos). Ex.: 55 + DDD + número.
