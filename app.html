@@ -2686,8 +2686,25 @@
         <button class="btn small ghost" style="margin-top:14px" onclick="sairDoProfessor()">Sair deste professor</button>
       </div>`;
     }
-    // toda conta é Piik Light por padrão (gratuito); paga mostra o plano assinado
+    const statusPerfil = (ME && ME.assinatura_status || "").toLowerCase();
     const ativa = ASSIN_ROWS.find(r=>r.status==="authorized");
+
+    // Cancelamento já solicitado: mostra AVISO e NÃO mostra o botão de cancelar.
+    if(statusPerfil === "cancelado"){
+      const planoC = (ativa && ativa.plano) || (ME && ME.plano) || "light";
+      const nomeC = PLANO_LABEL[planoC] || planoC;
+      const ateRaw = ME && (ME.assinatura_ate || ME.assinatura_vencimento);
+      const ate = ateRaw ? fmtDataCurta(ateRaw) : null;
+      return `<div class="assin-atual">
+        <span class="aa-tag">Sua assinatura</span>
+        <div class="aa-plano">${esc(nomeC)}</div>
+        <div style="margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.4);font-size:13px;line-height:1.5">
+          ⏳ <b>Cancelamento solicitado.</b> Não haverá novas cobranças.${ate?` Seu plano segue ativo até <b>${ate}</b>, depois a conta volta para o Piik Light.`:` Seu plano segue ativo até o fim do período já pago.`}
+        </div>
+      </div>`;
+    }
+
+    // toda conta é Piik Light por padrão (gratuito); paga mostra o plano assinado
     const plano = ativa ? ativa.plano : "light";
     const nome = PLANO_LABEL[plano] || plano;
     const gratis = (plano === "light");
