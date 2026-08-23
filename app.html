@@ -2687,11 +2687,13 @@
       </div>`;
     }
     const statusPerfil = (ME && ME.assinatura_status || "").toLowerCase();
+    const planoPerfil = (ME && ME.plano || "").toLowerCase();
     const ativa = ASSIN_ROWS.find(r=>r.status==="authorized");
 
-    // Cancelamento já solicitado: mostra AVISO e NÃO mostra o botão de cancelar.
-    if(statusPerfil === "cancelado"){
-      const planoC = (ativa && ativa.plano) || (ME && ME.plano) || "light";
+    // Cancelamento solicitado E ainda no período já pago (plano não voltou pro Light):
+    // mostra AVISO, sem botão. Se foi estornado (plano='light'), cai no fluxo normal (Light).
+    if(statusPerfil === "cancelado" && planoPerfil && planoPerfil !== "light"){
+      const planoC = (ativa && ativa.plano) || planoPerfil || "light";
       const nomeC = PLANO_LABEL[planoC] || planoC;
       const ateRaw = ME && (ME.assinatura_ate || ME.assinatura_vencimento);
       const ateD = ateRaw ? new Date(ateRaw) : null;
@@ -2848,12 +2850,12 @@
     let diasC = null;
     if(ativaC && ativaC.created_at){ diasC = (Date.now() - new Date(ativaC.created_at).getTime())/86400000; }
     const dentro7 = (diasC !== null && diasC <= 7);
-    const notaEstorno = dentro7
-      ? "<br><br>💚 Como você assinou há <b>menos de 7 dias</b>, ao cancelar o valor pago é <b>estornado automaticamente</b> (direito de arrependimento — art. 49 do CDC)."
-      : "<br><br><span style='opacity:.8'>Obs.: o estorno automático vale apenas quando a assinatura tem menos de 7 dias.</span>";
+    const msgConfirm = dentro7
+      ? "Como você assinou há <b>menos de 7 dias</b>, ao cancelar o valor pago é <b>estornado</b> e seu plano é <b>encerrado agora</b> — a conta volta para o <b>Piik Light</b> (direito de arrependimento, art. 49 do CDC). O valor retorna ao seu cartão em alguns dias úteis.<br><br>Deseja continuar?"
+      : "Sua assinatura será encerrada e <b>não haverá novas cobranças</b>. Você continua com o plano <b>até o fim do período já pago</b>; depois a conta volta para o <b>Piik Light</b> (gratuito).<br><br>Deseja continuar?";
     const ok = await piikConfirm({
       titulo: "Cancelar assinatura?",
-      msg: "Sua assinatura será encerrada e <b>não haverá novas cobranças</b>. Você continua com o plano até o fim do período que já pagou; depois disso a conta volta para o <b>Piik Light</b> (gratuito)." + notaEstorno + "<br><br>Deseja continuar?",
+      msg: msgConfirm,
       ok: "Sim, cancelar", cancel: "Voltar"
     });
     if(!ok) return;
@@ -2871,8 +2873,12 @@
       }
       if(Array.isArray(ASSIN_ROWS)) ASSIN_ROWS.forEach(r=>{ if(r.status==="authorized") r.status="cancelled"; });
       if(ME) ME.assinatura_status = "cancelado";
-      const extra = data.estornado ? "<br><br>Como você assinou há menos de 7 dias, o valor pago foi <b>estornado</b> automaticamente." : "";
-      await piikAlert({ titulo:"Assinatura cancelada", msg:"Pronto! Não haverá novas cobranças. Seu plano segue ativo até o fim do período já pago." + extra });
+      if(data.estornado){
+        if(ME) ME.plano = "light";
+        await piikAlert({ titulo:"Assinatura cancelada e estornada", msg:"Pronto! Como você cancelou em <b>menos de 7 dias</b>, o valor foi <b>estornado</b> e seu plano foi <b>encerrado agora</b> — a conta voltou para o <b>Piik Light</b>.<br><br>O valor volta para o seu cartão em alguns dias úteis (prazo do banco/Mercado Pago)." });
+      } else {
+        await piikAlert({ titulo:"Assinatura cancelada", msg:"Pronto! Não haverá novas cobranças. Seu plano segue ativo até o fim do período já pago; depois a conta volta para o <b>Piik Light</b>." });
+      }
       if(typeof carregarMinhaAssinatura==="function") carregarMinhaAssinatura(); else assinSec("atual");
     }catch(e){ piikAlert("Erro ao cancelar: " + e.message); }
   }
