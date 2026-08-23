@@ -2694,7 +2694,9 @@
       const planoC = (ativa && ativa.plano) || (ME && ME.plano) || "light";
       const nomeC = PLANO_LABEL[planoC] || planoC;
       const ateRaw = ME && (ME.assinatura_ate || ME.assinatura_vencimento);
-      const ate = ateRaw ? fmtDataCurta(ateRaw) : null;
+      const ateD = ateRaw ? new Date(ateRaw) : null;
+      // só mostra a data se ela fizer sentido (estiver no futuro); senão, texto genérico
+      const ate = (ateD && ateD.getTime() > Date.now()) ? fmtDataCurta(ateRaw) : null;
       return `<div class="assin-atual">
         <span class="aa-tag">Sua assinatura</span>
         <div class="aa-plano">${esc(nomeC)}</div>
@@ -2736,9 +2738,12 @@
     const hist = visiveis.map(r=>{
       const nome = PLANO_LABEL[r.plano] || r.plano;
       const st = ASSIN_STATUS[r.status] || {txt:r.status, cls:"pe"};
+      // data que faz sentido pro status: ativa = quando começou; cancelada/pausada = quando mudou
+      const ehFim = (r.status === "cancelled" || r.status === "paused");
+      const dataRef = ehFim ? (r.updated_at || r.created_at) : r.created_at;
       return `<div class="assin-hist-row">
         <span class="ah-plano">${esc(nome)}</span>
-        <span class="ah-data">${fmtDataCurta(r.created_at)}</span>
+        <span class="ah-data">${fmtDataCurta(dataRef)}</span>
         <span class="ah-valor">${fmtBRL(r.valor)}</span>
         <span class="fin-tag ${st.cls}">${st.txt}</span>
       </div>`;
