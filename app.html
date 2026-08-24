@@ -446,6 +446,17 @@
   .modo-treino .hello,
   .modo-treino .role-chip{display:none !important}
   .modo-treino .shell{grid-template-columns:1fr}
+  /* modo foco de MONTAGEM (personal montando o treino): esconde menu lateral e usa a largura toda */
+  body.montar-foco .sidebar,
+  body.montar-foco .hello,
+  body.montar-foco .role-chip{display:none !important}
+  body.montar-foco .shell{grid-template-columns:1fr}
+  body.montar-foco .wrap{max-width:min(1600px,96vw)}
+  .montar-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:14px;
+    padding:10px 14px;margin-bottom:14px;position:sticky;top:8px;z-index:40}
+  .montar-topo b{font-size:15px}
+  .montar-topo .meta-sm{opacity:.7;font-weight:600}
   /* pílula "treino em andamento" (fora da tela de execução) */
   .treino-pill{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:70;
     display:flex;align-items:center;gap:16px;background:var(--pk-surf,#15171c);border:3px solid var(--pink,#7fff00);
@@ -4820,7 +4831,7 @@
     await garantirExercicios();
     await carregarFicha(studentId);
   }
-  function fecharTreino(){ fecharJanela("fichaCard"); FICHA=null; FICHA_DIA=null; }
+  function fecharTreino(){ document.body.classList.remove("montar-foco"); fecharJanela("fichaCard"); FICHA=null; FICHA_DIA=null; MODO_EDICAO=false; }
 
   // ---- Prazo (duração recomendada) do treino ----
   function opcoesMeses(sel){
@@ -5051,6 +5062,7 @@
   async function renderConteudoDia(){
     const box = document.getElementById("fichaConteudo");
     if(!box) return;
+    document.body.classList.remove("montar-foco");   // sai do modo foco por padrão; o modo edição religa abaixo
     if(!FICHA_DIA){
       box.innerHTML = `<div class="empty">Crie um dia de treino (A, B, C…) para começar a adicionar exercícios.</div>`;
       return;
@@ -5144,18 +5156,21 @@
       }
       gi += g.length;
     });
+    document.body.classList.add("montar-foco");   // esconde o menu lateral e usa a largura toda
     box.innerHTML = `
+      <div class="montar-topo">
+        <b>✏️ Montando: ${esc(nomeDia)}${lista.length?` <span class="meta-sm">· ${lista.length} exercício${lista.length===1?"":"s"}</span>`:""}</b>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn small ghost" onclick="removerDia()">Remover dia</button>
+          <button class="btn small" onclick="concluirDia()">✓ Concluir e voltar</button>
+        </div>
+      </div>
       <div class="montador">
         <div class="montador-esq">
-          <div class="fx-edit-top">
-            <button class="btn small ghost" onclick="concluirDia()">✓ Concluir ${esc(nomeDia)}</button>
-            <button class="btn small ghost" onclick="removerDia()">Remover dia</button>
-          </div>
           ${lista.length>=2 ? `<div class="fx-replicar">
             <button class="btn small ghost" onclick="replicarSeriesDescanso()" title="Copia séries e descanso do 1º exercício para todos deste dia">⤵ Replicar séries/descanso</button>
             <button class="btn small ghost" onclick="replicarObs()" title="Copia a observação do 1º exercício para todos deste dia">⤵ Replicar observação</button>
           </div>` : ""}
-          ${lista.length?`<div class="tr-head">${esc(nomeDia)} · ${lista.length} exercício${lista.length===1?"":"s"}</div>`:""}
           <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício ainda. Escolha na biblioteca ao lado →</div>`}</div>
         </div>
         <aside class="montador-dir">
@@ -5166,8 +5181,14 @@
     pintarLibPane();
   }
 
-  async function editarDia(){ MODO_EDICAO = true; const y=window.scrollY; await renderConteudoDia(); window.scrollTo(0,y); }
-  function concluirDia(){ MODO_EDICAO = false; renderConteudoDia(); }
+  async function editarDia(){
+    MODO_EDICAO = true;
+    await renderConteudoDia();
+    // como o menu lateral some e a largura muda, leva o topo da montagem para perto do início da tela
+    const t = document.querySelector(".montar-topo");
+    if(t){ const y = t.getBoundingClientRect().top + window.scrollY - 12; window.scrollTo(0, Math.max(0, y)); }
+  }
+  function concluirDia(){ MODO_EDICAO = false; document.body.classList.remove("montar-foco"); renderConteudoDia(); }
 
   // reordenar exercícios: reindexa a lista inteira (robusto a ordem duplicada/nula)
   async function moverEx(id, dir){
@@ -5932,7 +5953,7 @@
 /* ===== Montador em duas colunas + biblioteca embutida + player de vídeo ===== */
 .montador{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start;max-width:100%}
 .montador-esq{min-width:0;max-width:100%}
-.montador-dir{min-width:0;max-width:100%;position:sticky;top:10px}
+.montador-dir{min-width:0;max-width:100%;position:sticky;top:72px}
 .montador .fx-campos{max-width:100%}
 .montador .fx-campos label,.montador .fx-campos input{max-width:100%}
 .montador .fx-added,.montador .biset-box,.montador .biset-box-cards{max-width:100%;min-width:0}
