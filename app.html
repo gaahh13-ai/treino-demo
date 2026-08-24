@@ -5351,7 +5351,7 @@
           <span class="lib-item-nome">${esc(e.nome)}</span>
           <span class="lib-item-grp">${esc(e.grupo||"")}${e.equipamento?" · "+esc(e.equipamento):""}</span>
         </span>
-        <span class="lib-fav${fav?" on":""}" title="${fav?"Remover dos favoritos":"Favoritar"}" onclick="event.stopPropagation();toggleFavLib('${e.id}')">${fav?"★":"☆"}</span>
+        <span class="lib-fav${fav?" on":""}" title="${fav?"Remover dos favoritos":"Favoritar"}" onclick="event.stopPropagation();toggleFavLib('${e.id}')">★</span>
         <span class="lib-add">＋</span>
       </div>`;
     }).join("");
@@ -5939,7 +5939,8 @@
 .lib-toggle{display:none}
 .lib-pane{background:var(--card,#12161b);border:1px solid var(--line,#2a2f37);border-radius:14px;padding:12px}
 .lib-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-.lib-lista{max-height:62vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+/* altura fixa: trocar de categoria (Favoritos etc.) não muda a altura da página, então a tela não pula */
+.lib-lista{height:62vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
 .lib-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2,#171c22);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:7px 10px;cursor:pointer;color:inherit;font:inherit}
 .lib-item:hover{border-color:var(--accent,#7fff00)}
 .lib-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex:0 0 auto;background:var(--elev,#0e1216);display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -5948,7 +5949,8 @@
 .lib-item-nome{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-item-grp{font-size:12px;opacity:.7}
 .lib-add{font-size:18px;font-weight:800;color:var(--accent,#7fff00);flex:0 0 auto}
-.lib-fav{flex:0 0 auto;font-size:17px;line-height:1;color:#7c8698;cursor:pointer;padding:2px 4px;border-radius:6px}
+/* estrela sempre visível, mesmo com qualquer cor de personalização (contorno claro+escuro) */
+.lib-fav{flex:0 0 auto;font-size:18px;line-height:1;color:#9aa3b0;cursor:pointer;padding:2px 5px;border-radius:6px;text-shadow:0 0 2px rgba(0,0,0,.6),0 0 1px rgba(255,255,255,.5);transition:color .12s}
 .lib-fav:hover{color:#ffcf33}
 .lib-fav.on{color:#ffcf33}
 .lib-pane .fx-grupos{display:flex;flex-wrap:wrap;overflow-x:visible;gap:6px;padding-bottom:0}
