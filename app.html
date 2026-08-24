@@ -4799,6 +4799,7 @@
 
   /* ---------- PROFISSIONAL: MONTADOR DE TREINO ---------- */
   async function garantirExercicios(){
+    try{ await loadFavoritos(); }catch(e){}   // favoritos disponíveis também no montador
     if(EXERCICIOS.length) return;
     const { data } = await sb.from("exercicios").select("*").order("grupo").order("nome");
     EXERCICIOS = data || [];
@@ -5332,20 +5333,47 @@
   function libListaHTML(){
     const jaTem = window.FX_JATEM || new Set();
     let lista = (EXERCICIOS||[]).filter(e=>!jaTem.has(e.id));
-    if(FX_GRUPO) lista = lista.filter(e=>e.grupo===FX_GRUPO);
+    if(FX_GRUPO === "__fav__"){ lista = lista.filter(e=>FAVORITOS.has(e.id)); }
+    else if(FX_GRUPO){ lista = lista.filter(e=>e.grupo===FX_GRUPO); }
     const q = FX_LIB_Q.toLowerCase().trim();
     if(q) lista = lista.filter(e=>(e.nome||"").toLowerCase().includes(q));
     lista = [...lista].sort((a,b)=>(a.nome||"").localeCompare(b.nome||"","pt",{sensitivity:"base"}));
-    if(!lista.length) return `<div class="empty" style="padding:16px">Nenhum exercício disponível${FX_GRUPO?" em "+esc(FX_GRUPO):""}. Crie um novo ali em cima. 👆</div>`;
-    return lista.map(e=>`
-      <button class="lib-item" onclick="addExDaLib('${e.id}')">
+    if(!lista.length){
+      if(FX_GRUPO === "__fav__") return `<div class="empty" style="padding:16px">Você ainda não favoritou nenhum exercício. Toque na ⭐ de um exercício para adicioná-lo aqui.</div>`;
+      return `<div class="empty" style="padding:16px">Nenhum exercício disponível${FX_GRUPO?" em "+esc(FX_GRUPO):""}. Crie um novo ali em cima. 👆</div>`;
+    }
+    return lista.map(e=>{
+      const fav = FAVORITOS.has(e.id);
+      return `
+      <div class="lib-item" onclick="addExDaLib('${e.id}')">
         ${midiaThumbHTML(e.media_url,"lib-thumb")}
         <span class="lib-item-txt">
           <span class="lib-item-nome">${esc(e.nome)}</span>
           <span class="lib-item-grp">${esc(e.grupo||"")}${e.equipamento?" · "+esc(e.equipamento):""}</span>
         </span>
+        <span class="lib-fav${fav?" on":""}" title="${fav?"Remover dos favoritos":"Favoritar"}" onclick="event.stopPropagation();toggleFavLib('${e.id}')">${fav?"★":"☆"}</span>
         <span class="lib-add">＋</span>
-      </button>`).join("");
+      </div>`;
+    }).join("");
+  }
+  async function toggleFavLib(id){
+    const jaFav = FAVORITOS.has(id);
+    if(jaFav){ FAVORITOS.delete(id); } else { FAVORITOS.add(id); }
+    // repinta a lista na hora (não recarrega o painel inteiro p/ manter a busca/rolagem)
+    const l = document.getElementById("libLista"); if(l) l.innerHTML = libListaHTML();
+    try{
+      if(jaFav){
+        await sb.from("exercicio_favoritos").delete().eq("professional_id", ME.id).eq("exercicio_id", id);
+      } else {
+        const { error } = await sb.from("exercicio_favoritos").insert({ professional_id: ME.id, exercicio_id: id });
+        if(error) throw error;
+      }
+    }catch(e){
+      // desfaz em caso de erro
+      if(jaFav){ FAVORITOS.add(id); } else { FAVORITOS.delete(id); }
+      if(l) l.innerHTML = libListaHTML();
+      piikAlert("Não consegui atualizar o favorito agora. Tente novamente.");
+    }
   }
   function pintarLibPane(){
     const pane = document.getElementById("libPane"); if(!pane) return;
@@ -5353,8 +5381,10 @@
     const disp = (EXERCICIOS||[]).filter(e=>!jaTem.has(e.id));
     const gset = [...new Set(disp.map(e=>e.grupo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt",{sensitivity:"base"}));
     const grupos = gset.filter(g=>g!=="Outro").concat(gset.includes("Outro")?["Outro"]:[]);
-    const chips = [`<button class="chip-f ${FX_GRUPO===""?"sel":""}" onclick="setLibGrupo('')">Todos</button>`]
-      .concat(grupos.map(g=>`<button class="chip-f ${FX_GRUPO===g?"sel":""}" onclick="setLibGrupo('${esc(g)}')">${g==="Outro"?"Outros":esc(g)}</button>`)).join("");
+    const chips = [
+      `<button class="chip-f chip-fav ${FX_GRUPO==="__fav__"?"sel":""}" onclick="setLibGrupo('__fav__')">★ Favoritos</button>`,
+      `<button class="chip-f ${FX_GRUPO===""?"sel":""}" onclick="setLibGrupo('')">Todos</button>`
+    ].concat(grupos.map(g=>`<button class="chip-f ${FX_GRUPO===g?"sel":""}" onclick="setLibGrupo('${esc(g)}')">${g==="Outro"?"Outros":esc(g)}</button>`)).join("");
     pane.innerHTML = `
       <div class="lib-head"><b>📚 Biblioteca</b>
         <button class="btn small" onclick="toggleLibForm()">➕ Criar exercício</button></div>
@@ -5918,6 +5948,12 @@
 .lib-item-nome{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lib-item-grp{font-size:12px;opacity:.7}
 .lib-add{font-size:18px;font-weight:800;color:var(--accent,#7fff00);flex:0 0 auto}
+.lib-fav{flex:0 0 auto;font-size:17px;line-height:1;color:#7c8698;cursor:pointer;padding:2px 4px;border-radius:6px}
+.lib-fav:hover{color:#ffcf33}
+.lib-fav.on{color:#ffcf33}
+.lib-pane .fx-grupos{display:flex;flex-wrap:wrap;overflow-x:visible;gap:6px;padding-bottom:0}
+.chip-f.chip-fav{border-color:#5a4a12;color:#ffcf33}
+.chip-f.chip-fav.sel{background:#ffcf33;border-color:#ffcf33;color:#12161b}
 .lib-form{background:var(--card2,#171c22);border:1px solid var(--line,#2a2f37);border-radius:12px;padding:12px;margin-bottom:10px}
 .lib-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .lib-form-grid input,.lib-form-grid select{width:100%;background:var(--elev,#0e1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:9px;padding:8px 9px;font-size:13px}
