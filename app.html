@@ -318,9 +318,6 @@
   .foco-card{border:2px solid var(--pink);border-radius:20px;padding:22px;min-height:44vh;display:flex;flex-direction:column;
     justify-content:center;background:rgba(127,255,0,.04);box-shadow:0 10px 30px rgba(0,0,0,.3)}
   .foco-card.done{border-color:#bbeccb;background:#12160b}
-  .foco-midia{width:100%;aspect-ratio:16/9;max-height:34vh;margin:0 auto 16px;border-radius:14px;overflow:hidden;
-    background:#000;border:1px solid var(--line,#262a33)}
-  .foco-midia video,.foco-midia img{width:100%;height:100%;object-fit:contain;display:block;cursor:zoom-in}
   .foco-nome{font-size:26px;font-weight:800;line-height:1.15;text-align:center}
   .foco-presc{text-align:center;font-size:14px;color:var(--txt);margin-top:8px}
   .foco-check{width:100%;margin-top:18px;font-size:17px;padding:16px}
@@ -867,7 +864,6 @@
   let EXEC_DIA = null, EXEC_EXS = [], EXEC_DUR = null, RATE_NOTA = 0;
   let EXEC_FEITOS = new Set(), INATIV_INT = null;
   let MODO_FOCO = false, FOCO_IDX = 0;   // Modo Foco: um exercício por vez
-  let MIDIA_EX = {};                     // exercicio_id -> media_url (vem da tabela `exercicios`)
 
   // campos das avaliações
   const DOBRAS = [
@@ -960,8 +956,22 @@
           return;
         }
         btn.disabled = true; msg.className="msg"; msg.textContent="Salvando…";
+        // regra: cada CPF só pode ter uma conta de aluno
+        const voltarInput = ()=>{ btn.disabled=false; etapa="input"; inp.disabled=false; corr.style.display="none"; btn.textContent="Continuar"; };
+        try{
+          const { data: emUso } = await sb.rpc("cpf_em_uso", { p_cpf: raw, p_categoria: "aluno" });
+          if(emUso){ voltarInput(); msg.className="msg err";
+            msg.innerHTML = "Já existe uma conta de aluno com esse CPF. Se essa conta é sua, saia e entre com o e-mail dela — cada CPF pode ter só uma conta de aluno.";
+            return; }
+        }catch(_){}
         const { error } = await sb.from("profiles").update({ cpf: raw }).eq("id", ME.id);
-        if(error){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
+        if(error){
+          voltarInput(); msg.className="msg err";
+          msg.textContent = /cpf_categoria_uniq|duplicate|23505/i.test(error.message||"")
+            ? "Já existe uma conta de aluno com esse CPF. Entre com o e-mail dessa conta."
+            : ("Erro: "+error.message);
+          return;
+        }
         ME.cpf = raw; ov.remove(); resolve();
       };
     });
@@ -1682,7 +1692,6 @@
     // carrega os exercícios de todos os dias de uma vez
     const { data: exs } = await sb.from("ficha_exercicios").select("*").eq("ficha_id", ficha.id).order("ordem");
     ALUNO_EXS = exs || [];
-    await carregarMidiasEx(ALUNO_EXS);
     // último treino executado por dia (sessões finalizadas)
     ULTIMO_POR_DIA = {};
     const { data: sess } = await sb.from("sessoes").select("dia_id,data")
@@ -1740,27 +1749,6 @@
   }
 
   // ícone/emoji por grupo muscular (placeholder até termos imagens/GIFs reais)
-  /* media_url mora na tabela `exercicios`; ficha_exercicios guarda só o exercicio_id.
-     Por isso a busca separada — sem isso o app nunca acha o vídeo. */
-  async function carregarMidiasEx(lista){
-    const ids = [...new Set((lista||[]).map(x=>x.exercicio_id).filter(Boolean))];
-    const faltam = ids.filter(id => !(id in MIDIA_EX));
-    if(!faltam.length) return;
-    for(let i=0; i<faltam.length; i+=200){
-      const { data } = await sb.from("exercicios").select("id,media_url").in("id", faltam.slice(i,i+200));
-      (data||[]).forEach(e=>{ MIDIA_EX[e.id] = e.media_url || null; });
-    }
-    faltam.forEach(id=>{ if(!(id in MIDIA_EX)) MIDIA_EX[id] = null; });
-  }
-  function midiaDoEx(x){ return (x && (x.media_url || (x.exercicio_id ? MIDIA_EX[x.exercicio_id] : null))) || null; }
-  // aquece o cache do navegador com o vídeo do próximo exercício
-  const _preFeitos = new Set();
-  function preloadMidia(url){
-    if(!url || _preFeitos.has(url)) return;
-    _preFeitos.add(url);
-    fetch(url, {mode:"no-cors"}).catch(()=>{});
-  }
-
   function iconeExercicio(x){
     const t = ((x.grupo||"") + " " + (x.nome_cache||"")).toLowerCase();
     if(/perna|quadr|leg|agach?|afundo|glúte|gluteo|panturr|coxa/.test(t)) return "🦵";
@@ -1817,8 +1805,7 @@
     box.innerHTML = titulo + btnIniciar + agruparBiset(lista).map(g=>{
       const inner = g.map((x,idx)=>{
         const esq = esquemaPresc(x);
-        const _mu = midiaDoEx(x);
-        const img = _mu ? midiaThumbHTML(_mu, "") : iconeExercicio(x);
+        const img = x.media_url ? midiaThumbHTML(x.media_url, "") : iconeExercicio(x);
         const ultimo = idx === g.length-1;
         return `<div class="tr-ex">
           <div class="tr-ex-row">
@@ -1891,7 +1878,6 @@
         (coms||[]).forEach(c=>{ if(c.texto){ (COMENTARIOS[c.ficha_exercicio_id]=COMENTARIOS[c.ficha_exercicio_id]||[]).push({id:c.id, texto:c.texto, created_at:c.created_at}); } });
       }catch(e){}
     }
-    await carregarMidiasEx(exs);   // garante os vídeos mesmo se a execução começar por outro caminho
     EXEC_DIA = dia; EXEC_EXS = exs;
     EXEC_FEITOS = new Set();
     renderExecucao(dia, exs);
@@ -2004,13 +1990,6 @@
     const alvo = []; { const esq=esquemaPresc(x); if(esq) alvo.push(esc(esq)); } if(x.carga_alvo!=null) alvo.push("alvo "+esc(String(x.carga_alvo)));
     const feito = EXEC_FEITOS.has(x.id);
     const descBtn = (x.descanso_seg!=null) ? `<button class="desc-btn" onclick="descanso(${x.descanso_seg})">⏱️ Descansar ${x.descanso_seg}s</button>` : "";
-    const mu = midiaDoEx(x);
-    const midia = !mu ? "" : `<div class="foco-midia">${
-      midiaEhVideo(mu)
-        ? `<video src="${esc(mu)}" autoplay muted loop playsinline preload="auto" onclick="abrirVideoFull('${esc(mu)}')"></video>`
-        : `<img src="${esc(mu)}" onclick="abrirVideoFull('${esc(mu)}')">`
-    }</div>`;
-    if(prox) preloadMidia(midiaDoEx(prox));   // próximo exercício já vai vir do cache
     return `
       <div class="foco-top">
         <span class="exec-crono js-crono foco-crono" id="execCrono">⏲️ 00:00</span>
@@ -2018,7 +1997,6 @@
       </div>
       <div class="foco-prog">Exercício ${FOCO_IDX+1} de ${lista.length}</div>
       <div class="foco-card${feito?" done":""}">
-        ${midia}
         <div class="foco-nome">${esc(x.nome_cache||"Exercício")}</div>
         <div class="foco-presc">${alvo.join(" · ")||"—"}${ult!=null?` · última vez: ${esc(String(ult))}`:""}</div>
         ${x.obs?`<div class="tr-obs" style="margin-top:12px">📝 ${esc(x.obs)}</div>`:""}
@@ -4268,6 +4246,13 @@
     if(!nome){ msg.className="msg err"; msg.textContent="Digite o nome do aluno."; return; }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
     if(cpf && !cpfValido(cpf)){ msg.className="msg err"; msg.textContent="CPF inválido. Confira os números (ou deixe em branco)."; return; }
+    // regra: cada CPF só pode ter uma conta de aluno
+    if(cpf){
+      try{
+        const { data: emUso } = await sb.rpc("cpf_em_uso", { p_cpf: cpf, p_categoria: "aluno" });
+        if(emUso){ msg.className="msg err"; msg.textContent="Já existe uma conta de aluno com esse CPF. Cada CPF pode ter só uma conta de aluno — confira se o aluno já não está cadastrado."; return; }
+      }catch(_){}
+    }
     btn.disabled=true; msg.className="msg"; msg.textContent="Criando conta do aluno…";
 
     // manda o token de login ATUALIZADO explicitamente (evita "Não autenticado" por token vencido)
@@ -4290,6 +4275,10 @@
       if(/já existe uma conta|convite comum/i.test(errMsg||"")){
         msg.className="msg warn"; msg.textContent = "Esse e-mail já tem conta no Piik. Usando o convite por e-mail…";
         return cadastrarAluno();
+      }
+      if(/cpf_categoria_uniq|duplicate|23505/i.test(errMsg||"")){
+        msg.className="msg err"; msg.textContent = "Já existe uma conta de aluno com esse CPF. Cada CPF pode ter só uma conta de aluno.";
+        return;
       }
       msg.className="msg err"; msg.textContent = errMsg || "Não foi possível criar o aluno.";
       return;

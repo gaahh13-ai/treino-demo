@@ -300,6 +300,17 @@ if(!nome){ showMsg("Digite seu nome."); return; }
 if(!cpfValido(cpf)){ showMsg("Digite um CPF válido."); return; }
 if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showMsg("Digite um e-mail válido."); return; }
 if(!pass || pass.length < 6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
+// CPF já usado para essa categoria (regra: 1 conta de aluno + 1 de personal por CPF)
+const _catSU = (SIGNUP_ROLE === "professional") ? "personal" : "aluno";
+try{
+  const { data: _emUso } = await sb.rpc("cpf_em_uso", { p_cpf: cpf, p_categoria: _catSU });
+  if(_emUso){
+    showMsg(_catSU === "personal"
+      ? "Já existe uma conta de personal com esse CPF. Cada CPF pode ter só uma conta de personal. Se a conta é sua, entre com o e-mail dela."
+      : "Já existe uma conta de aluno com esse CPF. Cada CPF pode ter só uma conta de aluno. Se a conta é sua, entre com o e-mail dela.");
+    return;
+  }
+}catch(_){ /* se a checagem falhar, segue — o banco ainda protege */ }
 if(!(await piikConfirm({
 titulo: "Confirme seu CPF",
 html: `Seu CPF é <b style="color:#7fff00">${document.getElementById("suCpf").value}</b>?<br><br>Depois do cadastro, a alteração do CPF é feita <b>somente pelo suporte</b>. Confira com atenção antes de continuar.`,
