@@ -5886,8 +5886,9 @@
       if(!_sb)return;
       var ures=await _sb.auth.getUser(); var user=ures&&ures.data?ures.data.user:null;
       if(!user)return;
-      var pr=await _sb.from('profiles').select('role,professional_id').eq('id',user.id).single();
+      var pr=await _sb.from('profiles').select('role,professional_id,brand_off').eq('id',user.id).single();
       var perfil=pr.data; if(!perfil)return;
+      if(perfil.brand_off===true) return;   // marca (white-label) desativada só para esta conta — reversível pelo banco
       var profId=(perfil.role==='professional'||perfil.role==='creator')?user.id:perfil.professional_id;
       if(!profId)return;
       // A marca (white-label) só é aplicada se o profissional dono estiver no plano You Piik (mais caro).
