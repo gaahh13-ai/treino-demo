@@ -356,6 +356,28 @@
   .pb-logo-text{margin-top:30px;font-weight:900;font-size:22px;color:var(--txt,#e8eaee);opacity:.92;position:relative}
   .pb-logo-text span{color:var(--accent,var(--pink,#7fff00))}
   .pb-logo-img{margin-top:30px;max-height:46px;max-width:190px;object-fit:contain;position:relative;display:inline-block}
+  /* nível de esforço (fim de treino) */
+  .esf-ops{display:flex;flex-direction:column;gap:8px;margin:4px 0 12px}
+  .esf-op{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card2,#171c22);
+    border:1px solid var(--line,#2a2f37);border-radius:12px;padding:11px 13px;cursor:pointer;color:inherit;font:inherit;transition:.14s}
+  .esf-op:hover{border-color:var(--accent,var(--pink,#7fff00))}
+  .esf-op.sel{border-color:var(--accent,var(--pink,#7fff00));background:rgba(127,255,0,.08);box-shadow:0 0 0 1px var(--accent,var(--pink,#7fff00)) inset}
+  .esf-emoji{font-size:26px;flex:0 0 auto;line-height:1}
+  .esf-txt{display:flex;flex-direction:column}
+  .esf-txt b{font-size:15px;font-weight:800}
+  .esf-txt span{font-size:12px;color:var(--muted,#9aa0ab)}
+  /* velocímetro de esforço */
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;margin:2px 0 12px;user-select:none;-webkit-user-select:none}
+  .gauge-val{text-align:center;margin-top:-6px}
+  .gauge-val b{font-size:36px;font-weight:900;display:block;line-height:1}
+  .gauge-lbl{font-size:15px;font-weight:800}
+  /* retorno dos treinos (visão do personal) */
+  .retorno-lista{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .retorno-item{background:var(--card2,#171c22);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:10px 12px}
+  .retorno-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .retorno-data{font-size:12px;color:var(--muted,#9aa0ab);font-weight:600}
+  .retorno-esf{font-size:13px;font-weight:800}
+  .retorno-com{margin-top:6px;font-size:14px;font-style:italic;color:var(--txt,#e8eaee)}
   .exec-timer{background:linear-gradient(120deg,var(--pink,#7fff00),var(--pink-deep,#5fbf00));color:#fff;font-weight:800;text-align:center;
     padding:12px;border-radius:14px;margin-bottom:12px;font-size:16px}
   .ex-card{background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(180,90,140,.05)}
@@ -2323,27 +2345,83 @@
     renderAvaliacaoTreino();
   }
 
+  // Nível de esforço 1–10 (velocímetro arrastável). Guardado em sessoes.nota. 3 zonas de descrição.
+  const GA = { cx:150, cy:150, r:120, nlen:104 };
+  function gaugeDeg(v){ return 180 - (Number(v)-1)*20; }   // v=1 → 180° (esq), v=10 → 0° (dir)
+  function gaugeArcPath(cx,cy,r,s,e){
+    const p=d=>{const a=d*Math.PI/180;return [cx+r*Math.cos(a), cy-r*Math.sin(a)];};
+    const [sx,sy]=p(s),[ex,ey]=p(e); const large=Math.abs(s-e)>180?1:0;
+    return `M ${sx.toFixed(1)} ${sy.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+  }
+  function esforcoInfo(n){
+    n=Number(n)||0; if(n<=0) return null;
+    if(n<=3) return { nome:"Muito leve",    cor:"#7fff00", emoji:"😌" };
+    if(n<=7) return { nome:"Moderado",       cor:"#ffcf33", emoji:"💪" };
+    return           { nome:"Muito intenso", cor:"#ff5a5a", emoji:"🥵" };
+  }
+
   function renderAvaliacaoTreino(){
     const p = document.getElementById("panel");
-    const estrelas = [1,2,3,4,5].map(n=>`<button class="rate-star" data-n="${n}" onclick="setNota(${n})">★</button>`).join("");
+    const {cx,cy,r} = GA;
+    const ticks = [1,2,3,4,5,6,7,8,9,10].map(v=>{
+      const a=gaugeDeg(v)*Math.PI/180;
+      const x1=cx+(r-2)*Math.cos(a),  y1=cy-(r-2)*Math.sin(a);
+      const x2=cx+(r-15)*Math.cos(a), y2=cy-(r-15)*Math.sin(a);
+      return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#3a414d" stroke-width="2"/>`;
+    }).join("");
+    const svg = `
+      <svg id="gaugeSvg" viewBox="0 0 300 172" style="width:100%;max-width:300px;display:block;margin:0 auto;touch-action:none;cursor:grab">
+        <path d="${gaugeArcPath(cx,cy,r,180,130)}" stroke="#4fae2e" stroke-width="15" fill="none" stroke-linecap="round"/>
+        <path d="${gaugeArcPath(cx,cy,r,130,50)}"  stroke="#d6a51e" stroke-width="15" fill="none"/>
+        <path d="${gaugeArcPath(cx,cy,r,50,0)}"    stroke="#d23b3b" stroke-width="15" fill="none" stroke-linecap="round"/>
+        ${ticks}
+        <line id="gaugeNeedle" x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-GA.nlen}" stroke="var(--txt,#e8eaee)" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="${cx}" cy="${cy}" r="10" fill="var(--txt,#e8eaee)"/>
+        <circle cx="${cx}" cy="${cy}" r="4.5" fill="#0a0c0f"/>
+      </svg>`;
     p.innerHTML = `
       <div class="exec-top"><div class="exec-titulo" style="flex:1;text-align:center">Como foi o treino?</div></div>
       <div class="ex-card">
-        <p class="meta-sm" style="margin:0 0 12px">${EXEC_DUR!=null?`Treino de ${EXEC_DUR} min. `:""}Dê uma nota e, se quiser, deixe um comentário para seu personal.</p>
-        <div class="rate-stars" id="rateStars">${estrelas}</div>
-        <div class="rate-lbl" id="rateLbl">Toque nas estrelas para avaliar</div>
-        <textarea id="rateComentario" class="rate-txt" placeholder="Como você se sentiu? Alguma dor, dificuldade ou recado para o personal? (opcional)"></textarea>
+        <p class="meta-sm" style="margin:0 0 6px;text-align:center">${EXEC_DUR!=null?`Treino de ${EXEC_DUR} min. `:""}Arraste o ponteiro pro seu <b>nível de esforço</b>.</p>
+        <div class="gauge-wrap">
+          ${svg}
+          <div class="gauge-val"><b id="gaugeNum">5</b><span id="gaugeLbl" class="gauge-lbl">Moderado</span></div>
+        </div>
+        <textarea id="rateComentario" class="rate-txt" placeholder="Quer deixar um recado pro seu personal? Alguma dor, dificuldade, como se sentiu… (opcional)"></textarea>
         <button class="btn" style="width:100%;margin-top:4px" onclick="concluirComAvaliacao()">✅ Concluir treino</button>
         <button class="btn ghost" style="width:100%;margin-top:8px" onclick="cancelarAvaliacao()">↩️ Voltar ao treino</button>
       </div>`;
     window.scrollTo({top:0});
+    gaugeInit();
   }
 
-  function setNota(n){
-    RATE_NOTA = n;
-    document.querySelectorAll("#rateStars .rate-star").forEach(b=> b.classList.toggle("on", Number(b.dataset.n) <= n));
-    const labels = {1:"Muito puxado 😣",2:"Difícil 😅",3:"Ok 🙂",4:"Bom 💪",5:"Excelente 🔥"};
-    const l = document.getElementById("rateLbl"); if(l) l.textContent = labels[n] || "";
+  function gaugeSetValue(v){
+    v = Math.max(1, Math.min(10, Math.round(v))); RATE_NOTA = v;
+    const a=gaugeDeg(v)*Math.PI/180;
+    const nx=GA.cx+GA.nlen*Math.cos(a), ny=GA.cy-GA.nlen*Math.sin(a);
+    const nd=document.getElementById("gaugeNeedle"); if(nd){ nd.setAttribute("x2",nx.toFixed(1)); nd.setAttribute("y2",ny.toFixed(1)); }
+    const info=esforcoInfo(v);
+    const numEl=document.getElementById("gaugeNum"); if(numEl) numEl.textContent=v;
+    const lblEl=document.getElementById("gaugeLbl"); if(lblEl&&info){ lblEl.textContent=info.nome; lblEl.style.color=info.cor; }
+  }
+  function gaugeFromEvent(e){
+    const svg=document.getElementById("gaugeSvg"); if(!svg) return;
+    const rect=svg.getBoundingClientRect();
+    const clientX=(e.touches&&e.touches[0])?e.touches[0].clientX:e.clientX;
+    const clientY=(e.touches&&e.touches[0])?e.touches[0].clientY:e.clientY;
+    const px=(clientX-rect.left)*(300/rect.width), py=(clientY-rect.top)*(172/rect.height);
+    const dx=px-GA.cx, dy=GA.cy-py;
+    let ang=Math.atan2(dy,dx)*180/Math.PI; if(ang<0) ang+=360;
+    ang=Math.max(0, Math.min(180, ang));
+    gaugeSetValue(1 + (180-ang)/20);
+  }
+  function gaugeInit(){
+    const svg=document.getElementById("gaugeSvg"); if(!svg) return;
+    let drag=false;
+    svg.addEventListener("pointerdown", e=>{ drag=true; try{svg.setPointerCapture(e.pointerId);}catch(_){ } gaugeFromEvent(e); });
+    svg.addEventListener("pointermove", e=>{ if(drag) gaugeFromEvent(e); });
+    svg.addEventListener("pointerup",   e=>{ drag=false; try{svg.releasePointerCapture(e.pointerId);}catch(_){ } });
+    gaugeSetValue(RATE_NOTA||5);
   }
 
   function cancelarAvaliacao(){
@@ -4234,10 +4312,12 @@
         <a class="btn small ghost" href="dashboard.html?aluno=${id}">Dashboard</a>
         ${temTreino()?`<button class="btn small ghost" id="btnTreinos" onclick="abrirTreino('${id}')">Treinos</button>`:""}
         <button class="btn small ghost" id="btnAvals" onclick="verAvaliacoes('${id}')">Avaliações</button>
+        <button class="btn small ghost" id="btnRetorno" onclick="verRetornoTreinos('${id}')">Retorno dos treinos</button>
         ${demo?"":`<button class="btn small ghost" id="btnFin" onclick="verFinanceiroAluno('${id}')">Financeiro</button>`}
       </div>
       ${demo?"":`<div class="grupos-aluno-box"><span class="meta-sm" style="font-weight:700">Grupos:</span> <span id="gruposAluno_${id}" class="grupos-aluno"></span></div>`}
       <div id="assessList_${id}" style="margin-top:6px"></div>
+      <div id="retornoList_${id}" style="margin-top:6px"></div>
       <div id="finList_${id}" style="margin-top:6px"></div>`;
     if(!demo) renderGruposDoAluno(id);
     if(temTreino()) carregarResumoTreinoAluno(id);
@@ -4631,6 +4711,36 @@
     el.innerHTML = sched + novoBtn + ((data && data.length)
       ? `<div style="margin-top:12px">${data.map((a,i)=>avaliacaoDetalhe(a,i,true)).join("")}</div>`
       : `<div class="empty" style="margin-top:10px">Sem avaliações ainda.</div>`);
+  }
+
+  // Retorno dos treinos: o personal vê o nível de esforço + comentário que o aluno deixou ao concluir
+  async function verRetornoTreinos(id){
+    const el = document.getElementById("retornoList_"+id);
+    if(!el) return;
+    const btn = document.getElementById("btnRetorno");
+    if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
+    if(btn) btn.classList.add("ativo");
+    el.innerHTML = `<div class="empty">Carregando…</div>`;
+    const { data, error } = await sb.from("sessoes")
+      .select("data,fim,nota,comentario,finalizada")
+      .eq("student_id", id).eq("finalizada", true)
+      .order("data",{ascending:false}).limit(40);
+    if(error){ el.innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+    const feats = (data||[]).filter(s => s.nota || (s.comentario && s.comentario.trim()));
+    if(!feats.length){ el.innerHTML = `<div class="empty" style="margin-top:8px">Nenhum retorno de treino ainda. Ele aparece aqui quando o aluno conclui um treino e responde o nível de esforço.</div>`; return; }
+    el.innerHTML = `<div class="retorno-lista">` + feats.map(s=>{
+      const e = esforcoInfo(s.nota);
+      let quando = "";
+      try{ quando = new Date(s.fim || s.data).toLocaleDateString("pt-BR",{day:"2-digit",month:"short"}); }catch(_){}
+      const com = (s.comentario && s.comentario.trim()) ? s.comentario.trim() : "";
+      return `<div class="retorno-item">
+        <div class="retorno-top">
+          <span class="retorno-data">${esc(quando)}</span>
+          ${e ? `<span class="retorno-esf" style="color:${e.cor}">${e.emoji} ${e.nome} · ${s.nota}/10</span>` : ""}
+        </div>
+        ${com ? `<div class="retorno-com">“${esc(com)}”</div>` : ""}
+      </div>`;
+    }).join("") + `</div>`;
   }
 
   async function salvarProxAval(id){
