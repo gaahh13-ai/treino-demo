@@ -325,6 +325,37 @@
   .foco-prox b{color:var(--txt);font-size:16px}
   .foco-nav{display:flex;gap:8px;margin-top:12px}
   .foco-nav .btn{flex:1;justify-content:center;text-align:center}
+  .foco-card{position:relative}
+  .foco-obs{position:absolute;top:12px;right:12px}
+  /* ===== Card de parabéns no fim do treino (instagramável) ===== */
+  .parabens-ov{position:fixed;inset:0;z-index:100000;background:rgba(6,8,10,.96);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;overflow:auto}
+  .parabens-card{width:100%;max-width:360px;border-radius:26px;padding:40px 26px 30px;text-align:center;
+    background:linear-gradient(165deg,#141a20,#0a0c0f);border:1px solid var(--line,#232830);color:var(--txt,#e8eaee);
+    box-shadow:0 24px 70px rgba(0,0,0,.6);position:relative;overflow:hidden}
+  .parabens-card::before{content:"";position:absolute;top:-110px;left:50%;transform:translateX(-50%);width:300px;height:300px;
+    background:radial-gradient(circle,var(--accent,var(--pink,#7fff00)),transparent 62%);opacity:.20;pointer-events:none}
+  .pb-emoji{font-size:56px;line-height:1;position:relative}
+  .pb-title{font-size:26px;font-weight:900;margin-top:10px;letter-spacing:-.02em;position:relative}
+  .pb-sub{color:var(--muted,#9aa0ab);font-weight:600;margin-top:4px;font-size:14px;position:relative}
+  .pb-stats{display:flex;justify-content:center;gap:12px;margin:24px 0 6px;position:relative;flex-wrap:wrap}
+  .pb-stat{background:rgba(255,255,255,.04);border:1px solid var(--line,#232830);border-radius:14px;padding:14px 12px;min-width:78px}
+  .pb-stat b{display:block;font-size:27px;font-weight:900;line-height:1;color:var(--accent,var(--pink,#7fff00))}
+  .pb-stat span{font-size:11px;font-weight:600;color:var(--muted,#9aa0ab);margin-top:4px;display:block}
+  .pb-stars{color:var(--accent,var(--pink,#7fff00));font-size:20px;letter-spacing:3px;margin-top:10px;position:relative}
+  .pb-frase{font-weight:700;font-size:15px;margin-top:18px;position:relative;line-height:1.45}
+  .pb-brand{margin-top:24px;font-weight:900;font-size:20px;color:var(--txt,#e8eaee);opacity:.9;position:relative}
+  .pb-brand span{color:var(--accent,var(--pink,#7fff00))}
+  .pb-actions{display:flex;gap:12px;width:100%;max-width:360px}
+  .pb-hint{color:var(--muted,#9aa0ab);font-size:12.5px;text-align:center}
+  /* versão minimalista: saudação, frase em destaque, data e logo */
+  .parabens-card{padding:48px 28px 36px}
+  .pb-eyebrow{font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted,#9aa0ab);position:relative}
+  .pb-frase-big{font-size:clamp(24px,7vw,30px);font-weight:900;line-height:1.22;margin:20px 0 24px;letter-spacing:-.02em;position:relative}
+  .pb-date{font-size:13px;color:var(--muted,#9aa0ab);font-weight:600;position:relative}
+  .pb-logo-text{margin-top:30px;font-weight:900;font-size:22px;color:var(--txt,#e8eaee);opacity:.92;position:relative}
+  .pb-logo-text span{color:var(--accent,var(--pink,#7fff00))}
+  .pb-logo-img{margin-top:30px;max-height:46px;max-width:190px;object-fit:contain;position:relative;display:inline-block}
   .exec-timer{background:linear-gradient(120deg,var(--pink,#7fff00),var(--pink-deep,#5fbf00));color:#fff;font-weight:800;text-align:center;
     padding:12px;border-radius:14px;margin-bottom:12px;font-size:16px}
   .ex-card{background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(180,90,140,.05)}
@@ -1997,6 +2028,7 @@
       </div>
       <div class="foco-prog">Exercício ${FOCO_IDX+1} de ${lista.length}</div>
       <div class="foco-card${feito?" done":""}">
+        <button class="ex-obs-btn foco-obs${(COMENTARIOS[x.id]&&COMENTARIOS[x.id].length)?" tem":""}" id="focoObsBtn" onclick="abrirComentario('${x.id}')" title="Comentar este exercício">⋮</button>
         <div class="foco-nome">${esc(x.nome_cache||"Exercício")}</div>
         <div class="foco-presc">${alvo.join(" · ")||"—"}${ult!=null?` · última vez: ${esc(String(ult))}`:""}</div>
         ${x.obs?`<div class="tr-obs" style="margin-top:12px">📝 ${esc(x.obs)}</div>`:""}
@@ -2104,6 +2136,11 @@
     const card = document.getElementById("exc_"+fxId);
     const btn = card ? card.querySelector(".ex-obs-btn") : null;
     if(btn) btn.classList.toggle("tem", !!(COMENTARIOS[fxId] && COMENTARIOS[fxId].length));
+    // também atualiza o botão do modo foco (se estiver visível e for este exercício)
+    const fbtn = document.getElementById("focoObsBtn");
+    if(fbtn && MODO_FOCO && EXEC_EXS[FOCO_IDX] && EXEC_EXS[FOCO_IDX].id === fxId){
+      fbtn.classList.toggle("tem", !!(COMENTARIOS[fxId] && COMENTARIOS[fxId].length));
+    }
   }
   async function salvarComentario(fxId){
     const t = document.getElementById("comentTxt");
@@ -2324,10 +2361,61 @@
     const { error } = await sb.from("sessoes").update({ finalizada:true, fim: fimIso, nota: RATE_NOTA||null, comentario: coment }).eq("id", EXEC_SESSAO.id);
     if(error){ const { error:e2 } = await sb.from("sessoes").update({ finalizada:true, fim: fimIso }).eq("id", EXEC_SESSAO.id);
                if(e2){ await sb.from("sessoes").update({ finalizada:true }).eq("id", EXEC_SESSAO.id); } }
+    const _info = {
+      nome: (ME && ME.full_name) ? String(ME.full_name).trim().split(/\s+/)[0] : "Atleta",
+      dia:  (EXEC_DIA && EXEC_DIA.label) ? EXEC_DIA.label : "Treino",
+      dur:  dur,
+      feitos: EXEC_FEITOS.size,
+      total:  (EXEC_EXS||[]).length,
+      nota:   RATE_NOTA||0
+    };
     EXEC_SESSAO = null;
-    go("meutreino");
-    const msg = dur!=null ? `✅ Treino registrado em ${dur} min! Bom trabalho. 💪` : "✅ Treino registrado! Bom trabalho. 💪";
-    setTimeout(()=>{ const b=document.getElementById("treinoBoxAluno"); if(b) b.insertAdjacentHTML("afterbegin", `<div class="msg ok" style="display:block">${msg}</div>`); }, 400);
+    mostrarParabens(_info);
+  }
+
+  // ===== Card de parabéns no fim do treino (instagramável) =====
+  function mostrarParabens(info){
+    window.PB_INFO = info;
+    if(document.getElementById("parabensOv")) return;
+    const frases = [
+      "Você apareceu. É isso que constrói resultado. 🔥",
+      "Mais um dia mais forte que ontem. 💪",
+      "Disciplina venceu a preguiça hoje. 👏",
+      "Constância é o segredo — e você tá nela. 🚀",
+      "Treino feito é vitória garantida. 🏆"
+    ];
+    const frase = frases[((info.feitos||0) + (info.dur||0)) % frases.length];
+    let dataFull = "";
+    try{ dataFull = new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" }); }catch(e){ dataFull = ""; }
+    // white-label: usa o LOGO do personal; senão, o logo do Piik
+    const brand = window.PIIK_BRAND || null;
+    const logoHTML = (brand && brand.logo_url)
+      ? `<img class="pb-logo-img" src="${esc(brand.logo_url)}" alt="">`
+      : `<div class="pb-logo-text">P<span>ii</span>k</div>`;
+    const ov = document.createElement("div");
+    ov.id = "parabensOv"; ov.className = "parabens-ov";
+    ov.innerHTML = `
+      <div class="parabens-card">
+        <div class="pb-eyebrow">Parabéns, ${esc(info.nome)} 🎉</div>
+        <div class="pb-frase-big">${frase}</div>
+        ${dataFull ? `<div class="pb-date">${esc(dataFull)}</div>` : ""}
+        ${logoHTML}
+      </div>
+      <div class="pb-actions">
+        <button class="btn" style="flex:1" onclick="compartilharTreino()">📸 Compartilhar</button>
+        <button class="btn ghost" style="flex:1" onclick="fecharParabens()">Concluir</button>
+      </div>
+      <div class="pb-hint">Tire um print para postar no seu story 📸</div>`;
+    document.body.appendChild(ov);
+    window.scrollTo({top:0});
+  }
+  function fecharParabens(){ const o=document.getElementById("parabensOv"); if(o) o.remove(); go("meutreino"); }
+  async function compartilharTreino(){
+    const info = window.PB_INFO || {};
+    const txt = `Mais um treino concluído no Piik! 💪\n${info.dia||"Treino"}${info.dur!=null?` · ${info.dur} min`:""} · ${info.feitos||0} exercícios`;
+    try{ if(navigator.share){ await navigator.share({ title:"Meu treino no Piik", text: txt }); return; } }catch(e){ return; }
+    try{ await navigator.clipboard.writeText(txt); piikAlert("Texto copiado! Cole no seu story — ou tire um print desta tela. 📸"); }
+    catch(e){ piikAlert("Tire um print desta tela para postar no seu story. 📸"); }
   }
 
   function sairExecucao(){
@@ -5870,6 +5958,7 @@
     var t2=pz.text2||(t1?(bg?mix(t1,bg,0.38):mix(t1,'#0a0b0d',0.38)):null);
     set('--txt',t1); set('--muted',t2);
     aplicarLogo(pz.logo_url);
+    try{ window.PIIK_BRAND = { logo_url: pz.logo_url||null, accent: pz.accent||null }; }catch(e){}   // logo do personal p/ o card de parabéns
   }
 
   async function run(){
