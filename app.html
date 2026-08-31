@@ -421,6 +421,14 @@
   .com-item-txt{font-size:13.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
   .com-item-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
   .com-item-data{font-size:11px;color:var(--muted);font-weight:700}
+  /* Fotos da avaliação física */
+  .aval-fotos-prev{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .aval-foto{position:relative;width:78px;height:78px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--elev,#0e1216)}
+  .aval-foto img{width:100%;height:100%;object-fit:cover;display:block}
+  .aval-foto .rm{position:absolute;top:2px;right:2px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .aval-fotos-view{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .aval-fotos-view a{width:88px;height:88px;border-radius:10px;overflow:hidden;border:1px solid var(--line);display:block;background:var(--elev,#0e1216)}
+  .aval-fotos-view img{width:100%;height:100%;object-fit:cover;display:block}
   .com-del{border:none;background:none;cursor:pointer;font-size:15px;padding:2px 4px;line-height:1}
   .ex-obs-btn{border:1.5px solid var(--line);background:transparent;color:var(--muted);border-radius:10px;
     width:40px;height:40px;font-size:22px;font-weight:800;line-height:1;cursor:pointer;position:relative;flex:0 0 auto}
@@ -1590,6 +1598,7 @@
     }
     AVAL_SEXO = ME.sex || "";
     box.innerHTML = data.map((a,idx)=>avaliacaoDetalhe(a,idx)).join("");
+    hidratarFotosAval(box);
   }
 
   async function carregarProxAvalAluno(){
@@ -3230,6 +3239,13 @@
         </div>
 
         <div class="field" style="margin-top:16px"><label>Observação</label><textarea id="a_notes" rows="3" placeholder="opcional"></textarea></div>
+        <div class="field" style="margin-top:16px">
+          <label>Fotos (opcional)</label>
+          <div class="meta-sm" style="margin:2px 0 8px">Fotos de progresso do aluno — frente, costas, lado. Ficam guardadas com segurança.</div>
+          <input type="file" id="a_fotos_input" accept="image/*" multiple style="display:none" onchange="avalFotosSelecionadas(this)">
+          <button type="button" class="btn small ghost" onclick="document.getElementById('a_fotos_input').click()">📷 Adicionar fotos</button>
+          <div id="a_fotos_prev" class="aval-fotos-prev"></div>
+        </div>
         <button class="btn small" id="assessSaveBtn" onclick="salvarAvaliacao()">Salvar avaliação</button>
         <div class="msg" id="assessMsg"></div>
       </div>
@@ -4677,7 +4693,8 @@
         ${dob ? `<div class="grupo-tit" style="margin-top:14px">Dobras cutâneas</div><div class="meds">${dob}</div>` : ""}
         ${per ? `<div class="grupo-tit" style="margin-top:14px">Circunferências</div><div class="meds">${per}</div>` : ""}
         ${a.notes ? `<div class="obs"><b>Observação:</b> ${esc(a.notes)}</div>` : ""}
-        ${!gerais && !dob && !per && !a.notes ? `<div class="empty">Sem medidas registradas nesta avaliação.</div>` : ""}
+        ${(Array.isArray(a.fotos) && a.fotos.length) ? `<div class="grupo-tit" style="margin-top:14px">Fotos</div><div class="aval-fotos-view">${a.fotos.map(p=>`<a data-foto-path="${esc(p)}" target="_blank" rel="noopener"><img alt="foto da avaliação" loading="lazy"></a>`).join("")}</div>` : ""}
+        ${!gerais && !dob && !per && !a.notes && !(Array.isArray(a.fotos)&&a.fotos.length) ? `<div class="empty">Sem medidas registradas nesta avaliação.</div>` : ""}
       </div>
     </div>`;
   }
@@ -4733,6 +4750,7 @@
     el.innerHTML = sched + novoBtn + ((data && data.length)
       ? `<div style="margin-top:12px">${data.map((a,i)=>avaliacaoDetalhe(a,i,true)).join("")}</div>`
       : `<div class="empty" style="margin-top:10px">Sem avaliações ainda.</div>`);
+    hidratarFotosAval(el);
   }
 
   // Retorno dos treinos: o personal vê o nível de esforço + comentário que o aluno deixou ao concluir
@@ -5054,6 +5072,9 @@
     DOBRAS.forEach(([k])=>põe("dob_"+k, a.skinfolds ? a.skinfolds[k] : null));
     PERIMETROS.forEach(([k])=>põe("per_"+k, a.circumferences ? a.circumferences[k] : null));
     põe("a_notes", a.notes);
+    AVAL_FOTOS = Array.isArray(a.fotos) ? a.fotos.map(p=>({path:p})) : [];
+    AVAL_FOTOS_ORIG = Array.isArray(a.fotos) ? a.fotos.slice() : [];
+    renderAvalFotosPrev();
     prepararCalculo(s);
 
     const card = document.getElementById("assessCard");
@@ -5061,6 +5082,56 @@
     const m = document.getElementById("assessMsg"); m.className="msg"; m.textContent="";
     { const topo = card.getBoundingClientRect().top + window.scrollY - 76;
       window.scrollTo({ top: Math.max(0, topo), behavior:"smooth" }); }
+  }
+
+  // ===== Fotos da avaliação física (bucket privado avaliacoes-fotos) =====
+  let AVAL_FOTOS = [];       // itens {path} já salvos ou {file,url} novos
+  let AVAL_FOTOS_ORIG = [];  // paths que já existiam (pra apagar os removidos ao salvar)
+  async function fotoAvalSignedUrl(path){
+    try{ const { data } = await sb.storage.from("avaliacoes-fotos").createSignedUrl(path, 3600); return data ? data.signedUrl : null; }
+    catch(e){ return null; }
+  }
+  function avalFotosSelecionadas(input){
+    const files = Array.from(input.files||[]);
+    files.forEach(f=>{
+      if(!f || !f.type || f.type.indexOf("image/")!==0) return;
+      if(f.size > 10*1024*1024){ piikAlert('A foto "'+f.name+'" passa de 10MB. Escolha uma menor.'); return; }
+      AVAL_FOTOS.push({ file:f, url:URL.createObjectURL(f) });
+    });
+    input.value = "";
+    renderAvalFotosPrev();
+  }
+  function removerAvalFoto(i){
+    const it = AVAL_FOTOS[i];
+    if(it && it.file && it.url){ try{ URL.revokeObjectURL(it.url); }catch(e){} }
+    AVAL_FOTOS.splice(i,1);
+    renderAvalFotosPrev();
+  }
+  async function renderAvalFotosPrev(){
+    const box = document.getElementById("a_fotos_prev"); if(!box) return;
+    box.innerHTML = AVAL_FOTOS.map((it,i)=>`<div class="aval-foto"><img id="afp_${i}" alt="foto"><button type="button" class="rm" title="Remover" onclick="removerAvalFoto(${i})">✕</button></div>`).join("");
+    for(let i=0;i<AVAL_FOTOS.length;i++){
+      const it = AVAL_FOTOS[i], img = document.getElementById("afp_"+i); if(!img) continue;
+      if(it.url){ img.src = it.url; }
+      else if(it.path){ const u = await fotoAvalSignedUrl(it.path); if(u) img.src = u; }
+    }
+  }
+  async function uploadFotoAval(file, studentId){
+    const ext = (file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"") || "jpg";
+    const path = ME.id + "/" + studentId + "/" + Date.now() + "-" + Math.random().toString(36).slice(2,8) + "." + ext;
+    const { error } = await sb.storage.from("avaliacoes-fotos").upload(path, file, { cacheControl:"3600", upsert:false, contentType:file.type||undefined });
+    if(error) throw new Error(error.message || "Falha no upload da foto.");
+    return path;
+  }
+  async function hidratarFotosAval(container){
+    if(!container) return;
+    const els = container.querySelectorAll("[data-foto-path]");
+    for(const a of els){
+      const p = a.getAttribute("data-foto-path");
+      const u = await fotoAvalSignedUrl(p);
+      if(u){ a.href = u; const img = a.querySelector("img"); if(img) img.src = u; }
+      else { a.style.display = "none"; }  // sem acesso/erro: esconde a caixa vazia
+    }
   }
 
   async function novaAvaliacao(id){
@@ -5084,6 +5155,7 @@
     ["a_weight","a_height","a_bf","a_lean","a_fat","a_notes"].forEach(f=>{const e=document.getElementById(f); if(e) e.value="";});
     DOBRAS.forEach(([k])=>{const e=document.getElementById("dob_"+k); if(e) e.value="";});
     PERIMETROS.forEach(([k])=>{const e=document.getElementById("per_"+k); if(e) e.value="";});
+    AVAL_FOTOS = []; AVAL_FOTOS_ORIG = []; renderAvalFotosPrev();
     prepararCalculo(s);
     const card = document.getElementById("assessCard");
     card.style.display="block"; registrarJanela("assessCard");
@@ -6040,6 +6112,16 @@
       created_by: ME.id };
     btn.disabled=true; msg.className="msg"; msg.textContent="";
 
+    // Fotos: sobe as novas, mantém as já salvas
+    let fotosPaths = [];
+    try{
+      for(const it of AVAL_FOTOS){
+        if(it.path){ fotosPaths.push(it.path); }
+        else if(it.file){ if(msg){ msg.className="msg"; msg.textContent="Enviando fotos…"; } fotosPaths.push(await uploadFotoAval(it.file, student_id)); }
+      }
+    }catch(e){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro ao enviar foto: "+e.message; return; }
+    row.fotos = fotosPaths.length ? fotosPaths : null;
+
     let error;
     if(EDIT_ID){
       const { created_by, ...campos } = row;
@@ -6049,6 +6131,9 @@
     }
     btn.disabled=false;
     if(error){ msg.className="msg err"; msg.textContent="Erro ao salvar: "+error.message; return; }
+    // apaga do storage as fotos que foram removidas nesta edição
+    const removidas = AVAL_FOTOS_ORIG.filter(p => fotosPaths.indexOf(p)===-1);
+    if(removidas.length){ try{ await sb.storage.from("avaliacoes-fotos").remove(removidas); }catch(e){} }
     msg.className="msg ok"; msg.textContent = EDIT_ID ? "Alterações salvas!" : "Avaliação salva!";
     const alvo = student_id;
     EDIT_ID = null;
