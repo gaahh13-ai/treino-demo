@@ -3804,6 +3804,7 @@
     if(!el) return;
     const btn = document.getElementById("btnFin");
     if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
+    _fecharPaineisAluno(id,"finList_");
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     FIN_AL.id = id; FIN_AL.comp = FIN_AL.comp || compAtual();
@@ -4681,11 +4682,27 @@
     </div>`;
   }
 
+  // Fecha os outros painéis inline do aluno (acordeão: só um aberto por vez)
+  function _fecharPaineisAluno(id, exceto){
+    var paineis = [
+      {c:"assessList_", b:"btnAvals"},
+      {c:"notasList_",  b:"btnNotas"},
+      {c:"retornoList_",b:"btnRetorno"},
+      {c:"finList_",    b:"btnFin"}
+    ];
+    paineis.forEach(function(p){
+      if(p.c===exceto) return;
+      var el = document.getElementById(p.c+id); if(el) el.innerHTML="";
+      var btn = document.getElementById(p.b); if(btn) btn.classList.remove("ativo");
+    });
+  }
+
   async function verAvaliacoes(id){
     const el = document.getElementById("assessList_"+id);
     if(!el) return;
     const btn = document.getElementById("btnAvals");
     if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
+    _fecharPaineisAluno(id,"assessList_");
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     // próxima avaliação agendada (usa a tabela de agendamentos)
@@ -4724,6 +4741,7 @@
     if(!el) return;
     const btn = document.getElementById("btnRetorno");
     if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
+    _fecharPaineisAluno(id,"retornoList_");
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     const { data, error } = await sb.from("sessoes")
@@ -4754,6 +4772,7 @@
     if(!el) return;
     const btn = document.getElementById("btnNotas");
     if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
+    _fecharPaineisAluno(id,"notasList_");
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     let atual = "";
