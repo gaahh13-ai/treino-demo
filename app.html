@@ -4766,7 +4766,7 @@
     }).join("") + `</div>`;
   }
 
-  // Anotações privadas do personal sobre o aluno (botão próprio na ficha). Tabela aluno_notas. Só o personal vê.
+  // Anotações privadas do personal sobre o aluno (botão próprio na ficha). Tabela aluno_notas = histórico com data/hora. Só o personal vê.
   async function verAnotacoes(id){
     const el = document.getElementById("notasList_"+id);
     if(!el) return;
@@ -4775,20 +4775,35 @@
     _fecharPaineisAluno(id,"notasList_");
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
-    let atual = "";
+    await renderAnotacoes(id);
+  }
+  async function renderAnotacoes(id){
+    const el = document.getElementById("notasList_"+id);
+    if(!el) return;
+    let itens = [];
     try{
-      const { data } = await sb.from("aluno_notas").select("nota")
-        .eq("professional_id", ME.id).eq("student_id", id).maybeSingle();
-      atual = (data && data.nota) ? data.nota : "";
+      const { data } = await sb.from("aluno_notas").select("id,nota,created_at")
+        .eq("professional_id", ME.id).eq("student_id", id)
+        .order("created_at",{ascending:false});
+      itens = (data||[]).filter(n => n.nota && n.nota.trim());
     }catch(e){}
+    const hist = itens.map(n=>`
+      <div class="com-item">
+        <div class="com-item-txt">${esc(n.nota)}</div>
+        <div class="com-item-foot">
+          <span class="com-item-data">${fmtComentData(n.created_at)}</span>
+          <button class="com-del" onclick="excluirAnotacao('${id}','${n.id}')" title="Excluir">🗑</button>
+        </div>
+      </div>`).join("");
     el.innerHTML = `
       <div class="nota-inline">
-        <div class="meta-sm" style="margin-bottom:8px">📝 Anotações particulares sobre o aluno — lesões, restrições, objetivos, observações. <b>Só você vê; o aluno não tem acesso.</b></div>
-        <textarea id="notaTxt_${id}" class="fx-obs" rows="5" placeholder="Escreva aqui…">${esc(atual)}</textarea>
+        <div class="meta-sm" style="margin-bottom:8px">📝 Anotações particulares sobre o aluno — lesões, restrições, objetivos, observações. <b>Só você vê; o aluno não tem acesso.</b> Cada anotação fica registrada com data e hora.</div>
+        <textarea id="notaTxt_${id}" class="fx-obs" rows="4" placeholder="Escreva ${itens.length?"outra anotação":"uma anotação"}…"></textarea>
         <div class="nota-inline-acoes">
           <button class="btn small" onclick="salvarAnotacoes('${id}')">Salvar anotação</button>
           <span class="msg" id="notaMsgInline_${id}"></span>
         </div>
+        ${itens.length ? `<div class="com-lista" style="margin-top:12px">${hist}</div>` : `<div class="empty" style="margin-top:10px">Nenhuma anotação ainda.</div>`}
       </div>`;
   }
   async function salvarAnotacoes(id){
@@ -4796,15 +4811,19 @@
     const msg = document.getElementById("notaMsgInline_"+id);
     if(!t) return;
     const nota = t.value.trim();
+    if(!nota){ if(msg){ msg.className="msg"; msg.textContent="Escreva algo antes de salvar."; } return; }
     if(msg){ msg.className="msg"; msg.textContent="Salvando…"; }
-    const { error } = await sb.from("aluno_notas").upsert(
-      { professional_id: ME.id, student_id: id, nota: nota || null, updated_at: new Date().toISOString() },
-      { onConflict: "professional_id,student_id" }
+    const { error } = await sb.from("aluno_notas").insert(
+      { professional_id: ME.id, student_id: id, nota: nota, created_at: new Date().toISOString() }
     );
-    if(msg){
-      if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; }
-      else { msg.className="msg ok"; msg.textContent="✅ Salvo — só você vê."; }
-    }
+    if(error){ if(msg){ msg.className="msg err"; msg.textContent="Erro: "+error.message; } return; }
+    await renderAnotacoes(id);   // recarrega com a nova anotação no histórico e o campo limpo
+  }
+  async function excluirAnotacao(id, notaId){
+    if(!(await piikConfirm({ titulo:"Excluir anotação?", msg:"Tem certeza que deseja excluir esta anotação?", ok:"Sim, excluir", cancel:"Voltar" }))) return;
+    const { error } = await sb.from("aluno_notas").delete().eq("id", notaId);
+    if(error){ piikAlert("Não consegui excluir: " + error.message); return; }
+    await renderAnotacoes(id);
   }
 
   async function salvarProxAval(id){
@@ -5851,12 +5870,7 @@
     if(box) box.style.display = "none";
     if(chev) chev.textContent = "▾";
     if(msg){ msg.className="msg"; msg.textContent=""; }
-    if(!studentId || !t) return;
-    try{
-      const { data } = await sb.from("aluno_notas").select("nota")
-        .eq("professional_id", ME.id).eq("student_id", studentId).maybeSingle();
-      if(data && data.nota){ t.value = data.nota; }
-    }catch(e){}
+    // Anotações agora são um histórico com data/hora (aba Anotações). Aqui o campo começa vazio: cada "salvar" registra uma nova anotação.
   }
   function toggleNotaAluno(){
     const box = document.getElementById("notaBox"), chev = document.getElementById("notaChev");
@@ -5872,14 +5886,14 @@
     const msg = document.getElementById("notaMsg");
     if(!sid || !t) return;
     const nota = t.value.trim();
+    if(!nota){ if(msg){ msg.className="msg"; msg.textContent="Escreva algo antes de salvar."; } return; }
     if(msg){ msg.className="msg"; msg.textContent="Salvando…"; }
-    const { error } = await sb.from("aluno_notas").upsert(
-      { professional_id: ME.id, student_id: sid, nota: nota || null, updated_at: new Date().toISOString() },
-      { onConflict: "professional_id,student_id" }
+    const { error } = await sb.from("aluno_notas").insert(
+      { professional_id: ME.id, student_id: sid, nota: nota, created_at: new Date().toISOString() }
     );
     if(msg){
       if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; }
-      else { msg.className="msg ok"; msg.textContent="✅ Salvo — só você vê."; }
+      else { msg.className="msg ok"; msg.textContent="✅ Registrado com data e hora — só você vê. (veja o histórico na aba Anotações)"; t.value=""; }
     }
   }
 
