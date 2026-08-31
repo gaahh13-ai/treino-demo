@@ -378,6 +378,9 @@
   .retorno-data{font-size:12px;color:var(--muted,#9aa0ab);font-weight:600}
   .retorno-esf{font-size:13px;font-weight:800}
   .retorno-com{margin-top:6px;font-size:14px;font-style:italic;color:var(--txt,#e8eaee)}
+  /* anotações inline (botão próprio) */
+  .nota-inline{background:var(--card2,#171c22);border:1px solid var(--line,#2a2f37);border-radius:12px;padding:12px;margin-top:8px}
+  .nota-inline-acoes{display:flex;align-items:center;gap:10px;margin-top:8px}
   .exec-timer{background:linear-gradient(120deg,var(--pink,#7fff00),var(--pink-deep,#5fbf00));color:#fff;font-weight:800;text-align:center;
     padding:12px;border-radius:14px;margin-bottom:12px;font-size:16px}
   .ex-card{background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(180,90,140,.05)}
@@ -3066,7 +3069,7 @@
   }
 
   // Número de suporte (formato internacional, só dígitos). Ex.: 55 + DDD + número.
-  const SUPORTE_WHATSAPP = "5511999999999"; // TODO: trocar pelo número de suporte real
+  const SUPORTE_WHATSAPP = "5519998194608"; // WhatsApp Business do Piik
   function abrirAjuda(){
     if(typeof fecharMenus==="function") fecharMenus();
     if(document.getElementById("ajudaModal")) return;
@@ -4311,12 +4314,14 @@
       <div class="det-acoes">
         <a class="btn small ghost" href="dashboard.html?aluno=${id}">Dashboard</a>
         ${temTreino()?`<button class="btn small ghost" id="btnTreinos" onclick="abrirTreino('${id}')">Treinos</button>`:""}
-        <button class="btn small ghost" id="btnAvals" onclick="verAvaliacoes('${id}')">Avaliações</button>
+        <button class="btn small ghost" id="btnAvals" onclick="verAvaliacoes('${id}')">Avaliações físicas</button>
+        <button class="btn small ghost" id="btnNotas" onclick="verAnotacoes('${id}')">Anotações</button>
         <button class="btn small ghost" id="btnRetorno" onclick="verRetornoTreinos('${id}')">Retorno dos treinos</button>
         ${demo?"":`<button class="btn small ghost" id="btnFin" onclick="verFinanceiroAluno('${id}')">Financeiro</button>`}
       </div>
       ${demo?"":`<div class="grupos-aluno-box"><span class="meta-sm" style="font-weight:700">Grupos:</span> <span id="gruposAluno_${id}" class="grupos-aluno"></span></div>`}
       <div id="assessList_${id}" style="margin-top:6px"></div>
+      <div id="notasList_${id}" style="margin-top:6px"></div>
       <div id="retornoList_${id}" style="margin-top:6px"></div>
       <div id="finList_${id}" style="margin-top:6px"></div>`;
     if(!demo) renderGruposDoAluno(id);
@@ -4741,6 +4746,46 @@
         ${com ? `<div class="retorno-com">“${esc(com)}”</div>` : ""}
       </div>`;
     }).join("") + `</div>`;
+  }
+
+  // Anotações privadas do personal sobre o aluno (botão próprio na ficha). Tabela aluno_notas. Só o personal vê.
+  async function verAnotacoes(id){
+    const el = document.getElementById("notasList_"+id);
+    if(!el) return;
+    const btn = document.getElementById("btnNotas");
+    if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
+    if(btn) btn.classList.add("ativo");
+    el.innerHTML = `<div class="empty">Carregando…</div>`;
+    let atual = "";
+    try{
+      const { data } = await sb.from("aluno_notas").select("nota")
+        .eq("professional_id", ME.id).eq("student_id", id).maybeSingle();
+      atual = (data && data.nota) ? data.nota : "";
+    }catch(e){}
+    el.innerHTML = `
+      <div class="nota-inline">
+        <div class="meta-sm" style="margin-bottom:8px">📝 Anotações particulares sobre o aluno — lesões, restrições, objetivos, observações. <b>Só você vê; o aluno não tem acesso.</b></div>
+        <textarea id="notaTxt_${id}" class="fx-obs" rows="5" placeholder="Escreva aqui…">${esc(atual)}</textarea>
+        <div class="nota-inline-acoes">
+          <button class="btn small" onclick="salvarAnotacoes('${id}')">Salvar anotação</button>
+          <span class="msg" id="notaMsgInline_${id}"></span>
+        </div>
+      </div>`;
+  }
+  async function salvarAnotacoes(id){
+    const t = document.getElementById("notaTxt_"+id);
+    const msg = document.getElementById("notaMsgInline_"+id);
+    if(!t) return;
+    const nota = t.value.trim();
+    if(msg){ msg.className="msg"; msg.textContent="Salvando…"; }
+    const { error } = await sb.from("aluno_notas").upsert(
+      { professional_id: ME.id, student_id: id, nota: nota || null, updated_at: new Date().toISOString() },
+      { onConflict: "professional_id,student_id" }
+    );
+    if(msg){
+      if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; }
+      else { msg.className="msg ok"; msg.textContent="✅ Salvo — só você vê."; }
+    }
   }
 
   async function salvarProxAval(id){
@@ -6125,7 +6170,7 @@
 (function(){
   /* ===== STANDBY: quando tiver o número, preencha abaixo (DDI+DDD+número, só dígitos).
      Ex.: var WHATSAPP_NUMERO = '5531999999999';  e pronto — o botão passa a funcionar. ===== */
-  var WHATSAPP_NUMERO = '';
+  var WHATSAPP_NUMERO = '5519998194608';
   var WHATSAPP_MSG = 'Olá! Vim pelo site do Piik e gostaria de saber mais.';
 
   var SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
