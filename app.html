@@ -1436,7 +1436,7 @@
     else if(id === "consultas"){  p.innerHTML = viewConsultas();  carregarMinhasConsultas(); }
     else if(id === "perfil"){ p.innerHTML = viewPerfil(); }
     else if(id === "assinatura"){ p.innerHTML = viewAssinatura(); carregarMinhaAssinatura(); }
-    else if(id === "admin")p.innerHTML = viewAdmin();
+    else if(id === "admin"){ p.innerHTML = viewAdmin(); carregarUsuariosAdmin(); }
     else if(id === "alunos"){    if(PENDING_GRUPO===undefined) GRUPO_FILTRO=null; p.innerHTML = viewAlunos();    loadStudents(); }
     else if(id === "grupos"){    p.innerHTML = viewGrupos(); carregarGruposView(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
@@ -3120,9 +3120,44 @@
 
   function viewAdmin(){
     return `<h2>Painel do criador</h2>
-      <div class="card"><h3>🛠️ Acesso total</h3>
-      <p>Você tem acesso completo à estrutura: profissionais, alunos, dados e configurações.
-         As telas de gestão de profissionais entram numa próxima etapa.</p></div>`;
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <h3 style="margin:0">👥 Usuários cadastrados</h3>
+          <span class="meta-sm" id="admUsersCount"></span>
+        </div>
+        <input id="admUserBusca" class="aluno-search" placeholder="Buscar por nome ou e-mail…" style="width:100%;margin:12px 0 4px;box-sizing:border-box">
+        <div id="admUsersList"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+  let ADM_USERS = [];
+  function tipoConta(u){ return u.role==="professional" ? "Profissional" : (u.role==="creator" ? "Criador" : "Aluno"); }
+  async function carregarUsuariosAdmin(){
+    const el = document.getElementById("admUsersList"); if(!el) return;
+    const { data, error } = await sb.from("profiles")
+      .select("id, full_name, email, role, deletado_em, is_demo")
+      .order("role", { ascending:true }).order("full_name", { ascending:true, nullsFirst:false });
+    if(error){ el.innerHTML = `<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
+    ADM_USERS = (data || []).filter(u => !u.deletado_em && !u.is_demo);
+    renderUsuariosAdmin();
+    const inp = document.getElementById("admUserBusca");
+    if(inp && !inp._wired){ inp._wired = true; inp.addEventListener("input", renderUsuariosAdmin); }
+  }
+  function renderUsuariosAdmin(){
+    const el = document.getElementById("admUsersList"); if(!el) return;
+    const q = ((document.getElementById("admUserBusca")||{}).value || "").trim().toLowerCase();
+    let lista = ADM_USERS;
+    if(q) lista = lista.filter(u => ((u.full_name||"") + " " + (u.email||"")).toLowerCase().includes(q));
+    const cont = document.getElementById("admUsersCount");
+    if(cont) cont.textContent = lista.length + (lista.length===1 ? " usuário" : " usuários");
+    if(!lista.length){ el.innerHTML = `<div class="empty">Nenhum usuário encontrado.</div>`; return; }
+    el.innerHTML = lista.map(u => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line,#2a2f37)">
+        <div style="min-width:0">
+          <div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.full_name||"—")}</div>
+          <div class="meta-sm" style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.email||"")}</div>
+        </div>
+        <span class="role-chip chip-${esc(u.role||"")}" style="white-space:nowrap">${tipoConta(u)}</span>
+      </div>`).join("");
   }
 
   /* ================= TELAS: PROFISSIONAL ================= */
