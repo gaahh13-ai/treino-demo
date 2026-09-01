@@ -1547,17 +1547,52 @@
     window.open(`https://t.me/${bot}?start=${token}`, "_blank");
   }
 
+  // Eleva a sessão para AAL2 usando o código do app autenticador (necessário p/ trocar senha com 2FA ligado)
+  async function elevarAAL2(code){
+    try{
+      const { data: fdata, error: ferr } = await sb.auth.mfa.listFactors();
+      if(ferr) return { ok:false, erro:ferr.message };
+      const totp = (fdata && fdata.totp && fdata.totp[0]) || null;
+      if(!totp) return { ok:false, erro:"Nenhum fator de 2FA encontrado nesta conta." };
+      const { data: ch, error: cerr } = await sb.auth.mfa.challenge({ factorId: totp.id });
+      if(cerr) return { ok:false, erro:cerr.message };
+      const { error: verr } = await sb.auth.mfa.verify({ factorId: totp.id, challengeId: ch.id, code });
+      if(verr) return { ok:false, erro:"Código inválido. Confira no app autenticador e tente de novo." };
+      return { ok:true };
+    }catch(e){ return { ok:false, erro:String(e && e.message || e) }; }
+  }
   async function definirSenha(){
     const p1=document.getElementById("np1").value, p2=document.getElementById("np2").value;
     const msg=document.getElementById("pwMsg"), btn=document.getElementById("pwBtn");
+    const mfaWrap=document.getElementById("npMfaWrap"), mfaInp=document.getElementById("npMfa");
     if(p1.length<6){ msg.className="msg err"; msg.textContent="A senha precisa ter ao menos 6 caracteres."; return; }
     if(p1!==p2){ msg.className="msg err"; msg.textContent="As senhas não coincidem."; return; }
     btn.disabled=true; msg.className="msg"; msg.textContent="";
-    const { error } = await sb.auth.updateUser({ password:p1 });
-    btn.disabled=false;
-    if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; return; }
-    msg.className="msg ok"; msg.textContent="Senha salva! Já pode entrar com e-mail e senha.";
-    document.getElementById("np1").value=""; document.getElementById("np2").value="";
+    try{
+      // Se o campo de 2FA está visível, primeiro eleva a sessão com o código
+      if(mfaWrap && mfaWrap.style.display!=="none"){
+        const code=((mfaInp&&mfaInp.value)||"").replace(/\D/g,"");
+        if(code.length<6){ btn.disabled=false; msg.className="msg err"; msg.textContent="Digite o código de 6 dígitos do app autenticador."; return; }
+        msg.className="msg"; msg.textContent="Verificando o código…";
+        const el=await elevarAAL2(code);
+        if(!el.ok){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro no 2FA: "+el.erro; return; }
+      }
+      const { error } = await sb.auth.updateUser({ password:p1 });
+      if(error){
+        // 2FA exigido: revela o campo do código e pede pra salvar de novo
+        if(/AAL2|aal2|MFA|assurance|factor/i.test(error.message||"")){
+          if(mfaWrap) mfaWrap.style.display="";
+          btn.disabled=false; msg.className="msg"; msg.textContent="Sua conta tem verificação em 2 fatores. Digite o código de 6 dígitos do seu app autenticador e toque em Salvar de novo.";
+          if(mfaInp) mfaInp.focus();
+          return;
+        }
+        btn.disabled=false; msg.className="msg err"; msg.textContent="Erro: "+error.message; return;
+      }
+      btn.disabled=false;
+      msg.className="msg ok"; msg.textContent="Senha salva! Já pode entrar com e-mail e senha.";
+      document.getElementById("np1").value=""; document.getElementById("np2").value="";
+      if(mfaInp) mfaInp.value=""; if(mfaWrap) mfaWrap.style.display="none";
+    }catch(e){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro: "+String(e && e.message || e); }
   }
 
   /* ---------- ALUNO: AVALIAÇÕES FÍSICAS ---------- */
@@ -2656,6 +2691,7 @@
             <div class="field"><label>Nova senha</label><input id="np1" type="password" placeholder="mín. 6 caracteres"></div>
             <div class="field"><label>Confirmar nova senha</label><input id="np2" type="password" placeholder="repita a senha"></div>
           </div>
+          <div class="field" id="npMfaWrap" style="display:none;margin-top:8px"><label>Código do app autenticador (2FA)</label><input id="npMfa" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 dígitos"></div>
           <button class="btn small" id="pwBtn" onclick="definirSenha()">Salvar nova senha</button>
           <div class="msg" id="pwMsg"></div>
         </div>
