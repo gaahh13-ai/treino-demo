@@ -6185,6 +6185,146 @@
 })();
 </script>
 
+<!-- Piik: item de menu "Ajuda" (manual + feedback) — visível só para embaixadores do beta -->
+<script>
+(async function(){
+  try{
+    if(!window.supabase) return;
+    const _src = await fetch('app.html',{cache:'no-store'}).then(r=>r.text());
+    const _URL=(_src.match(/SUPABASE_URL\s*=\s*["']([^"']+)["']/)||[])[1];
+    const _ANON=(_src.match(/SUPABASE_ANON\s*=\s*["']([^"']+)["']/)||[])[1];
+    if(!_URL||!_ANON) return;
+    const _sb=window.supabase.createClient(_URL,_ANON,{auth:{flowType:'implicit',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+    const { data:{ user } } = await _sb.auth.getUser();
+    if(!user) return;
+    const { data:perfil } = await _sb.from('profiles').select('embaixador').eq('id',user.id).single();
+    if(!perfil || perfil.embaixador!==true) return;
+
+    // Link do manual completo (por enquanto a página que criamos; dá pra trocar por piik.com.br/manual.html depois)
+    var MANUAL_URL='https://claude.ai/code/artifact/df5bf1d2-828f-4b0a-bf8b-eb853800a1b8';
+    var UP=[];        // prints selecionados: {file,url}
+    var selTipo='';
+
+    function estilizaTipos(){
+      var bs=document.querySelectorAll('.piik-fb-tipo');
+      for(var i=0;i<bs.length;i++){
+        var b=bs[i], on=(b.getAttribute('data-t')===selTipo);
+        b.style.cssText='flex:1;cursor:pointer;font:inherit;font-size:13px;font-weight:700;padding:9px 6px;border-radius:10px;'+
+          (on?'background:rgba(127,255,0,.14);border:1px solid #7fff00;color:#e8eaee'
+             :'background:#171c22;border:1px solid #2a2f37;color:#9aa0ab');
+      }
+    }
+    function renderPrev(){
+      var box=document.getElementById('piik-fb-prev'); if(!box) return;
+      box.innerHTML='';
+      UP.forEach(function(it,i){
+        var d=document.createElement('div');
+        d.style.cssText='position:relative;width:70px;height:70px;border-radius:9px;overflow:hidden;border:1px solid #2a2f37;background:#0e1216';
+        d.innerHTML='<img src="'+it.url+'" style="width:100%;height:100%;object-fit:cover;display:block">'+
+          '<button data-i="'+i+'" class="piik-fb-rm" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;font-size:12px;line-height:1;cursor:pointer">×</button>';
+        box.appendChild(d);
+      });
+      var rms=box.querySelectorAll('.piik-fb-rm');
+      for(var i=0;i<rms.length;i++){
+        rms[i].addEventListener('click',function(){
+          var idx=Number(this.getAttribute('data-i'));
+          if(UP[idx]&&UP[idx].url){ try{ URL.revokeObjectURL(UP[idx].url); }catch(e){} }
+          UP.splice(idx,1); renderPrev();
+        });
+      }
+    }
+    function fechar(){ var ov=document.getElementById('piik-fb-ov'); if(ov) ov.remove(); UP=[]; selTipo=''; }
+
+    async function enviar(){
+      var msg=document.getElementById('piik-fb-msg');
+      var txt=(document.getElementById('piik-fb-txt')||{}).value||'';
+      txt=txt.trim();
+      if(!selTipo){ msg.style.color='#ff5a5a'; msg.textContent='Escolha: ideia, sugestão ou erro.'; return; }
+      if(!txt){ msg.style.color='#ff5a5a'; msg.textContent='Escreva algo antes de enviar.'; return; }
+      var btn=document.getElementById('piik-fb-send'); btn.disabled=true;
+      msg.style.color='#9aa0ab'; msg.textContent='Enviando…';
+      try{
+        var paths=[];
+        for(var i=0;i<UP.length;i++){
+          var f=UP[i].file;
+          var ext=(f.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+          var path=user.id+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+          var up=await _sb.storage.from('feedback-anexos').upload(path,f,{cacheControl:'3600',upsert:false,contentType:f.type||undefined});
+          if(up.error) throw new Error(up.error.message||'Falha ao enviar o print.');
+          paths.push(path);
+        }
+        var res=await _sb.functions.invoke('enviar-feedback',{ body:{ tipo:selTipo, texto:txt, anexos:paths } });
+        if(res.error) throw new Error(res.error.message||'Erro ao enviar.');
+        msg.style.color='#7fff00'; msg.textContent='✅ Enviado! Muito obrigado pelo retorno. 💚';
+        setTimeout(fechar,1400);
+      }catch(e){
+        btn.disabled=false; msg.style.color='#ff5a5a'; msg.textContent='Erro: '+(e.message||e);
+      }
+    }
+
+    function abrir(){
+      if(document.getElementById('piik-fb-ov')) return;
+      var ov=document.createElement('div'); ov.id='piik-fb-ov';
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2147483000;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 14px';
+      ov.innerHTML='<div style="background:#12161b;color:#e8eaee;border:1px solid #2a2f37;border-radius:16px;max-width:460px;width:100%;padding:20px;box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b style="font-size:18px">Ajuda &amp; Feedback</b>'+
+        '<button id="piik-fb-x" style="background:none;border:none;color:#9aa0ab;font-size:24px;cursor:pointer;line-height:1">&times;</button></div>'+
+        '<p style="color:#9aa0ab;font-size:14px;margin:6px 0 12px">Achou algo estranho, tem uma ideia ou sugest&atilde;o? Conta pra gente &mdash; seu retorno molda o Piik. &#128154;</p>'+
+        '<a href="'+MANUAL_URL+'" target="_blank" rel="noopener" style="display:inline-block;color:#7fff00;font-weight:700;text-decoration:none;font-size:14px;margin-bottom:14px">&#128214; Ver o manual completo</a>'+
+        '<div style="display:flex;gap:8px;margin-bottom:12px" id="piik-fb-tipos">'+
+        '<button data-t="ideia" class="piik-fb-tipo">&#128161; Ideia</button>'+
+        '<button data-t="sugestao" class="piik-fb-tipo">&#9997;&#65039; Sugest&atilde;o</button>'+
+        '<button data-t="erro" class="piik-fb-tipo">&#128030; Erro</button></div>'+
+        '<textarea id="piik-fb-txt" rows="5" placeholder="Escreva aqui&hellip;" style="width:100%;box-sizing:border-box;background:#0e1216;color:#e8eaee;border:1px solid #2a2f37;border-radius:10px;padding:10px;font:inherit;font-size:14px;resize:vertical"></textarea>'+
+        '<div style="margin-top:10px"><input type="file" id="piik-fb-file" accept="image/*" multiple style="display:none">'+
+        '<button id="piik-fb-add" style="background:#171c22;color:#e8eaee;border:1px solid #2a2f37;border-radius:10px;padding:9px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer">&#128206; Anexar print</button>'+
+        '<div id="piik-fb-prev" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div></div>'+
+        '<button id="piik-fb-send" style="width:100%;margin-top:14px;background:#7fff00;color:#07090b;border:none;border-radius:11px;padding:12px;font:inherit;font-size:15px;font-weight:800;cursor:pointer">Enviar</button>'+
+        '<div id="piik-fb-msg" style="font-size:13px;margin-top:8px;min-height:16px"></div></div>';
+      document.body.appendChild(ov);
+      estilizaTipos();
+      ov.addEventListener('click',function(e){ if(e.target===ov) fechar(); });
+      document.getElementById('piik-fb-x').addEventListener('click',fechar);
+      var tbs=ov.querySelectorAll('.piik-fb-tipo');
+      for(var i=0;i<tbs.length;i++){ tbs[i].addEventListener('click',function(){ selTipo=this.getAttribute('data-t'); estilizaTipos(); }); }
+      var fileInp=document.getElementById('piik-fb-file');
+      document.getElementById('piik-fb-add').addEventListener('click',function(){ fileInp.click(); });
+      fileInp.addEventListener('change',function(){
+        var fs=Array.prototype.slice.call(this.files||[]);
+        fs.forEach(function(f){
+          if(!f||!f.type||f.type.indexOf('image/')!==0) return;
+          if(f.size>10*1024*1024){ alert('A imagem "'+f.name+'" passa de 10MB.'); return; }
+          UP.push({file:f,url:URL.createObjectURL(f)});
+        });
+        this.value=''; renderPrev();
+      });
+      document.getElementById('piik-fb-send').addEventListener('click',enviar);
+    }
+
+    function inject(){
+      if(document.getElementById('piik-ajuda-link')) return true;
+      var base=document.getElementById('nav_financeiro')||document.getElementById('nav_desempenho')||document.getElementById('nav_exercicios');
+      if(!base||!base.parentElement) return false;
+      var item=base.cloneNode(true);
+      item.id='piik-ajuda-link';
+      item.removeAttribute('onclick');
+      var lbl=item.querySelector('.lbl')||item;
+      lbl.textContent='Ajuda';
+      item.addEventListener('click',function(ev){ ev.preventDefault(); ev.stopPropagation(); abrir(); },true);
+      var perso=document.getElementById('piik-perso-link');
+      if(perso&&perso.parentElement===base.parentElement){ perso.insertAdjacentElement('afterend',item); }
+      else { base.parentElement.appendChild(item); }
+      return true;
+    }
+    if(!inject()){
+      var mo=new MutationObserver(function(){ if(inject()) mo.disconnect(); });
+      mo.observe(document.body,{childList:true,subtree:true});
+      setTimeout(function(){ mo.disconnect(); },15000);
+    }
+  }catch(e){ console.warn('piik ajuda menu:', e); }
+})();
+</script>
+
 <!-- Piik white-label: aplica a marca do personal (cores, fundo, textos, logo) no site -->
 <script>
 (function(){
