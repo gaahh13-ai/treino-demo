@@ -1445,6 +1445,7 @@
     else if(id === "financeiro"){ p.innerHTML = viewFinanceiro(); carregarFinanceiro(); }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
     atualizarPill();
+    bannerCongelada();
     window.scrollTo({top:0, behavior:"smooth"});
   }
 
@@ -2212,6 +2213,7 @@
     }
   }
   async function salvarComentario(fxId){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const t = document.getElementById("comentTxt");
     const texto = (t ? t.value : "").trim();
     if(!texto){ fecharComentario(); return; }
@@ -2234,6 +2236,7 @@
   }
 
   async function salvarCarga(fichaExId, exId, carga){
+    if(contaCongelada()){ avisoCongelada(); return; }
     let atual = EXEC_LOGS[fichaExId] || {};
     atual.cargaTxt = (carga==null || String(carga).trim()==="") ? null : String(carga).trim();
     { const n = toNum(carga); atual.carga = isNaN(n) ? null : n; }   // guarda também o número (se der) p/ histórico
@@ -2251,6 +2254,7 @@
   }
 
   async function salvarSerie(fichaExId, exId, serie, carga, reps){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const chave = fichaExId + "_" + serie;
     let atual = EXEC_LOGS[chave] || { carga:null, reps:null };
     if(carga!==null) atual.carga = carga===""?null:Number(carga);
@@ -3952,6 +3956,7 @@
   }
 
   async function salvarMens(sid){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const vEl = document.getElementById("finVal_"+sid);
     const dEl = document.getElementById("finDia_"+sid);
     const valor = Math.max(0, Number(vEl && vEl.value)||0);
@@ -3964,6 +3969,7 @@
   }
 
   async function registrarPagamento(sid){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const m = FIN_MENS[sid] || {};
     const valor = Number(m.valor)||0;
     const { data, error } = await sb.from("pagamentos")
@@ -4045,6 +4051,7 @@
     renderFinAluno(id);
   }
   async function finAlunoSalvarPlano(id){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const v = Math.max(0, Number((document.getElementById("finAlVal_"+id)||{}).value)||0);
     let d = Math.round(Number((document.getElementById("finAlDia_"+id)||{}).value)||5); d = Math.min(28, Math.max(1, d));
     const { error } = await sb.from("mensalidades")
@@ -4054,6 +4061,7 @@
     renderFinAluno(id);
   }
   async function finAlunoPagar(id, pagar){
+    if(contaCongelada()){ avisoCongelada(); return; }
     if(pagar){
       const valor = Number((FIN_AL.mens||{}).valor)||0;
       const { data, error } = await sb.from("pagamentos")
@@ -4468,7 +4476,23 @@
   }
 
   function alunoEhDemo(id){ const s = STUDENTS.find(x=>x.id===(id||SELECTED_STUDENT)); return !!(s && (s.demo || s.is_demo)); }
-  function bloqueiaDemo(id){ if(alunoEhDemo(id)){ piikAlert("Este é o aluno demo (somente leitura). Use um aluno real para editar."); return true; } return false; }
+  function contaCongelada(){ return !!(ME && ME.conta_congelada) && ehProfPiik(); }
+  function avisoCongelada(){ piikAlert("Sua assinatura foi encerrada e a conta está em modo somente leitura. Você pode ver o histórico dos seus alunos, mas para editar ou cadastrar novos alunos é preciso reativar um plano em Assinatura."); }
+  function bannerCongelada(){
+    var ex=document.getElementById("congeladaBanner");
+    if(!contaCongelada()){ if(ex) ex.remove(); return; }
+    if(ex) return;
+    var b=document.createElement("div"); b.id="congeladaBanner";
+    b.style.cssText="position:sticky;top:0;z-index:900;background:rgba(255,176,32,.16);border-bottom:1px solid rgba(255,176,32,.5);color:#ffcf7a;padding:9px 14px;font-size:13px;font-weight:600;text-align:center;line-height:1.4";
+    b.innerHTML="🔒 Assinatura encerrada — conta em modo somente leitura. Você vê o histórico dos alunos, mas não pode editar nem cadastrar. Reative um plano em Assinatura para voltar a editar.";
+    var panel=document.getElementById("panel");
+    if(panel && panel.parentElement){ panel.parentElement.insertBefore(b,panel); } else { document.body.insertBefore(b,document.body.firstChild); }
+  }
+  function bloqueiaDemo(id){
+    if(contaCongelada()){ avisoCongelada(); return true; }
+    if(alunoEhDemo(id)){ piikAlert("Este é o aluno demo (somente leitura). Use um aluno real para editar."); return true; }
+    return false;
+  }
   function selecionarAluno(id){
     if(id !== SELECTED_STUDENT) fecharTodasJanelas();  // troca de aluno fecha janelas antigas
     SELECTED_STUDENT = id;
@@ -4591,6 +4615,7 @@
   }
 
   async function criarAlunoCompleto(){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const nome  = document.getElementById("inviteName").value.trim();
     const email = document.getElementById("inviteEmail").value.trim().toLowerCase();
     const cpf   = (document.getElementById("inviteCpf").value||"").replace(/\D/g,"");
@@ -4655,6 +4680,7 @@
   }
 
   async function cadastrarAluno(){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const nome  = document.getElementById("inviteName").value.trim();
     const email = document.getElementById("inviteEmail").value.trim().toLowerCase();
     const msg = document.getElementById("inviteMsg"), btn = document.getElementById("inviteBtn");
@@ -4707,6 +4733,7 @@
   }
 
   async function gerarAcesso(alunoId){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const s = STUDENTS.find(x=>x.id===alunoId);
     const nome = s ? nomeAluno(s) : "aluno";
     const emailAluno = s ? (s.email||"") : "";
@@ -5000,6 +5027,7 @@
       </div>`;
   }
   async function salvarAnotacoes(id){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const t = document.getElementById("notaTxt_"+id);
     const msg = document.getElementById("notaMsgInline_"+id);
     if(!t) return;
@@ -5020,6 +5048,7 @@
   }
 
   async function salvarProxAval(id){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const inp = document.getElementById("proxAval_"+id);
     const msg = document.getElementById("proxAvalMsg_"+id);
     const d = inp && inp.value;
@@ -5403,6 +5432,7 @@
     return `<span class="meta-sm">vence em <b>${data}</b> · <b style="color:${cor}">${extra}</b></span>`;
   }
   async function salvarPrazoFicha(v){
+    if(contaCongelada()){ avisoCongelada(); return; }
     if(!FICHA) return;
     const meses = parseInt(v,10) || null;
     const { error } = await sb.from("fichas").update({ duracao_meses:meses }).eq("id", FICHA.id);
@@ -5520,6 +5550,7 @@
   function fecharNovoTreino(){ const m=document.getElementById("novoTreinoModal"); if(m) m.remove(); }
 
   async function criarNovoTreino(duplicar){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const meses = parseInt((document.getElementById("ntMeses")||{}).value || "", 10) || null;
     fecharNovoTreino();
     const studentId = FICHA.student_id;
@@ -5581,6 +5612,7 @@
   function selDia(id){ FICHA_DIA = id; MODO_EDICAO = false; renderDias(); }
 
   async function addDia(){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const letras = "ABCDEFGH";
     const label = "Treino " + (letras[FICHA_DIAS.length] || (FICHA_DIAS.length+1));
     const { data, error } = await sb.from("ficha_dias").insert({
@@ -5592,6 +5624,7 @@
   }
 
   async function removerDia(){
+    if(contaCongelada()){ avisoCongelada(); return; }
     if(!FICHA_DIA) return;
     const d = FICHA_DIAS.find(x=>x.id===FICHA_DIA);
     if(!(await piikConfirm(`Remover ${d?d.label:"este dia"} e seus exercícios?`))) return;
@@ -5804,6 +5837,7 @@
     renderConteudoDia();  // atualiza o dia com o que foi adicionado
   }
   async function addExPopup(exId){
+    if(contaCongelada()){ avisoCongelada(); return; }
     if(!exId || !FICHA_DIA) return;
     const ex = EXERCICIOS.find(e=>e.id===exId);
     const { data: exs } = await sb.from("ficha_exercicios").select("id").eq("dia_id", FICHA_DIA);
@@ -5846,6 +5880,7 @@
   }
 
   async function addExDireto(exId){
+    if(contaCongelada()){ avisoCongelada(); return; }
     if(!exId || !FICHA_DIA) return;
     const y = window.scrollY;                 // guarda a posição da tela
     const ex = EXERCICIOS.find(e=>e.id===exId);
@@ -5970,6 +6005,7 @@
     if(abrir){ const n=document.getElementById("lib_nome"); if(n) n.focus(); }
   }
   async function addExDaLib(exId){
+    if(contaCongelada()){ avisoCongelada(); return; }
     if(!exId || !FICHA_DIA) return;
     const y = window.scrollY;
     const ex = (EXERCICIOS||[]).find(e=>e.id===exId);
@@ -5994,6 +6030,7 @@
     return data.publicUrl;
   }
   async function salvarExercicioInline(){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const nome = (document.getElementById("lib_nome")||{}).value?.trim() || "";
     const msg = document.getElementById("libFormMsg"), btn = document.getElementById("libSalvarBtn");
     if(!nome){ if(msg){ msg.className="msg err"; msg.textContent="Digite o nome do exercício."; } return; }
@@ -6028,6 +6065,7 @@
   }
 
   async function addEx(){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const sel = document.getElementById("fxAdd");
     const exId = sel.value;
     if(!exId){ return; }
@@ -6128,6 +6166,7 @@
     if(abrir){ const t=document.getElementById("notaAlunoTxt"); if(t) t.focus(); }
   }
   async function salvarNotaAluno(){
+    if(contaCongelada()){ avisoCongelada(); return; }
     const sid = (document.getElementById("fichaStudentId")||{}).value;
     const t = document.getElementById("notaAlunoTxt");
     const msg = document.getElementById("notaMsg");
