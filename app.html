@@ -5058,7 +5058,7 @@
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     const { data, error } = await sb.from("sessoes")
-      .select("data,fim,nota,comentario,finalizada")
+      .select("data,fim,nota,comentario,finalizada,dia_id,ficha_dias(label)")
       .eq("student_id", id).eq("finalizada", true)
       .order("data",{ascending:false}).limit(40);
     if(error){ el.innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
@@ -5069,9 +5069,10 @@
       let quando = "";
       try{ quando = new Date(s.fim || s.data).toLocaleDateString("pt-BR",{day:"2-digit",month:"short"}); }catch(_){}
       const com = (s.comentario && s.comentario.trim()) ? s.comentario.trim() : "";
+      const treino = (s.ficha_dias && s.ficha_dias.label) ? s.ficha_dias.label : "Treino";
       return `<div class="retorno-item">
         <div class="retorno-top">
-          <span class="retorno-data">${esc(quando)}</span>
+          <span class="retorno-data">${esc(quando)} · <b>${esc(treino)}</b></span>
           ${e ? `<span class="retorno-esf" style="color:${e.cor}">${e.emoji} ${e.nome} · ${s.nota}/10</span>` : ""}
         </div>
         ${com ? `<div class="retorno-com">“${esc(com)}”</div>` : ""}
