@@ -1314,7 +1314,7 @@
       '<p>Visão geral do Piik'+(first?' · olá, '+esc(first):'')+' — dados ao vivo do banco.</p></div>'+
       '<div id="gestKpis" class="gest-kpis"><div class="empty">Carregando indicadores…</div></div>'+
       '<div class="gest-grid">'+
-        '<div class="gest-card"><h3>🚀 Embaixadores</h3><div id="admEmbList"><div class="empty">Carregando…</div></div></div>'+
+        '<div class="gest-card"><h3>🚀 Piik Beta Testers</h3><div id="admEmbList"><div class="empty">Carregando…</div></div></div>'+
         '<div class="gest-card"><h3>💬 Feedbacks recebidos <span class="meta-sm" id="admFbCount"></span></h3><div id="admFbList"><div class="empty">Carregando…</div></div></div>'+
       '</div>'+
       '<div class="gest-card">'+
@@ -1365,8 +1365,8 @@
       kpi(pagantes.length,"Pagantes","Fit + You Piik") +
       kpi(alunos.length,"Alunos","ativos") +
       kpi(cadMes,"Cadastros no mês","novos perfis") +
-      kpi(embs.length,"Embaixadores","marcados") +
-      kpi(embAtivados+"/"+embs.length,"Ativação embaixadores",taxaAtiv+"% cumpriram a meta") +
+      kpi(embs.length,"Piik Beta Testers","marcados") +
+      kpi(embAtivados+"/"+embs.length,"Ativação Beta Testers",taxaAtiv+"% cumpriram a meta") +
       kpi(emailsTotal,"E-mails enviados",emailsMes+" neste mês") +
       kpi("—","Lista de espera","captura ainda não criada",true) +
       kpi("—","Trial → pagante","precisa rastrear pagamentos",true) +
@@ -3251,8 +3251,8 @@
   function viewAdmin(){
     return `<h2>Painel do criador</h2>
       <div class="card">
-        <h3 style="margin:0 0 2px">🚀 Embaixadores</h3>
-        <p class="meta-sm" style="margin:0">Como cada embaixador está no beta.</p>
+        <h3 style="margin:0 0 2px">🚀 Piik Beta Testers</h3>
+        <p class="meta-sm" style="margin:0">Como cada Beta Tester está no beta.</p>
         <div id="admEmbList" style="margin-top:6px"><div class="empty">Carregando…</div></div>
       </div>
       <div class="card">
@@ -3294,7 +3294,7 @@
   async function renderEmbaixadores(todos){
     const el = document.getElementById("admEmbList"); if(!el) return;
     const embs = todos.filter(u => u.embaixador===true && !u.deletado_em);
-    if(!embs.length){ el.innerHTML = `<div class="empty">Nenhum embaixador marcado ainda.</div>`; return; }
+    if(!embs.length){ el.innerHTML = `<div class="empty">Nenhum Piik Beta Tester marcado ainda.</div>`; return; }
     const embIds = embs.map(e=>e.id);
     const alunosPorProf = {};
     todos.forEach(u => { if(u.professional_id && !u.is_demo && !u.deletado_em) alunosPorProf[u.professional_id] = (alunosPorProf[u.professional_id]||0)+1; });
