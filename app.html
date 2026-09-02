@@ -4479,14 +4479,13 @@
   function contaCongelada(){ return !!(ME && ME.conta_congelada) && ehProfPiik(); }
   function avisoCongelada(){ piikAlert("Sua assinatura foi encerrada e a conta está em modo somente leitura. Você pode ver o histórico dos seus alunos, mas para editar ou cadastrar novos alunos é preciso reativar um plano em Assinatura."); }
   function bannerCongelada(){
-    var ex=document.getElementById("congeladaBanner");
-    if(!contaCongelada()){ if(ex) ex.remove(); return; }
-    if(ex) return;
+    if(!contaCongelada()) return;
+    var panel=document.getElementById("panel"); if(!panel) return;
+    if(panel.firstElementChild && panel.firstElementChild.id==="congeladaBanner") return;
     var b=document.createElement("div"); b.id="congeladaBanner";
-    b.style.cssText="position:sticky;top:0;z-index:900;background:rgba(255,176,32,.16);border-bottom:1px solid rgba(255,176,32,.5);color:#ffcf7a;padding:9px 14px;font-size:13px;font-weight:600;text-align:center;line-height:1.4";
-    b.innerHTML="🔒 Assinatura encerrada — conta em modo somente leitura. Você vê o histórico dos alunos, mas não pode editar nem cadastrar. Reative um plano em Assinatura para voltar a editar.";
-    var panel=document.getElementById("panel");
-    if(panel && panel.parentElement){ panel.parentElement.insertBefore(b,panel); } else { document.body.insertBefore(b,document.body.firstChild); }
+    b.style.cssText="background:#5a4712;border:1px solid #b9922b;border-radius:12px;color:#ffdf9e;padding:11px 14px;margin:0 0 16px;font-size:13px;font-weight:700;line-height:1.45;box-sizing:border-box";
+    b.textContent="🔒 Assinatura encerrada — conta em modo somente leitura. Você vê o histórico dos alunos, mas não pode editar nem cadastrar. Reative um plano em Assinatura para voltar a editar.";
+    panel.insertAdjacentElement("afterbegin", b);
   }
   function bloqueiaDemo(id){
     if(contaCongelada()){ avisoCongelada(); return true; }
