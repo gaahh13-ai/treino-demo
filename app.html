@@ -3188,7 +3188,7 @@
 
   async function carregarAdmin(){
     const { data: perfis, error } = await sb.from("profiles")
-      .select("id, full_name, email, role, deletado_em, is_demo, professional_id, embaixador")
+      .select("id, full_name, email, role, plano, deletado_em, is_demo, professional_id, embaixador")
       .order("role", { ascending:true }).order("full_name", { ascending:true, nullsFirst:false });
     if(error){ const el=document.getElementById("admUsersList"); if(el) el.innerHTML=`<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
     const todos = perfis || [];
@@ -3228,7 +3228,10 @@
             <div style="font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.full_name||"—")}</div>
             <div class="meta-sm" style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.email||"")}</div>
           </div>
-          ${selo}
+          <div style="display:flex;align-items:center;gap:6px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end">
+            <span style="white-space:nowrap;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--pk-surf2,#1d2027);color:var(--pink,#7fff00);border:1px solid var(--line,#2a2f37)">${esc(PLANO_LABEL[e.plano]||e.plano||"—")}</span>
+            ${selo}
+          </div>
         </div>
         <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
           <span style="font-size:13px"><b style="font-size:15px">${nAl}</b> <span class="meta-sm">aluno${nAl===1?"":"s"}</span></span>
@@ -3296,8 +3299,9 @@
           <div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.full_name||"—")}</div>
           <div class="meta-sm" style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.email||"")}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex:0 0 auto">
+        <div style="display:flex;align-items:center;gap:6px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end">
           <span class="role-chip chip-${esc(u.role||"")}" style="white-space:nowrap">${tipoConta(u)}</span>
+          ${(u.role!=="student" && u.plano) ? `<span style="white-space:nowrap;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;background:var(--pk-surf2,#1d2027);color:var(--pink,#7fff00);border:1px solid var(--line,#2a2f37)">${esc(PLANO_LABEL[u.plano]||u.plano)}</span>` : ""}
           ${statusChip}
         </div>
       </div>`;
