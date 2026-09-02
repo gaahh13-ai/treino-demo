@@ -1436,7 +1436,7 @@
     else if(id === "consultas"){  p.innerHTML = viewConsultas();  carregarMinhasConsultas(); }
     else if(id === "perfil"){ p.innerHTML = viewPerfil(); }
     else if(id === "assinatura"){ p.innerHTML = viewAssinatura(); carregarMinhaAssinatura(); }
-    else if(id === "admin"){ p.innerHTML = viewAdmin(); carregarUsuariosAdmin(); }
+    else if(id === "admin"){ p.innerHTML = viewAdmin(); carregarAdmin(); }
     else if(id === "alunos"){    if(PENDING_GRUPO===undefined) GRUPO_FILTRO=null; p.innerHTML = viewAlunos();    loadStudents(); }
     else if(id === "grupos"){    p.innerHTML = viewGrupos(); carregarGruposView(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
@@ -3157,6 +3157,18 @@
   function viewAdmin(){
     return `<h2>Painel do criador</h2>
       <div class="card">
+        <h3 style="margin:0 0 2px">🚀 Embaixadores</h3>
+        <p class="meta-sm" style="margin:0">Como cada embaixador está no beta.</p>
+        <div id="admEmbList" style="margin-top:6px"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <h3 style="margin:0">💬 Feedbacks recebidos</h3>
+          <span class="meta-sm" id="admFbCount"></span>
+        </div>
+        <div id="admFbList" style="margin-top:8px"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
           <h3 style="margin:0">👥 Usuários cadastrados</h3>
           <span class="meta-sm" id="admUsersCount"></span>
@@ -3166,17 +3178,99 @@
       </div>`;
   }
   let ADM_USERS = [];
+  let ADM_NOME = {};   // id -> {nome,email}
+  const FB_TIPO = { ideia:"💡 Ideia", sugestao:"✍️ Sugestão", erro:"🐞 Erro" };
   function tipoConta(u){ return u.role==="professional" ? "Profissional" : (u.role==="creator" ? "Criador" : "Aluno"); }
-  async function carregarUsuariosAdmin(){
-    const el = document.getElementById("admUsersList"); if(!el) return;
-    const { data, error } = await sb.from("profiles")
-      .select("id, full_name, email, role, deletado_em, is_demo")
+
+  async function carregarAdmin(){
+    const { data: perfis, error } = await sb.from("profiles")
+      .select("id, full_name, email, role, deletado_em, is_demo, professional_id, embaixador")
       .order("role", { ascending:true }).order("full_name", { ascending:true, nullsFirst:false });
-    if(error){ el.innerHTML = `<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
-    ADM_USERS = (data || []).filter(u => !u.is_demo);
+    if(error){ const el=document.getElementById("admUsersList"); if(el) el.innerHTML=`<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
+    const todos = perfis || [];
+    ADM_USERS = todos.filter(u => !u.is_demo);
+    ADM_NOME = {}; todos.forEach(u => { ADM_NOME[u.id] = { nome:u.full_name||"—", email:u.email||"" }; });
     renderUsuariosAdmin();
     const inp = document.getElementById("admUserBusca");
     if(inp && !inp._wired){ inp._wired = true; inp.addEventListener("input", renderUsuariosAdmin); }
+    await renderEmbaixadores(todos);
+    await renderFeedbacksAdmin();
+  }
+
+  async function renderEmbaixadores(todos){
+    const el = document.getElementById("admEmbList"); if(!el) return;
+    const embs = todos.filter(u => u.embaixador===true && !u.deletado_em);
+    if(!embs.length){ el.innerHTML = `<div class="empty">Nenhum embaixador marcado ainda.</div>`; return; }
+    const embIds = embs.map(e=>e.id);
+    const alunosPorProf = {};
+    todos.forEach(u => { if(u.professional_id && !u.is_demo && !u.deletado_em) alunosPorProf[u.professional_id] = (alunosPorProf[u.professional_id]||0)+1; });
+    const treinosPorProf = {};
+    try{ const { data: fis } = await sb.from("fichas").select("professional_id").in("professional_id", embIds);
+      (fis||[]).forEach(f => { if(f.professional_id) treinosPorProf[f.professional_id] = (treinosPorProf[f.professional_id]||0)+1; }); }catch(e){}
+    const fbPorUser = {};
+    try{ const { data: fbs } = await sb.from("feedback").select("user_id").in("user_id", embIds);
+      (fbs||[]).forEach(f => { if(f.user_id) fbPorUser[f.user_id] = (fbPorUser[f.user_id]||0)+1; }); }catch(e){}
+    el.innerHTML = embs.map(e => {
+      const nAl = alunosPorProf[e.id]||0, nTr = treinosPorProf[e.id]||0, nFb = fbPorUser[e.id]||0;
+      const ativado = nAl>=3 && nTr>=1;
+      const selo = ativado
+        ? `<span style="white-space:nowrap;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;background:rgba(127,255,0,.14);color:var(--pink,#7fff00);border:1px solid var(--pink,#7fff00)">Ativado</span>`
+        : `<span style="white-space:nowrap;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;background:rgba(230,190,60,.16);color:#e8c14a;border:1px solid #6a5a1e">Não ativado</span>`;
+      const falta = !ativado ? `<div class="meta-sm" style="margin-top:6px;font-size:12px">Falta pra ativar: ${nAl<3?`${3-nAl} aluno(s)`:""}${(nAl<3&&nTr<1)?" e ":""}${nTr<1?"montar 1 treino":""}.</div>` : "";
+      return `
+      <div style="padding:12px 0;border-top:1px solid var(--line,#2a2f37)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="min-width:0">
+            <div style="font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.full_name||"—")}</div>
+            <div class="meta-sm" style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.email||"")}</div>
+          </div>
+          ${selo}
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
+          <span style="font-size:13px"><b style="font-size:15px">${nAl}</b> <span class="meta-sm">aluno${nAl===1?"":"s"}</span></span>
+          <span style="font-size:13px"><b style="font-size:15px">${nTr}</b> <span class="meta-sm">treino${nTr===1?"":"s"}</span></span>
+          <span style="font-size:13px"><b style="font-size:15px">${nFb}</b> <span class="meta-sm">feedback${nFb===1?"":"s"}</span></span>
+        </div>
+        ${falta}
+      </div>`;
+    }).join("");
+  }
+
+  async function fbSignedUrl(path){
+    try{ const { data } = await sb.storage.from("feedback-anexos").createSignedUrl(path, 3600); return data ? data.signedUrl : null; }
+    catch(e){ return null; }
+  }
+  async function renderFeedbacksAdmin(){
+    const el = document.getElementById("admFbList"); if(!el) return;
+    const { data, error } = await sb.from("feedback")
+      .select("id, user_id, tipo, texto, anexos, status, created_at")
+      .order("created_at", { ascending:false }).limit(80);
+    const cont = document.getElementById("admFbCount");
+    if(error){ el.innerHTML = `<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
+    const lista = data || [];
+    if(cont) cont.textContent = lista.length + (lista.length===1?" mensagem":" mensagens");
+    if(!lista.length){ el.innerHTML = `<div class="empty">Nenhum feedback recebido ainda.</div>`; return; }
+    el.innerHTML = lista.map(f => {
+      const who = ADM_NOME[f.user_id] || { nome:"—", email:"" };
+      const anexos = Array.isArray(f.anexos) ? f.anexos : [];
+      const fotos = anexos.map(p => `<a data-fb-foto="${esc(p)}" target="_blank" rel="noopener" style="width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--line,#2a2f37);display:block;background:var(--elev,#0e1216)"><img alt="print" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block"></a>`).join("");
+      return `
+      <div style="padding:12px 0;border-top:1px solid var(--line,#2a2f37)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <span style="font-weight:800;font-size:13px">${esc(FB_TIPO[f.tipo]||f.tipo||"")}</span>
+          <span class="meta-sm" style="font-size:12px">${esc(fmtComentData(f.created_at))}</span>
+        </div>
+        <div style="white-space:pre-wrap;font-size:14px;margin:6px 0 4px">${esc(f.texto||"")}</div>
+        <div class="meta-sm" style="font-size:12px">${esc(who.nome)}${who.email?` · ${esc(who.email)}`:""}</div>
+        ${fotos ? `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">${fotos}</div>` : ""}
+      </div>`;
+    }).join("");
+    const imgs = el.querySelectorAll("[data-fb-foto]");
+    for(const a of imgs){
+      const u = await fbSignedUrl(a.getAttribute("data-fb-foto"));
+      if(u){ a.href = u; const img=a.querySelector("img"); if(img) img.src=u; }
+      else { a.style.display="none"; }
+    }
   }
   function renderUsuariosAdmin(){
     const el = document.getElementById("admUsersList"); if(!el) return;
