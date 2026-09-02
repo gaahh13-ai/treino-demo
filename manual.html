@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Manual do Embaixador Piik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&display=swap">
+<style>
+  :root{
+    --accent:#57b800; --accent-strong:#4a9600; --accent-ink:#0a1400; --accent-soft:rgba(87,184,0,.10);
+    --bg:#f5f7f2; --card:#ffffff; --card2:#eef2ea; --elev:#ffffff;
+    --txt:#151b12; --muted:#586152; --faint:#89927e; --line:#e4e8dd; --line2:#d0d7c6;
+    --amber:#a8760a; --blue:#2b6cb0;
+    --shadow:0 1px 2px rgba(20,26,18,.05),0 10px 26px rgba(20,26,18,.06);
+    --disp:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --accent:#8bff1f; --accent-strong:#8bff1f; --accent-ink:#0a1400; --accent-soft:rgba(139,255,31,.12);
+      --bg:#0a0e08; --card:#12170f; --card2:#171d13; --elev:#0e130b;
+      --txt:#e9eee4; --muted:#9aa48f; --faint:#6f7865; --line:#222a1c; --line2:#33402a;
+      --amber:#e8c14a; --blue:#84b6ef;
+      --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 28px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --accent:#8bff1f; --accent-strong:#8bff1f; --accent-ink:#0a1400; --accent-soft:rgba(139,255,31,.12);
+    --bg:#0a0e08; --card:#12170f; --card2:#171d13; --elev:#0e130b;
+    --txt:#e9eee4; --muted:#9aa48f; --faint:#6f7865; --line:#222a1c; --line2:#33402a;
+    --amber:#e8c14a; --blue:#84b6ef;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 28px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--body);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:34px 20px 80px}
+  a{color:var(--accent-strong);font-weight:700;text-decoration:none}
+  :root[data-theme="dark"] a, :root:not([data-theme="light"]) a{color:var(--accent)}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) a{color:var(--accent)}}
+
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 26px 24px;box-shadow:var(--shadow);margin-bottom:22px}
+  .logo{font-family:var(--disp);font-weight:900;font-size:22px;letter-spacing:-.02em}
+  .logo span{color:var(--accent-strong)}
+  :root[data-theme="dark"] .logo span{color:var(--accent)}
+  .badge{display:inline-block;margin-top:12px;font-family:var(--disp);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:5px 12px}
+  h1{font-family:var(--disp);font-weight:900;font-size:30px;line-height:1.12;letter-spacing:-.02em;margin:14px 0 8px;text-wrap:balance}
+  .hero p{margin:0;color:var(--muted);font-size:16px;max-width:60ch}
+
+  h2{font-family:var(--disp);font-size:13px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:38px 0 12px;display:flex;align-items:center;gap:9px}
+  h2 .em{font-size:16px}
+  h3{font-family:var(--disp);font-size:18px;font-weight:800;margin:20px 0 4px;letter-spacing:-.01em}
+  p{margin:8px 0}
+  .lead{font-size:16px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);margin:12px 0}
+  .soft{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
+
+  .missions{display:grid;gap:12px}
+  @media(min-width:640px){.missions{grid-template-columns:repeat(3,1fr)}}
+  .mission{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);position:relative}
+  .mission .n{font-family:var(--disp);font-size:12px;font-weight:900;color:var(--accent-ink);background:var(--accent);width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .mission h4{font-family:var(--disp);margin:10px 0 4px;font-size:16px;font-weight:800}
+  .mission p{margin:0;font-size:13.5px;color:var(--muted)}
+
+  .step{display:flex;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step .k{flex:0 0 auto;width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent-strong);font-family:var(--disp);font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center}
+  :root[data-theme="dark"] .step .k{color:var(--accent)}
+  .step .c{flex:1}
+  .step .c b{font-weight:800}
+  .step .c .sub{font-size:14px;color:var(--muted);margin-top:2px}
+
+  ul.clean{list-style:none;padding:0;margin:10px 0}
+  ul.clean li{position:relative;padding:6px 0 6px 24px}
+  ul.clean li::before{content:"";position:absolute;left:3px;top:14px;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+  ul.check li::before{content:"✓";background:none;left:0;top:5px;color:var(--accent-strong);font-weight:900;font-family:var(--disp)}
+  :root[data-theme="dark"] ul.check li::before{color:var(--accent)}
+
+  .callout{border-left:4px solid var(--accent);background:var(--card2);border-radius:0 12px 12px 0;padding:13px 16px;margin:14px 0}
+  .callout b{color:var(--txt)}
+  .pill{display:inline-block;font-family:var(--disp);font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line2);color:var(--muted)}
+  .pill.you{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-strong)}
+  :root[data-theme="dark"] .pill.you{color:var(--accent)}
+
+  .timeline{position:relative;margin:12px 0 0;padding-left:24px}
+  .timeline::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line2)}
+  .tl{position:relative;margin-bottom:14px}
+  .tl::before{content:"";position:absolute;left:-21px;top:3px;width:13px;height:13px;border-radius:50%;background:var(--accent);border:3px solid var(--bg)}
+  .tl b{font-family:var(--disp)}
+  .tl .d{font-family:var(--disp);font-size:11px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--accent-strong)}
+  :root[data-theme="dark"] .tl .d{color:var(--accent)}
+  .tl p{margin:1px 0 0;font-size:14px;color:var(--muted)}
+
+  .contact{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+  .contact .b{flex:1;min-width:200px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .contact .b .l{font-size:12px;color:var(--faint);font-weight:700;font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em}
+  .contact .b .v{font-size:16px;font-weight:800;margin-top:2px}
+
+  .foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--faint);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="logo">P<span>ii</span>k</div>
+    <span class="badge">Programa Embaixadores · Beta</span>
+    <h1>Bem-vindo ao time que está construindo o Piik</h1>
+    <p>Você tem acesso antecipado à plataforma que deixa o personal trainer mais profissional: treinos, acompanhamento dos alunos e — se quiser — tudo com a <b>sua marca</b>. Este é o seu manual: como usar e o que esperamos de você nas próximas semanas. Obrigado por embarcar. 🚀</p>
+  </div>
+
+  <div class="callout">
+    <b>O trato, em uma frase:</b> você usa o Piik de verdade com seus alunos por ~3 semanas e nos conta o que achou; em troca, você garante uma <b>condição especial e vitalícia</b> no Piik.
+  </div>
+
+  <h2><span class="em">🚀</span> Primeiros passos</h2>
+  <div class="card">
+    <div class="step"><div class="k">1</div><div class="c"><b>Acesse a plataforma</b><div class="sub">Abra <a href="https://piik.com.br" target="_blank" rel="noopener">piik.com.br</a> no computador ou no celular e entre com o acesso que te enviamos. Dica: no celular, use "Adicionar à tela de início" pra abrir como um app.</div></div></div>
+    <div class="step"><div class="k">2</div><div class="c"><b>Confira seu perfil</b><div class="sub">Nome, WhatsApp e, se você tiver, CREF e Instagram — é o que aparece pro seu aluno.</div></div></div>
+    <div class="step"><div class="k">3</div><div class="c"><b>Faça as 3 missões abaixo</b><div class="sub">São a espinha dorsal do teste. Com elas, você sente o valor do Piik já nos primeiros dias.</div></div></div>
+  </div>
+
+  <h2><span class="em">🎯</span> Suas 3 missões (primeiros 7 dias)</h2>
+  <div class="missions">
+    <div class="mission"><div class="n">1</div><h4>Cadastre 3 alunos</h4><p>Alunos reais seus. Depois é só gerar o acesso e enviar pra eles entrarem.</p></div>
+    <div class="mission"><div class="n">2</div><h4>Monte 1 treino</h4><p>Um treino de verdade pra um desses alunos, do jeito que você faria hoje.</p></div>
+    <div class="mission"><div class="n">3</div><h4>Veja um retorno</h4><p>Peça pro aluno concluir o treino no app — e veja o retorno dele chegar pra você.</p></div>
+  </div>
+  <div class="soft">Quando terminar as 3, você já viu o coração do Piik funcionando. É aí que a gente mais quer o seu olhar: o que foi fácil, o que travou, o que faltou.</div>
+
+  <h2><span class="em">📱</span> Como usar o Piik — passo a passo</h2>
+
+  <h3>Cadastrar um aluno e dar acesso</h3>
+  <ul class="clean">
+    <li>Cadastre o aluno com nome e dados básicos.</li>
+    <li>Toque em <b>Gerar acesso</b> na ficha do aluno para criar o link/senha de entrada.</li>
+    <li>Envie esse acesso pro aluno — ele entra pelo app e vê os treinos que você montar.</li>
+  </ul>
+
+  <h3>Montar o treino</h3>
+  <ul class="clean">
+    <li>Na ficha do aluno, abra <b>Treinos</b>.</li>
+    <li>Crie os dias (A, B, C…) e adicione exercícios da biblioteca.</li>
+    <li>Defina <b>séries, repetições e descanso</b> de cada exercício, e use o campo de <b>observação</b> quando quiser orientar algo.</li>
+    <li>Marque seus exercícios preferidos com a <b>estrela</b> (favoritos) pra achar rápido nos próximos treinos.</li>
+    <li>Use o <b>Modo Foco</b> pra montar/revisar um exercício por vez, com mais espaço.</li>
+  </ul>
+
+  <h3>Avaliações físicas <span class="pill">com fotos</span></h3>
+  <ul class="clean">
+    <li>Registre medidas (peso, dobras, circunferências) — o app calcula a composição corporal.</li>
+    <li>Use <b>📷 Adicionar fotos</b> pra anexar fotos de progresso (frente, costas, lado). Elas ficam guardadas com segurança.</li>
+    <li>Dá pra agendar a próxima avaliação e acompanhar o histórico.</li>
+  </ul>
+
+  <h3>Anotações <span class="pill">só você vê</span></h3>
+  <ul class="clean">
+    <li>Anote observações particulares sobre o aluno (lesões, restrições, objetivos).</li>
+    <li>Cada anotação fica registrada com <b>data e hora</b>, formando um histórico. O aluno não tem acesso.</li>
+  </ul>
+
+  <h3>Retorno dos treinos</h3>
+  <ul class="clean">
+    <li>Ao concluir um treino, o aluno responde o <b>nível de esforço</b> (num velocímetro de 1 a 10) e pode deixar um recado.</li>
+    <li>Você vê esse retorno em <b>Retorno dos treinos</b>, na ficha do aluno — ótimo pra ajustar a carga.</li>
+  </ul>
+
+  <h3>Dashboard e Financeiro</h3>
+  <ul class="clean">
+    <li><b>Dashboard</b>: visão de frequência e evolução do aluno.</li>
+    <li><b>Financeiro</b>: controle de mensalidades e pagamentos dos seus alunos.</li>
+  </ul>
+
+  <h3>Sua marca <span class="pill you">White-label · You Piik</span></h3>
+  <p style="margin-top:4px;color:var(--muted);font-size:14px">Se o seu acesso for You Piik, você personaliza o app com o <b>seu logo e a sua cor</b> — o aluno abre um app com a sua identidade, não a do Piik. É o maior diferencial pra você se destacar.</p>
+
+  <h3>O que o aluno vê</h3>
+  <p style="margin-top:4px;color:var(--muted);font-size:14px">O aluno entra pelo acesso que você gerou, vê os treinos do dia, marca as cargas, conclui o treino e responde o nível de esforço. Vale a pena você entrar como aluno uma vez pra sentir essa experiência.</p>
+
+  <h2><span class="em">🤝</span> O que esperamos de você</h2>
+  <div class="card">
+    <ul class="clean check">
+      <li><b>Usar de verdade</b> por ~3 semanas, com alunos reais — é o uso no dia a dia que revela o que importa.</li>
+      <li><b>Reportar o que achar estranho</b> no grupo do beta (um bug, algo confuso, uma ideia).</li>
+      <li><b>Responder 2 pesquisas rápidas</b> (uma no 7º dia, outra no 21º).</li>
+      <li><b>Deixar 1 depoimento</b> no fim, se você curtir a experiência.</li>
+    </ul>
+  </div>
+
+  <h2><span class="em">🐞</span> Como reportar um problema</h2>
+  <div class="soft">
+    Quando algo travar ou parecer errado, manda no grupo do beta com estes 3 itens — assim a gente resolve rápido:
+    <ul class="clean" style="margin-top:8px">
+      <li><b>O que você tentou fazer</b> (ex.: "montar o treino do João").</li>
+      <li><b>O que aconteceu</b> (ex.: "deu erro ao salvar" / "a tela ficou branca").</li>
+      <li><b>Um print</b> da tela, se der — ajuda demais.</li>
+    </ul>
+  </div>
+
+  <h2><span class="em">🗓️</span> Como vão ser as semanas</h2>
+  <div class="timeline">
+    <div class="tl"><div class="d">Dia 0</div><b>Boas-vindas</b><p>Você entra no grupo, recebe o acesso e começa pelas 3 missões.</p></div>
+    <div class="tl"><div class="d">Dia 3</div><b>Check-in rápido</b><p>A gente pergunta como foi o começo e se algo travou.</p></div>
+    <div class="tl"><div class="d">Dia 7</div><b>Pesquisa 1</b><p>Suas primeiras impressões (leva 2 minutos).</p></div>
+    <div class="tl"><div class="d">Dia 14</div><b>Novidades</b><p>Ajustes feitos a partir do feedback + uma pergunta aberta.</p></div>
+    <div class="tl"><div class="d">Dia 21</div><b>Pesquisa 2 + depoimento</b><p>Um retorno mais a fundo e, se você curtiu, um depoimento.</p></div>
+  </div>
+
+  <h2><span class="em">💬</span> Precisa de ajuda?</h2>
+  <p class="lead" style="color:var(--muted)">Qualquer dúvida, fala com a gente — a resposta é rápida.</p>
+  <div class="contact">
+    <div class="b"><div class="l">WhatsApp</div><div class="v">(19) 99819-4608</div></div>
+    <div class="b"><div class="l">E-mail</div><div class="v">contato@piik.com.br</div></div>
+  </div>
+
+  <div class="foot">
+    Seu feedback muda o produto de verdade — e sua condição especial fica com você pra sempre. Obrigado por construir isso com a gente. 💚<br>
+    Piik · Manual do Embaixador (Beta) · versão inicial.
+  </div>
+
+</div>
+
+</body>
+</html>
