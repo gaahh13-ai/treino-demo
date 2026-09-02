@@ -3588,16 +3588,6 @@
         <h3>🏋️ Treino — <span id="fichaAluno"></span></h3>
         <p>Monte o treino do aluno em dias (A, B, C…). Ele vê tudo no app, na aba "Meu treino".</p>
         <input type="hidden" id="fichaStudentId">
-        <div class="nota-aluno">
-          <button class="nota-toggle" onclick="toggleNotaAluno()">📝 Minhas anotações sobre o aluno <span class="meta-sm" style="opacity:.75">(só você vê)</span> <span id="notaChev">▾</span></button>
-          <div id="notaBox" class="nota-box" style="display:none">
-            <textarea id="notaAlunoTxt" rows="4" placeholder="Anotações particulares sobre o aluno: lesões, restrições, preferências, objetivos, observações da avaliação… Isso fica guardado só para você — o aluno não vê."></textarea>
-            <div class="nota-acoes">
-              <button class="btn small" onclick="salvarNotaAluno()">Salvar anotação</button>
-              <span class="msg" id="notaMsg"></span>
-            </div>
-          </div>
-        </div>
         <div id="fichaHeader" class="ficha-head"></div>
         <div id="fichaDias" style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0"></div>
         <div id="fichaConteudo"></div>
@@ -5486,7 +5476,6 @@
     const s = STUDENTS.find(x=>x.id===studentId);
     document.getElementById("fichaStudentId").value = studentId;
     document.getElementById("fichaAluno").textContent = nomeAluno(s);
-    carregarNotaAluno(studentId);
     document.getElementById("fichaDias").innerHTML = "";
     document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Carregando…</div>`;
     const card = document.getElementById("fichaCard");
@@ -6240,43 +6229,6 @@
     window.scrollTo(0, y);
   }
 
-  // ===== Anotação PRIVADA do personal sobre o aluno (o aluno NÃO vê) =====
-  async function carregarNotaAluno(studentId){
-    const t = document.getElementById("notaAlunoTxt");
-    const box = document.getElementById("notaBox"), chev = document.getElementById("notaChev");
-    const msg = document.getElementById("notaMsg");
-    if(t) t.value = "";
-    if(box) box.style.display = "none";
-    if(chev) chev.textContent = "▾";
-    if(msg){ msg.className="msg"; msg.textContent=""; }
-    // Anotações agora são um histórico com data/hora (aba Anotações). Aqui o campo começa vazio: cada "salvar" registra uma nova anotação.
-  }
-  function toggleNotaAluno(){
-    const box = document.getElementById("notaBox"), chev = document.getElementById("notaChev");
-    if(!box) return;
-    const abrir = box.style.display === "none";
-    box.style.display = abrir ? "block" : "none";
-    if(chev) chev.textContent = abrir ? "▴" : "▾";
-    if(abrir){ const t=document.getElementById("notaAlunoTxt"); if(t) t.focus(); }
-  }
-  async function salvarNotaAluno(){
-    if(contaCongelada()){ avisoCongelada(); return; }
-    const sid = (document.getElementById("fichaStudentId")||{}).value;
-    const t = document.getElementById("notaAlunoTxt");
-    const msg = document.getElementById("notaMsg");
-    if(!sid || !t) return;
-    const nota = t.value.trim();
-    if(!nota){ if(msg){ msg.className="msg"; msg.textContent="Escreva algo antes de salvar."; } return; }
-    if(msg){ msg.className="msg"; msg.textContent="Salvando…"; }
-    const { error } = await sb.from("aluno_notas").insert(
-      { professional_id: ME.id, student_id: sid, nota: nota, created_at: new Date().toISOString() }
-    );
-    if(msg){
-      if(error){ msg.className="msg err"; msg.textContent="Erro: "+error.message; }
-      else { msg.className="msg ok"; msg.textContent="✅ Registrado com data e hora — só você vê. (veja o histórico na aba Anotações)"; t.value=""; }
-    }
-  }
-
   /* ---------- PROFISSIONAL: METAS ---------- */
   async function abrirMetas(id){
     if(!alternarJanela("goalsCard")) return;
@@ -6842,12 +6794,6 @@ video.ex-thumb{object-fit:cover}
   .lib-form-grid{grid-template-columns:1fr}
 }
 .fx-replicar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
-.nota-aluno{margin:6px 0 14px;border:1px solid var(--line,#2a2f37);border-radius:12px;overflow:hidden}
-.nota-toggle{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--card2,#171c22);border:none;color:var(--txt,#e8eaee);font:inherit;font-weight:700;font-size:14px;padding:11px 14px;cursor:pointer}
-.nota-toggle #notaChev{margin-left:auto;opacity:.7}
-.nota-box{padding:12px 14px;background:var(--card,#12161b)}
-.nota-box textarea{width:100%;background:var(--elev,#0e1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:10px;font:inherit;font-size:14px;resize:vertical}
-.nota-acoes{display:flex;align-items:center;gap:10px;margin-top:8px}
 </style>
 </body>
 </html>
