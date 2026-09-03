@@ -6706,7 +6706,7 @@
     }
 
     function inject(){
-      if(document.getElementById('piik-bt-link')) return true;
+      if(document.getElementById('piik-bt-link')){ ensureLast(); return true; }
       var base=document.getElementById('nav_financeiro')||document.getElementById('nav_desempenho')||document.getElementById('nav_exercicios');
       if(!base||!base.parentElement) return false;
       var item=base.cloneNode(true);
@@ -6721,11 +6721,19 @@
       base.parentElement.appendChild(item);   // sempre no fim da lista (mais para baixo)
       return true;
     }
-    if(!inject()){
-      var mo=new MutationObserver(function(){ if(inject()) mo.disconnect(); });
-      mo.observe(document.body,{childList:true,subtree:true});
-      setTimeout(function(){ mo.disconnect(); },15000);
+    // Garante que o Beta Tester fique SEMPRE por último (abaixo de Personalização),
+    // mesmo que a Personalização seja injetada depois — corrige a troca de ordem no 1º login.
+    function ensureLast(){
+      var item=document.getElementById('piik-bt-link');
+      if(!item) return;
+      var parent=item.parentElement;
+      if(parent && parent.lastElementChild!==item) parent.appendChild(item);
     }
+    inject();
+    // segue observando por ~15s para reordenar caso a Personalização entre depois.
+    var mo=new MutationObserver(function(){ inject(); ensureLast(); });
+    mo.observe(document.body,{childList:true,subtree:true});
+    setTimeout(function(){ mo.disconnect(); },15000);
   }catch(e){ console.warn('piik ajuda menu:', e); }
 })();
 </script>
