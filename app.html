@@ -869,6 +869,27 @@
   .fin-tag.at{background:#2a1416!important;color:#ff9aa2!important}
   .fin-aluno{background:var(--pk-elev,#0f1116)!important;border-color:var(--line,#262a33)!important}
   .fin-al-mesnome{color:var(--txt,#fff)!important}
+  /* pagamento Pix (modais) */
+  .pix-ov{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:18px}
+  .pix-card{background:var(--card,#12161b);border:1px solid var(--line,#262a33);border-radius:18px;padding:22px;max-width:400px;width:100%;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:92vh;overflow:auto}
+  .pix-x{position:absolute;top:12px;right:14px;background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1}
+  .pix-tit{font-weight:800;font-size:17px;margin-bottom:14px;padding-right:24px}
+  .pix-opt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--pk-surf2,#1d2027);border:1px solid var(--line,#262a33);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;color:var(--txt,#e8eaee)}
+  .pix-opt:hover{border-color:var(--pink,#7fff00)}
+  .pix-opt-ic{font-size:24px;flex:0 0 auto}
+  .pix-opt-sub{font-size:12px;color:var(--muted)}
+  .pix-qr{display:block;width:220px;height:220px;margin:4px auto 12px;background:#fff;border-radius:12px;padding:8px}
+  .pix-valor{text-align:center;font-size:22px;font-weight:800;margin-bottom:6px}
+  .pix-hint{font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+  .pix-copia{display:flex;gap:8px;margin-bottom:12px}
+  .pix-copia input{flex:1;min-width:0;background:var(--elev,#0e1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#262a33);border-radius:10px;padding:10px;font-size:12px}
+  .pix-status{font-size:13px;text-align:center;padding:10px;border-radius:10px;background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.35)}
+  .pix-status.ok{background:rgba(127,255,0,.12);border-color:rgba(127,255,0,.4);color:var(--pink,#7fff00)}
+  .pix-status.err{background:rgba(255,90,90,.12);border-color:rgba(255,90,90,.4)}
+  .pix-load,.pix-erro{text-align:center;padding:24px;color:var(--muted)}
+  .pix-seal{margin-top:14px;text-align:center;font-size:12px;color:var(--muted)}
+  .pix-seal b{color:var(--txt,#e8eaee)}
+
   /* assinatura / planos */
   .assin-tab{background:var(--pk-surf,#15171c)!important;border-color:var(--line,#262a33)!important;color:var(--txt,#e8eaee)!important}
   .assin-tab.active{background:rgba(127,255,0,.14)!important;border-color:var(--pink,#7fff00)!important;color:var(--pink,#7fff00)!important}
@@ -3044,17 +3065,27 @@
       </div>`;
     }
 
-    // toda conta é Piik Light por padrão (gratuito); paga mostra o plano assinado
-    const plano = ativa ? ativa.plano : "light";
+    // plano efetivo: preapproval de CARTÃO ativo, OU o plano do perfil (caso Pix, que não tem preapproval)
+    const planoPix = (planoPerfil && planoPerfil !== "light") ? planoPerfil : null;
+    const plano = ativa ? ativa.plano : (planoPix || "light");
     const nome = PLANO_LABEL[plano] || plano;
     const gratis = (plano === "light");
+    const valor = ativa ? ativa.valor : (plano === "you_piik" ? 59.90 : 39.90);
+    // vencimento (útil pra quem paga por Pix mês a mês)
+    const ateRaw = ME && (ME.assinatura_ate || ME.assinatura_vencimento);
+    const ate = (ateRaw && new Date(ateRaw).getTime() > Date.now()) ? fmtDataCurta(ateRaw) : null;
     return `<div class="assin-atual${gratis?" light":""}">
       <span class="aa-tag">Sua assinatura</span>
       <div class="aa-plano">${esc(nome)}</div>
       ${gratis
         ? `<div class="aa-sub">Plano gratuito — abra <b>Planos</b> ao lado para fazer upgrade. 👉</div>`
-        : `<div class="aa-info">${fmtBRL(ativa.valor)}<span class="aa-mes">/mês</span></div>
-           <button class="btn small ghost" style="margin-top:16px" onclick="cancelarAssinatura()">Cancelar assinatura</button>`}
+        : (ativa
+            ? `<div class="aa-info">${fmtBRL(valor)}<span class="aa-mes">/mês</span></div>
+               <button class="btn small ghost" style="margin-top:16px" onclick="cancelarAssinatura()">Cancelar assinatura</button>`
+            : `<div class="aa-info">${fmtBRL(valor)}<span class="aa-mes">/mês</span> · por Pix</div>
+               ${ate?`<div class="aa-sub" style="margin-top:6px">Válido até <b>${ate}</b></div>`:``}
+               <button class="btn small" style="margin-top:16px" onclick="pagarComPix('${plano}','${esc(nome)}')">⚡ Pagar mensalidade com Pix</button>
+               <div class="meta-sm" style="margin-top:10px">Assinatura mês a mês por Pix — para encerrar, é só não renovar.</div>`)}
     </div>`;
   }
 
@@ -3144,14 +3175,49 @@
     box.innerHTML = `<div class="plano-grid">${PLANOS[qual].map(p=>planoCard(p, podeAssinar)).join("")}</div>`;
   }
 
+  // clicar em "Assinar" abre a escolha do meio de pagamento (cartão ou Pix)
   async function assinarPlano(nome){
     const mapa = { "Piik Fit":"fit", "You Piik":"you_piik" };
     const plano = mapa[nome];
     if(!plano){ piikAlert("O Piik Light é gratuito — não há o que pagar. 🙂"); return; }
+    escolherPagamento(plano, nome);
+  }
+
+  function escolherPagamento(plano, nome){
+    fecharPixModais();
+    const ov = document.createElement("div");
+    ov.className = "pix-ov"; ov.id = "pixEscolha";
+    ov.innerHTML = `
+      <div class="pix-card">
+        <button class="pix-x" onclick="fecharPixModais()">✕</button>
+        <div class="pix-tit">Como você quer pagar o ${esc(nome)}?</div>
+        <button class="pix-opt" onclick="assinarCartao('${plano}')">
+          <span class="pix-opt-ic">💳</span>
+          <span><b>Cartão de crédito</b><br><span class="pix-opt-sub">Assinatura automática — cobra todo mês sozinho</span></span>
+        </button>
+        <button class="pix-opt" onclick="pagarComPix('${plano}','${esc(nome)}')">
+          <span class="pix-opt-ic">⚡</span>
+          <span><b>Pix</b><br><span class="pix-opt-sub">Você paga o mês e renova quando quiser</span></span>
+        </button>
+        <div class="pix-seal">🔒 Pagamento processado com segurança pelo <b>Mercado Pago</b></div>
+      </div>`;
+    ov.addEventListener("click", e=>{ if(e.target===ov) fecharPixModais(); });
+    document.body.appendChild(ov);
+  }
+
+  let PIX_POLL = null;
+  function fecharPixModais(){
+    if(PIX_POLL){ clearInterval(PIX_POLL); PIX_POLL=null; }
+    ["pixEscolha","pixQR"].forEach(id=>{ const e=document.getElementById(id); if(e) e.remove(); });
+  }
+
+  // ----- Cartão (assinatura recorrente via Checkout Pro) -----
+  async function assinarCartao(plano){
+    fecharPixModais();
+    const nome = PLANO_LABEL[plano] || plano;
     try{
       const { data:{ session } } = await sb.auth.getSession();
       if(!session){ piikAlert("Faça login para assinar."); return; }
-      // Já assina esse MESMO plano (ativo)? Não manda pro Mercado Pago de novo.
       try{
         const { data: jaAtiva } = await sb.from("assinaturas")
           .select("plano").eq("user_id", ME.id).eq("status","authorized").limit(20);
@@ -3160,16 +3226,12 @@
           return;
         }
       }catch(e){ /* se a checagem falhar, segue o fluxo normal */ }
-      // planos de personal tornam a conta profissional
       if((plano==="fit" || plano==="you_piik") && ME && ME.role!=="professional"){
         try{ await sb.from("profiles").update({ role:"professional" }).eq("id", ME.id); ME.role="professional"; }catch(e){}
       }
       const resp = await fetch(SUPABASE_URL + "/functions/v1/criar-assinatura", {
         method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Authorization": "Bearer " + session.access_token
-        },
+        headers:{ "Content-Type":"application/json", "Authorization": "Bearer " + session.access_token },
         body: JSON.stringify({ plano })
       });
       const data = await resp.json().catch(()=>({}));
@@ -3177,9 +3239,86 @@
         piikAlert("Não consegui iniciar a assinatura: " + (data.error || ("erro "+resp.status)));
         return;
       }
-      // redireciona para o checkout do Mercado Pago
       window.location.href = data.init_point;
     }catch(e){ piikAlert("Erro ao assinar: " + e.message); }
+  }
+
+  // ----- Pix (cobrança avulsa do mês; renova quando paga) -----
+  async function pagarComPix(plano, nome){
+    fecharPixModais();
+    nome = nome || (PLANO_LABEL[plano] || plano);
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ piikAlert("Faça login para pagar."); return; }
+    if((plano==="fit" || plano==="you_piik") && ME && ME.role!=="professional"){
+      try{ await sb.from("profiles").update({ role:"professional" }).eq("id", ME.id); ME.role="professional"; }catch(e){}
+    }
+    const ov = document.createElement("div");
+    ov.className = "pix-ov"; ov.id = "pixQR";
+    ov.innerHTML = `<div class="pix-card">
+        <button class="pix-x" onclick="fecharPixModais()">✕</button>
+        <div class="pix-tit">Pagar ${esc(nome)} com Pix</div>
+        <div id="pixBody"><div class="pix-load">Gerando o Pix…</div></div>
+      </div>`;
+    ov.addEventListener("click", e=>{ if(e.target===ov) fecharPixModais(); });
+    document.body.appendChild(ov);
+    try{
+      const resp = await fetch(SUPABASE_URL + "/functions/v1/criar-pix", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Authorization": "Bearer " + session.access_token },
+        body: JSON.stringify({ plano })
+      });
+      const d = await resp.json().catch(()=>({}));
+      const body = document.getElementById("pixBody");
+      if(!resp.ok || !d.qr_code){
+        if(body) body.innerHTML = `<div class="pix-erro">Não consegui gerar o Pix: ${esc(d.error || ("erro "+resp.status))}</div>`;
+        return;
+      }
+      mostrarPixQR(d, nome);
+    }catch(e){
+      const body = document.getElementById("pixBody");
+      if(body) body.innerHTML = `<div class="pix-erro">Erro: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function mostrarPixQR(d, nome){
+    const body = document.getElementById("pixBody"); if(!body) return;
+    const img = d.qr_base64 ? `<img class="pix-qr" src="data:image/png;base64,${d.qr_base64}" alt="QR Code Pix">` : "";
+    body.innerHTML = `
+      ${img}
+      <div class="pix-valor">${fmtBRL(d.valor)}</div>
+      <div class="pix-hint">Abra o app do seu banco, escolha <b>Pix › Ler QR Code</b> e aponte para a imagem — ou use o copia-e-cola:</div>
+      <div class="pix-copia">
+        <input id="pixCopiaTxt" readonly value="${esc(d.qr_code)}">
+        <button class="btn small" onclick="copiarPix(this)">Copiar</button>
+      </div>
+      <div class="pix-status" id="pixStatus">⏳ Aguardando o pagamento — a tela atualiza sozinha quando cair.</div>
+      <div class="pix-seal">🔒 Pagamento processado com segurança pelo <b>Mercado Pago</b></div>`;
+    if(PIX_POLL) clearInterval(PIX_POLL);
+    const pid = String(d.payment_id);
+    let n = 0;
+    PIX_POLL = setInterval(async ()=>{
+      if(++n > 150){ clearInterval(PIX_POLL); PIX_POLL=null; return; }  // ~10 min
+      try{
+        const { data:c } = await sb.from("cobrancas").select("status").eq("mp_payment_id", pid).single();
+        if(c && c.status === "aprovado"){
+          clearInterval(PIX_POLL); PIX_POLL=null;
+          const st=document.getElementById("pixStatus");
+          if(st){ st.className="pix-status ok"; st.innerHTML="✅ Pagamento confirmado! Atualizando…"; }
+          setTimeout(()=>location.reload(), 1500);
+        } else if(c && ["expirado","cancelado","rejeitado"].includes(c.status)){
+          clearInterval(PIX_POLL); PIX_POLL=null;
+          const st=document.getElementById("pixStatus");
+          if(st){ st.className="pix-status err"; st.textContent="Esse Pix expirou ou foi cancelado. Feche e gere um novo."; }
+        }
+      }catch(e){}
+    }, 4000);
+  }
+
+  function copiarPix(btn){
+    const t=document.getElementById("pixCopiaTxt"); if(!t) return;
+    t.select(); t.setSelectionRange(0, 99999);
+    try{ navigator.clipboard.writeText(t.value); }catch(e){ try{ document.execCommand("copy"); }catch(_){} }
+    if(btn){ const o=btn.textContent; btn.textContent="Copiado!"; setTimeout(()=>{ btn.textContent=o; }, 1500); }
   }
 
   async function cancelarAssinatura(){
