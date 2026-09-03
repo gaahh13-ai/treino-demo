@@ -1725,6 +1725,7 @@
       }
       btn.disabled=false;
       msg.className="msg ok"; msg.textContent="Senha salva! Já pode entrar com e-mail e senha.";
+      try{ await sb.functions.invoke("email-senha"); }catch(e){}   // aviso de segurança: senha alterada
       document.getElementById("np1").value=""; document.getElementById("np2").value="";
       if(mfaInp) mfaInp.value=""; if(mfaWrap) mfaWrap.style.display="none";
     }catch(e){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro: "+String(e && e.message || e); }
@@ -2865,6 +2866,7 @@
     if(!ok) return;
     try{ await sb.rpc("solicitar_exclusao_conta"); }
     catch(e){ piikAlert("Não foi possível agora: "+(e.message||"")); return; }
+    try{ await sb.functions.invoke("email-exclusao"); }catch(e){}   // e-mail de confirmação do pedido
     await sb.auth.signOut();
     location.href = "login.html?conta=exclusao_solicitada";
   }
