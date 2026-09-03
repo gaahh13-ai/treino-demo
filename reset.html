@@ -39,7 +39,6 @@
   <a href="index.html" class="logo" style="display:block;text-decoration:none"><span>Piik</span></a>
   <h1>Criar nova senha</h1>
   <div class="sub" id="sub">Digite sua nova senha abaixo.</div>
-
   <div id="form">
     <div class="field"><label>Nova senha</label><input id="pw1" type="password" placeholder="••••••••"></div>
     <div class="field"><label>Confirmar nova senha</label><input id="pw2" type="password" placeholder="••••••••"></div>
@@ -48,7 +47,6 @@
   <div class="msg" id="msg"></div>
   <a class="back" href="login.html">← Voltar ao login</a>
 </div>
-
 <script>
   const SUPABASE_URL = "https://qpsraxnzgybehbwrtqjd.supabase.co";
   const SUPABASE_ANON = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
@@ -56,15 +54,11 @@
     auth: { flowType: "implicit", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
   });
   let ready = false;
-
   function showMsg(t, ok){ const el=document.getElementById("msg"); el.className="msg"+(t?(ok?" ok":" err"):""); el.textContent=t; }
-
   // O SDK detecta o token de recuperação na URL e dispara este evento
   sb.auth.onAuthStateChange((event, session)=>{ if(event==="PASSWORD_RECOVERY" && session){ ready=true; } });
-
   // fallback: se já há sessão de recuperação
   sb.auth.getSession().then(({data})=>{ if(data.session) ready=true; });
-
   async function salvar(){
     const p1=document.getElementById("pw1").value, p2=document.getElementById("pw2").value;
     if(p1.length<6){ showMsg("A senha precisa ter ao menos 6 caracteres."); return; }
@@ -75,6 +69,7 @@
     try{
       const { error } = await sb.auth.updateUser({ password:p1 });
       if(error) throw error;
+      try{ await sb.functions.invoke("email-senha"); }catch(e){}   // aviso de segurança: senha alterada
       showMsg("Senha alterada com sucesso! Redirecionando para o login…", true);
       await sb.auth.signOut();
       setTimeout(()=>location.href="login.html", 1800);
