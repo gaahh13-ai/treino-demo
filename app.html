@@ -591,7 +591,13 @@
   .grp-chip.add{font-weight:800;padding:6px 12px}
   .grp-chip.ghost{background:transparent;color:var(--muted);font-weight:600}
   .grupos-lista{display:flex;flex-direction:column;gap:8px}
+  .grupo-item{display:flex;flex-direction:column}
   .grupo-row{display:flex;align-items:center;gap:8px}
+  .gn-chev{display:inline-block;width:1em;color:var(--muted);font-size:12px;transition:none}
+  .grupo-alunos{margin:6px 0 2px 2px;padding:4px 2px 6px 8px;border-left:2px solid var(--line,#262a33)}
+  .grupo-alunos-lista{display:flex;flex-direction:column;gap:2px}
+  .grupo-aluno-lin{font-size:14px;color:var(--txt,#e8eaee);padding:5px 8px;border-radius:8px}
+  .grupo-aluno-lin:hover{background:var(--pk-surf2,#1d2027)}
   .grupo-nome{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--pk-surf2,#1d2027);border:1px solid var(--line,#262a33);border-radius:12px;padding:12px 14px;cursor:pointer;color:var(--txt,#e8eaee)}
   .gn-nome{font-weight:700;font-size:15px}
   .gn-count{font-size:12px;color:var(--muted)}
@@ -3410,13 +3416,28 @@
     function viewGrupos(){
     return `<h2>Grupos</h2>
       <div class="card">
-        <p class="meta-sm" style="margin:0 0 14px">Organize seus alunos em grupos (ex.: Online, Presencial). Toque num grupo para ver os alunos dele.</p>
+        <p class="meta-sm" style="margin:0 0 14px">Organize seus alunos em grupos (ex.: Online, Presencial). Toque num grupo para expandir e ver os alunos dele.</p>
         <div id="listaGrupos"><div class="empty">Carregando…</div></div>
       </div>`;
   }
+  let GRP_NOMES = {};   // id do aluno -> nome (para exibir dentro do grupo)
   async function carregarGruposView(){
     await carregarGrupos();
+    await garantirNomesAlunos();
     renderListaGrupos();
+  }
+  async function garantirNomesAlunos(){
+    GRP_NOMES = {};
+    (STUDENTS||[]).forEach(s=>{ GRP_NOMES[s.id] = nomeAluno(s); });
+    // completa nomes de quem esta em algum grupo mas ainda nao foi carregado (ex.: entrou direto em Grupos)
+    const faltam = [];
+    Object.keys(GRUPO_MEMBROS).forEach(gid=>{ (GRUPO_MEMBROS[gid]||new Set()).forEach(id=>{ if(!GRP_NOMES[id] && faltam.indexOf(id)<0) faltam.push(id); }); });
+    if(faltam.length){
+      try{
+        const { data } = await sb.from("profiles").select("id,full_name,email").in("id", faltam);
+        (data||[]).forEach(p=>{ GRP_NOMES[p.id] = p.full_name || p.email || "Aluno"; });
+      }catch(e){}
+    }
   }
   function renderListaGrupos(){
     const box = document.getElementById("listaGrupos");
@@ -3426,21 +3447,38 @@
       html += `<div class="empty">Nenhum grupo criado ainda.</div>`;
     } else {
       html += `<div class="grupos-lista">` + GRUPOS.map(g=>{
-        const n = (GRUPO_MEMBROS[g.id]||new Set()).size;
-        return `<div class="grupo-row">
-          <button class="grupo-nome" onclick="verGrupo('${g.id}')">
-            <span class="gn-nome">${esc(g.nome)}</span>
-            <span class="gn-count">${n} aluno${n===1?'':'s'}</span>
-          </button>
-          <button class="grupo-acao" title="Renomear" onclick="renomearGrupo('${g.id}')">\u270e</button>
-          <button class="grupo-acao" title="Excluir" onclick="excluirGrupo('${g.id}')">\ud83d\uddd1</button>
+        const membros = [...(GRUPO_MEMBROS[g.id]||new Set())];
+        const n = membros.length;
+        const nomes = membros.map(id=>GRP_NOMES[id]||"Aluno").sort((a,b)=>a.localeCompare(b,"pt-BR"));
+        const alunosHtml = n
+          ? `<div class="grupo-alunos-lista">` + nomes.map(nm=>`<div class="grupo-aluno-lin">\ud83d\udc64 ${esc(nm)}</div>`).join("") + `</div>`
+          : `<div class="empty" style="margin:0">Nenhum aluno neste grupo ainda.</div>`;
+        return `<div class="grupo-item">
+          <div class="grupo-row">
+            <button class="grupo-nome" onclick="toggleGrupoLista('${g.id}')" aria-expanded="false">
+              <span class="gn-nome"><span class="gn-chev" id="gchev_${g.id}">\u25b8</span> ${esc(g.nome)}</span>
+              <span class="gn-count">${n} aluno${n===1?'':'s'}</span>
+            </button>
+            <button class="grupo-acao" title="Renomear" onclick="renomearGrupo('${g.id}')">\u270e</button>
+            <button class="grupo-acao" title="Excluir" onclick="excluirGrupo('${g.id}')">\ud83d\uddd1</button>
+          </div>
+          <div class="grupo-alunos" id="galunos_${g.id}" style="display:none">${alunosHtml}</div>
         </div>`;
       }).join("") + `</div>`;
     }
     html += `<button class="btn" style="margin-top:14px;width:100%" onclick="novoGrupo()">\uff0b Novo grupo</button>`;
     box.innerHTML = html;
   }
-
+  function toggleGrupoLista(id){
+    const box = document.getElementById("galunos_"+id);
+    const chev = document.getElementById("gchev_"+id);
+    if(!box) return;
+    const abrir = box.style.display === "none";
+    box.style.display = abrir ? "block" : "none";
+    if(chev) chev.textContent = abrir ? "\u25be" : "\u25b8";
+    const btn = box.parentElement && box.parentElement.querySelector(".grupo-nome");
+    if(btn) btn.setAttribute("aria-expanded", abrir ? "true" : "false");
+  }
   function viewAlunos(){
     return `<h2>Meus alunos</h2>
       <div id="gruposBar" class="grupos-bar"></div>
