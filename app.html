@@ -1169,6 +1169,14 @@
       const { count } = await sb.from("ficha_dias").select("id",{count:"exact",head:true}).eq("student_id", ME.id);
       ALUNO_TREINO = (count||0) > 0;
     }
+    // profissional: paga por CARTÃO (preapproval ativo)? Se não, é candidato ao lembrete de Pix.
+    window.TEM_CARTAO = false;
+    if(ME.role === "professional"){
+      try{
+        const { data: pa } = await sb.from("assinaturas").select("id").eq("user_id", ME.id).eq("status","authorized").limit(1);
+        window.TEM_CARTAO = !!(pa && pa.length);
+      }catch(e){}
+    }
     // profissional voltando do dashboard de um aluno (?aluno=<id>): reabrir esse aluno
     const alunoParam = new URLSearchParams(location.search).get("aluno");
     if(ME.role !== "student" && alunoParam) PENDING_SELECT = alunoParam;
@@ -1571,6 +1579,7 @@
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
     atualizarPill();
     bannerCongelada();
+    bannerVencimentoPix();
     window.scrollTo({top:0, behavior:"smooth"});
   }
 
@@ -4752,8 +4761,44 @@
     var panel=document.getElementById("panel"); if(!panel) return;
     if(panel.firstElementChild && panel.firstElementChild.id==="congeladaBanner") return;
     var b=document.createElement("div"); b.id="congeladaBanner";
-    b.style.cssText="background:#5a4712;border:1px solid #b9922b;border-radius:12px;color:#ffdf9e;padding:11px 14px;margin:0 0 16px;font-size:13px;font-weight:700;line-height:1.45;box-sizing:border-box";
-    b.textContent="🔒 Assinatura encerrada — conta em modo somente leitura. Você vê o histórico dos alunos, mas não pode editar nem cadastrar. Reative um plano em Assinatura para voltar a editar.";
+    b.style.cssText="background:#5a4712;border:1px solid #b9922b;border-radius:12px;color:#ffdf9e;padding:11px 14px;margin:0 0 16px;font-size:13px;font-weight:700;line-height:1.45;box-sizing:border-box;display:flex;gap:12px;align-items:center;flex-wrap:wrap";
+    b.innerHTML='<span style="flex:1;min-width:180px">🔒 Assinatura encerrada — conta em modo somente leitura. Reative um plano em Assinatura para voltar a editar.</span>'+
+      '<button class="btn small" style="white-space:nowrap" onclick="window.ASSIN_INICIAL=\'planos\';go(\'assinatura\')">Reativar plano</button>';
+    panel.insertAdjacentElement("afterbegin", b);
+  }
+  // ===== Lembrete de vencimento para quem paga por Pix (mês a mês) =====
+  function ehPixPayer(){
+    if(!ehProfPiik()) return false;
+    const plano=(ME.plano||"").toLowerCase();
+    if(!plano || plano==="light") return false;
+    if((ME.assinatura_status||"").toLowerCase()==="cancelado") return false;
+    if(window.TEM_CARTAO) return false;   // paga no cartão: renova sozinho, não precisa lembrete
+    return true;
+  }
+  function diasParaVencer(){
+    const raw = ME && (ME.assinatura_vencimento || ME.assinatura_ate);
+    if(!raw) return null;
+    const v=new Date(raw); if(isNaN(v.getTime())) return null;
+    return Math.ceil((v.getTime()-Date.now())/86400000);
+  }
+  function bannerVencimentoPix(){
+    if(contaCongelada()) return;          // já mostra o banner de congelada
+    if(!ehPixPayer()) return;
+    const d=diasParaVencer();
+    if(d===null || d>3) return;           // só nos 3 dias finais ou já vencido
+    var panel=document.getElementById("panel"); if(!panel) return;
+    if(document.getElementById("vencPixBanner")) return;
+    const plano=(ME.plano||"").toLowerCase();
+    const nome=PLANO_LABEL[plano]||plano;
+    let txt;
+    if(d>1)       txt=`Sua mensalidade vence em <b>${d} dias</b>.`;
+    else if(d===1)txt=`Sua mensalidade vence <b>amanhã</b>.`;
+    else if(d===0)txt=`Sua mensalidade vence <b>hoje</b>.`;
+    else          txt=`Sua mensalidade <b>venceu há ${Math.abs(d)} dia${Math.abs(d)===1?'':'s'}</b>.`;
+    var b=document.createElement("div"); b.id="vencPixBanner";
+    b.style.cssText="background:#123a2a;border:1px solid #2f9e6a;border-radius:12px;color:#c8f7e2;padding:11px 14px;margin:0 0 16px;font-size:13px;line-height:1.5;box-sizing:border-box;display:flex;gap:12px;align-items:center;flex-wrap:wrap";
+    b.innerHTML=`<span style="flex:1;min-width:180px">⚡ ${txt} Pague com Pix para manter o acesso.</span>`+
+      `<button class="btn small" style="white-space:nowrap" onclick="pagarComPix('${plano}','${esc(nome)}')">Pagar com Pix</button>`;
     panel.insertAdjacentElement("afterbegin", b);
   }
   function bloqueiaDemo(id){
