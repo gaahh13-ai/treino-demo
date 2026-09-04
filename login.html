@@ -147,7 +147,7 @@ input[readonly]{background:#0c0d10!important;color:#9aa0ab!important}
 <div class="field"><label>E-mail</label><input id="email" type="email" placeholder="voce@email.com" autocomplete="email"></div>
 <div class="field"><label>Senha</label><input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
 <button class="btn" id="loginBtn" onclick="entrar()">Entrar</button>
-<button class="btn alt" id="goSignupBtn" onclick="showView('signup')">Criar conta</button>
+<button class="btn alt" id="goSignupBtn" onclick="showView('signup')" style="display:none">Criar conta</button>
 <div class="links">
 <a class="link" onclick="showView('first')">Primeiro acesso</a>
 <a class="link muted" onclick="irParaEsqueci()">Esqueci minha senha</a>
@@ -227,6 +227,17 @@ if(c==="excluida") setTimeout(()=>showMsg("Esta conta foi excluída. Para voltar
 else if(c==="exclusao_solicitada") setTimeout(()=>showMsg("Recebemos seu pedido de exclusão. Você tem 30 dias para reativar — é só entrar de novo nesse período.","warn"), 200);
 }
 
+/* ---------- cadastro fechado ao público: só abre via link de convite (?convite=piikbeta) ---------- */
+var CADASTRO_LIBERADO = false;
+{
+const conv = new URLSearchParams(location.search).get("convite");
+if(conv === "piikbeta"){
+  CADASTRO_LIBERADO = true;
+  const b = document.getElementById("goSignupBtn"); if(b) b.style.display = "";
+  showView("signup");
+}
+}
+
 /* ---------- contador de tentativas ---------- */
 function chave(email){ return "tent_" + email.trim().toLowerCase(); }
 function lerTentativas(email){
@@ -263,6 +274,7 @@ if(h) h.textContent = r === "professional"
 : "Como aluno você entra no plano gratuito e pode se vincular ao seu personal.";
 }
 function showView(v){
+if(v==="signup" && !CADASTRO_LIBERADO) v="login";   // cadastro fechado ao público (só via link de convite)
 document.getElementById("viewLogin").style.display = v==="login" ? "block" : "none";
 document.getElementById("viewFirst").style.display = v==="first" ? "block" : "none";
 document.getElementById("viewForgot").style.display = v==="forgot" ? "block" : "none";
