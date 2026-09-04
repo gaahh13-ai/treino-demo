@@ -1,65 +1,80 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Piik</title>
+<title>Piik — Lançamento em breve</title>
+<meta name="description" content="O app que deixa o personal trainer mais profissional. Lançamento em breve.">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&display=swap">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  :root{ --ac:#8bff1f; --ink:#07090b; }
+  *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%}
-  body{background:#0a0b0d;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;
-       background:radial-gradient(1200px 600px at 50% 35%, #101317 0%, #0a0b0d 70%)}
-  .login-btn{position:fixed;top:22px;right:22px;z-index:10;
-    display:inline-flex;align-items:center;gap:8px;text-decoration:none;
-    background:transparent;color:#7fff00;border:1.5px solid #34401f;border-radius:12px;
-    padding:10px 18px;font-weight:700;font-size:14px;transition:.15s}
-  .login-btn:hover{border-color:#7fff00;background:rgba(127,255,0,.08)}
-  .center{text-align:center;padding:24px}
-  .wordmark{font-family:'Rajdhani',sans-serif;font-style:italic;font-weight:700;
-    font-size:clamp(64px,16vw,150px);letter-spacing:6px;line-height:1;color:#fff}
-  .wordmark .ac{color:#7fff00}
-  .bar{width:min(360px,70vw);height:6px;background:#7fff00;border-radius:99px;margin:18px auto 0;opacity:.9}
-  .slogan{margin-top:22px;font-size:clamp(14px,3.4vw,20px);letter-spacing:1px;color:#c7ccd6}
-  .slogan b{color:#7fff00;font-weight:700}
-  .soon{margin-top:34px;font-size:12.5px;color:#6b7079;letter-spacing:.5px}
+  body{
+    min-height:100vh;font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:#e9eee4;background:#07090b;overflow:hidden;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px}
+  /* fundos / brilho */
+  .bg{position:fixed;inset:0;z-index:0;
+    background:radial-gradient(120% 90% at 50% 8%,#1a2414 0%,#0c1109 52%,#07090b 100%)}
+  .orb{position:fixed;z-index:0;border-radius:50%;filter:blur(90px);opacity:.5;
+    background:radial-gradient(circle,rgba(139,255,31,.35),transparent 70%);
+    width:620px;height:620px;left:50%;top:8%;transform:translateX(-50%);animation:pulse 6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.35;transform:translateX(-50%) scale(1)}50%{opacity:.6;transform:translateX(-50%) scale(1.08)}}
+  .content{position:relative;z-index:2;max-width:640px;width:100%}
+
+  /* topo: Entrar (usuários existentes) */
+  .top{position:fixed;top:22px;right:22px;z-index:3}
+  .entrar{display:inline-block;color:#cfe8b0;text-decoration:none;font-weight:700;font-size:14px;
+    border:1px solid rgba(139,255,31,.35);border-radius:999px;padding:9px 18px;background:rgba(139,255,31,.06);transition:all .15s}
+  .entrar:hover{background:rgba(139,255,31,.14);border-color:var(--ac);color:#fff}
+
+  .kicker{display:inline-flex;align-items:center;gap:9px;font-weight:800;font-size:13px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--ac);margin-bottom:26px}
+  .kicker .dot{width:9px;height:9px;border-radius:50%;background:var(--ac);box-shadow:0 0 0 0 rgba(139,255,31,.7);animation:blink 1.8s ease-in-out infinite}
+  @keyframes blink{0%{box-shadow:0 0 0 0 rgba(139,255,31,.6)}70%{box-shadow:0 0 0 12px rgba(139,255,31,0)}100%{box-shadow:0 0 0 0 rgba(139,255,31,0)}}
+
+  .logo{font-weight:900;font-size:clamp(72px,16vw,150px);line-height:.9;letter-spacing:-.03em;color:#fff}
+  .logo i{color:var(--ac);font-style:normal}
+  .tag{margin-top:18px;font-size:clamp(16px,3.6vw,22px);font-weight:700;color:#c7cdbf}
+  .tag b{color:var(--ac)}
+
+  .bar{margin:34px auto 0;width:min(320px,80%);height:6px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden;position:relative}
+  .bar > i{position:absolute;left:0;top:0;bottom:0;width:85%;border-radius:99px;
+    background:linear-gradient(90deg,#46c93a,var(--ac))}
+  .barlabel{margin-top:12px;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#8a927f}
+
+  .cta{display:inline-flex;align-items:center;gap:10px;margin-top:40px;background:var(--ac);color:var(--ink);
+    text-decoration:none;font-weight:800;font-size:16px;padding:15px 26px;border-radius:14px;
+    box-shadow:0 10px 30px rgba(139,255,31,.22);transition:transform .15s}
+  .cta:hover{transform:translateY(-2px)}
+  .ctahint{margin-top:14px;font-size:13px;color:#8a927f}
+
+  .foot{position:fixed;bottom:22px;left:0;right:0;z-index:2;text-align:center;color:#6f7865;font-size:12.5px;font-weight:600}
 </style>
 </head>
 <body>
-  <a class="login-btn" href="login.html">Entrar →</a>
-  <div class="center">
-    <div class="wordmark">P<span class="ac">ii</span>k</div>
-    <div class="bar"></div>
-    <div class="slogan">Seu método, <b>com a sua marca.</b></div>
-    <div class="soon">site em construção</div>
+  <div class="bg"></div>
+  <div class="orb"></div>
+
+  <div class="top"><a class="entrar" href="login.html">Entrar &rarr;</a></div>
+
+  <div class="content">
+    <div class="kicker"><span class="dot"></span> Lançamento em breve</div>
+    <div class="logo">P<i>ii</i>k</div>
+    <div class="tag">Seu método, <b>com a sua marca.</b></div>
+
+    <div class="bar"><i></i></div>
+    <div class="barlabel">Estamos chegando</div>
+
+    <a class="cta" href="https://www.instagram.com/usepiik/" target="_blank" rel="noopener">📸 Acompanhe os bastidores &nbsp;·&nbsp; @usepiik</a>
+    <div class="ctahint">Siga pra ser um dos primeiros a saber quando abrir.</div>
   </div>
-  <script>
-    const SUPABASE_URL = "https://qpsraxnzgybehbwrtqjd.supabase.co";
-    const SUPABASE_ANON = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-      auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
-    });
-    const DURACAO_MS = 12*60*60*1000;
-    (async ()=>{
-      try{
-        const { data:{ session } } = await sb.auth.getSession();
-        if(!session) return;
-        const ini = Number(localStorage.getItem("sessao_inicio")||0);
-        if(ini && Date.now()-ini > DURACAO_MS) return;   // sessão de 12h expirada
-        let nome = session.user.email || "Minha conta";
-        try{
-          const { data:p } = await sb.from("profiles").select("full_name").eq("id", session.user.id).single();
-          if(p && p.full_name) nome = p.full_name.trim().split(/\s+/)[0];
-        }catch(e){}
-        const btn = document.querySelector(".login-btn");
-        if(btn){ btn.textContent = nome + " →"; btn.href = "app.html"; }
-      }catch(e){}
-    })();
-  </script>
+
+  <div class="foot">O app que deixa o personal trainer mais profissional. · Piik</div>
 </body>
 </html>
