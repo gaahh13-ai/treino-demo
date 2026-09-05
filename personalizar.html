@@ -77,6 +77,13 @@
   .m-av{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;overflow:hidden}
   .m-av img{width:100%;height:100%;object-fit:cover}
   .m-tab{display:flex;justify-content:space-around;padding-top:8px;margin-top:12px;font-size:10px}
+  /* histórico */
+  .histItem{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--elev);margin-bottom:8px}
+  .histSw{display:flex;align-items:center;gap:5px;flex:1;flex-wrap:wrap;min-width:0}
+  .histSw .cw{width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.2);flex:0 0 22px}
+  .histSw img{height:24px;max-width:60px;object-fit:contain;margin-left:2px}
+  .histQuando{font-size:11px;color:var(--mute)}
+  .histBtn{width:auto!important;height:36px;padding:0 14px;font-size:13px;flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -150,6 +157,12 @@
           <button class="btn" id="btnSalvar">Salvar personalização</button>
           <button class="btn outline" id="btnPadrao">Restaurar padrão Piik</button>
         </div>
+
+        <div class="card" id="histCard" style="margin-top:14px">
+          <div class="lbl">HISTÓRICO — últimas 3 versões</div>
+          <div class="instr">Salvou uma versão e quer voltar? Restaure uma das suas 3 personalizações anteriores.</div>
+          <div id="histLista"><div class="instr">Suas versões anteriores aparecem aqui depois que você salvar uma alteração.</div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -160,6 +173,7 @@
 const PADRAO = { accent:'#7fff00', bg:'#0a0b0d', text1:'#ffffff', text2:'#c7ccd6', logo_url:null };
 let estado = { ...PADRAO };
 let sb=null, uid=null, tela=0, ativo='accent';
+let estadoSalvo=null, tinhaSalvo=false;   // controle do histórico
 const $ = id => document.getElementById(id);
 
 /* cor utils */
@@ -375,15 +389,79 @@ function ligar(){
 }
 function toast(m){ $('toastMsg').textContent=m; $('toast').classList.add('show'); setTimeout(()=>$('toast').classList.remove('show'),1800); }
 
+function mesmaPerso(a,b){ if(!a||!b) return false; return ['accent','bg','text1','text2','logo_url'].every(k=>(a[k]||null)===(b[k]||null)); }
+function snap(e){ return { accent:e.accent, bg:e.bg, text1:e.text1, text2:e.text2, logo_url:e.logo_url||null }; }
+function tempoRel(iso){
+  const d=new Date(iso); const s=(Date.now()-d.getTime())/1000;
+  if(s<90) return 'agora há pouco';
+  if(s<3600) return 'há '+Math.floor(s/60)+' min';
+  if(s<86400) return 'há '+Math.floor(s/3600)+' h';
+  const dias=Math.floor(s/86400); if(dias===1) return 'ontem';
+  if(dias<30) return 'há '+dias+' dias';
+  return d.toLocaleDateString('pt-BR');
+}
+
 async function salvar(){
   for(const k of ['accent','bg','text1','text2']){ if(!hex6(estado[k])){ toast('Cor inválida em '+k); return; } }
   $('btnSalvar').disabled=true; $('btnSalvar').textContent='Salvando…';
+  const anterior = (tinhaSalvo && estadoSalvo) ? {...estadoSalvo} : null;
   const { error } = await sb.from('personalizacao').upsert({
     professional_id: uid, accent: estado.accent, bg: estado.bg, text1: estado.text1, text2: estado.text2,
     logo_url: estado.logo_url, ativo:true, updated_at:new Date().toISOString()
   }, { onConflict:'professional_id' });
+  if(error){ $('btnSalvar').disabled=false; $('btnSalvar').textContent='Salvar personalização'; toast('Erro ao salvar'); console.error(error); return; }
+  // guarda a versão ANTERIOR no histórico (se mudou) e mantém só as 3 mais recentes
+  if(anterior && !mesmaPerso(anterior, estado)){
+    try{
+      await sb.from('personalizacao_historico').insert({
+        professional_id: uid, accent: anterior.accent, bg: anterior.bg,
+        text1: anterior.text1, text2: anterior.text2, logo_url: anterior.logo_url||null
+      });
+      const { data:rows } = await sb.from('personalizacao_historico').select('id')
+        .eq('professional_id', uid).order('criado_em',{ascending:false});
+      if(rows && rows.length>3){ await sb.from('personalizacao_historico').delete().in('id', rows.slice(3).map(r=>r.id)); }
+    }catch(e){ console.warn('histórico:', e); }
+  }
+  estadoSalvo = snap(estado); tinhaSalvo = true;
   $('btnSalvar').disabled=false; $('btnSalvar').textContent='Salvar personalização';
-  if(error){ toast('Erro ao salvar'); console.error(error); } else toast('Personalização salva!');
+  toast('Personalização salva!');
+  renderHistorico();
+}
+
+async function renderHistorico(){
+  const box=$('histLista'); if(!box) return;
+  let rows=[];
+  try{
+    const { data } = await sb.from('personalizacao_historico').select('*')
+      .eq('professional_id', uid).order('criado_em',{ascending:false}).limit(3);
+    rows = data || [];
+  }catch(e){ console.warn('histórico:', e); }
+  if(!rows.length){ box.innerHTML='<div class="instr">Suas versões anteriores aparecem aqui depois que você salvar uma alteração.</div>'; return; }
+  box.innerHTML = rows.map(r=>{
+    const cw=c=>`<span class="cw" style="background:${c}"></span>`;
+    const logo = r.logo_url ? `<img src="${r.logo_url}" alt="logo">` : '<span style="color:var(--mute);font-size:11px;margin-left:4px">sem logo</span>';
+    return `<div class="histItem">
+      <div class="histSw">${cw(r.accent)}${cw(r.bg)}${cw(r.text1)}${cw(r.text2)}${logo}
+        <span class="histQuando">${tempoRel(r.criado_em)}</span></div>
+      <button class="btn outline histBtn" data-id="${r.id}">Restaurar</button>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.histBtn').forEach(b=>b.onclick=()=>restaurar(b.dataset.id, rows));
+}
+
+async function restaurar(id, rows){
+  const r=(rows||[]).find(x=>x.id===id); if(!r) return;
+  estado = { accent:r.accent, bg:r.bg, text1:r.text1, text2:r.text2, logo_url:r.logo_url||null };
+  estado.logo_original = r.logo_url||null; estado.fundo_removido=false;
+  if(estado.logo_url){
+    const cores=await extrairPaleta(estado.logo_url,6);
+    if(cores.length){ $('logoCores').innerHTML=cores.map(c=>`<button class="sw" style="background:${c}" data-c="${c}"></button>`).join('');
+      $('logoCores').querySelectorAll('.sw').forEach(el=>el.onclick=()=>aplicarCor(el.dataset.c)); $('logoWrap').classList.remove('hidden'); }
+    else $('logoWrap').classList.add('hidden');
+  } else $('logoWrap').classList.add('hidden');
+  ativo='accent'; render();
+  await salvar();
+  toast('Versão restaurada e aplicada!');
 }
 
 function bloquear(html){ $('carregando').classList.add('hidden'); const b=$('bloqueio'); b.innerHTML=html; b.classList.remove('hidden'); }
@@ -409,7 +487,8 @@ async function init(){
       estado={ accent:pz.accent||PADRAO.accent, bg, text1:pz.text1||legivel(bg), text2:pz.text2||mix(bg,legivel(bg),0.55), logo_url:pz.logo_url||null };
       if(estado.logo_url){ const cores=await extrairPaleta(estado.logo_url,6); if(cores.length){ $('logoCores').innerHTML=cores.map(c=>`<button class="sw" style="background:${c}" data-c="${c}"></button>`).join(''); $('logoCores').querySelectorAll('.sw').forEach(el=>el.onclick=()=>aplicarCor(el.dataset.c)); $('logoWrap').classList.remove('hidden'); } }
     }
-    desenharPicker(); ligar(); render();
+    estadoSalvo = snap(estado); tinhaSalvo = !!(pz && pz.ativo!==false);
+    desenharPicker(); ligar(); render(); renderHistorico();
     $('carregando').classList.add('hidden'); $('painel').classList.remove('hidden');
   }catch(e){ console.error(e); bloquear('Algo deu errado ao carregar. Tente recarregar a página.'); }
 }
