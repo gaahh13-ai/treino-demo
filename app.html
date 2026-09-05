@@ -7338,7 +7338,7 @@
       var nAl=0,nTr=0,nRe=0;
       try{ var a=await _sb.from('profiles').select('id',{count:'exact',head:true}).eq('professional_id',user.id).is('deletado_em',null); nAl=a.count||0; }catch(e){}
       try{ var t=await _sb.from('fichas').select('id',{count:'exact',head:true}).eq('professional_id',user.id); nTr=t.count||0; }catch(e){}
-      try{ var r=await _sb.from('sessoes').select('id',{count:'exact',head:true}).eq('finalizada',true); nRe=r.count||0; }catch(e){}
+      try{ var r=await _sb.from('sessoes').select('id',{count:'exact',head:true}).eq('professional_id',user.id).eq('finalizada',true); nRe=r.count||0; }catch(e){}
 
       var ov=document.createElement('div'); ov.id='piik-bt-ov';
       ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#07090b;overflow:auto;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#e8eaee';
