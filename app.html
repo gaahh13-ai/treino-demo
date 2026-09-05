@@ -1615,7 +1615,8 @@
     await carregarConvitesGestao();
     // copia o link já na hora
     copiarTexto(BETA_URL + "?e=" + encodeURIComponent(email));
-    await piikAlert({ emoji:"🎟️", titulo:"Convite liberado!", msg:`O link já foi <b>copiado</b>. É só mandar pra <b>${esc(email)}</b>.<br><br><span style="font-size:12px;color:#9aa0ab">${esc(BETA_URL)}?e=…</span>` });
+    const linkConv = BETA_URL + "?e=" + encodeURIComponent(email);
+    await piikAlert({ emoji:"🎟️", titulo:"Convite liberado!", msg:`O link já foi <b>copiado</b> — é só mandar pra <b>${esc(email)}</b>.<br><br><span style="display:block;font-size:12px;color:#9aa0ab;word-break:break-all;text-align:left;background:var(--pk-elev,#0f1116);border:1px solid var(--line,#2a2f37);border-radius:8px;padding:8px 10px">${esc(linkConv)}</span>` });
   }
   async function carregarConvitesGestao(){
     const el=document.getElementById("convLista"); if(!el) return;
@@ -7332,13 +7333,32 @@
         '<div style="font-size:13px;color:#9aa0ab;margin-top:2px">'+texto+'</div></div>'+
         '<div style="font-size:18px;line-height:1">'+(feito?'✅':'⬜')+'</div></div>';
     }
+    function linhaObj(nome,feito,ok){
+      return '<tr style="border-top:1px solid #232a33">'+
+        '<td style="padding:12px 14px;font-weight:700;line-height:1.4;color:#e8eaee">'+nome+'</td>'+
+        '<td style="padding:12px 10px;color:#c7ccd6;white-space:nowrap">'+feito+'</td>'+
+        '<td style="padding:12px 12px;text-align:center;font-size:18px">'+(ok?'✅':'⬜')+'</td></tr>';
+    }
     async function abrir(){
       if(document.getElementById('piik-bt-ov')) return;
-      // progresso das missões (ao vivo)
-      var nAl=0,nTr=0,nRe=0;
-      try{ var a=await _sb.from('profiles').select('id',{count:'exact',head:true}).eq('professional_id',user.id).is('deletado_em',null); nAl=a.count||0; }catch(e){}
-      try{ var t=await _sb.from('fichas').select('id',{count:'exact',head:true}).eq('professional_id',user.id); nTr=t.count||0; }catch(e){}
-      try{ var r=await _sb.from('sessoes').select('id',{count:'exact',head:true}).eq('professional_id',user.id).eq('finalizada',true); nRe=r.count||0; }catch(e){}
+      // progresso dos objetivos (ao vivo)
+      var nAlunos=0, nComTreino=0, nCom2=0, totalAlunos=0;
+      try{
+        var alr = await _sb.from('profiles').select('id,is_demo').eq('professional_id',user.id).is('deletado_em',null);
+        var ids = (alr.data||[]).filter(function(a){ return a.is_demo!==true; }).map(function(a){ return a.id; });
+        totalAlunos = ids.length; nAlunos = ids.length;
+        if(ids.length){
+          var fr = await _sb.from('fichas').select('student_id').eq('professional_id',user.id);
+          var setTr={}; (fr.data||[]).forEach(function(f){ if(f.student_id && ids.indexOf(f.student_id)>=0) setTr[f.student_id]=1; });
+          nComTreino = Object.keys(setTr).length;
+          var sr = await _sb.from('sessoes').select('student_id').eq('professional_id',user.id).eq('finalizada',true);
+          var cnt={}; (sr.data||[]).forEach(function(s){ if(s.student_id) cnt[s.student_id]=(cnt[s.student_id]||0)+1; });
+          nCom2 = ids.filter(function(id){ return (cnt[id]||0)>=2; }).length;
+        }
+      }catch(e){}
+      var obj1 = nAlunos>=5;
+      var obj2 = nComTreino>=5;
+      var obj3 = totalAlunos>0 && nCom2===totalAlunos;
 
       var ov=document.createElement('div'); ov.id='piik-bt-ov';
       ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#07090b;overflow:auto;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#e8eaee';
@@ -7355,11 +7375,17 @@
             '<div style="font-size:13px;font-weight:600;opacity:.82">Como usar o Piik passo a passo + o programa do beta</div></div>'+
             '<div style="margin-left:auto;font-size:22px;font-weight:900">→</div></a>'+
           '<h3 style="margin:26px 0 10px;font-size:16px">🎯 Seus objetivos no teste</h3>'+
-          '<div style="display:flex;flex-direction:column;gap:10px">'+
-            missaoCard('1️⃣','Cadastre 3 alunos', nAl>=3, nAl>=3?('Feito! '+nAl+' alunos cadastrados.'):('Você já tem '+nAl+' de 3.'))+
-            missaoCard('2️⃣','Monte 1 treino', nTr>=1, nTr>=1?('Feito! '+nTr+' treino'+(nTr>1?'s':'')+' montado'+(nTr>1?'s':'')+'.'):'Monte o primeiro treino de um aluno.')+
-            missaoCard('3️⃣','Receba 1 retorno de treino', nRe>=1, nRe>=1?('Feito! '+nRe+' treino'+(nRe>1?'s':'')+' concluído'+(nRe>1?'s':'')+' por alunos.'):'Peça pro aluno concluir um treino no app.')+
-          '</div>'+
+          '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13.5px;background:#12161b;border:1px solid #2a2f37;border-radius:12px;overflow:hidden">'+
+            '<thead><tr style="background:#0e1319;color:#9aa0ab;text-align:left">'+
+              '<th style="padding:11px 14px;font-weight:800">Objetivo</th>'+
+              '<th style="padding:11px 10px;font-weight:800">Feito até agora</th>'+
+              '<th style="padding:11px 12px;font-weight:800;text-align:center">Status</th></tr></thead>'+
+            '<tbody>'+
+              linhaObj('Cadastrar no mínimo <b>5 alunos</b>', nAlunos+' de 5 alunos', obj1)+
+              linhaObj('Montar treino para no mínimo <b>5 alunos</b> <span style="color:#6f7865">(vale 1 por aluno)</span>', nComTreino+' de 5 com treino', obj2)+
+              linhaObj('<b>Todos os alunos</b> concluírem 2 treinos no app', (totalAlunos? (nCom2+' de '+totalAlunos+' alunos'):'sem alunos ainda'), obj3)+
+            '</tbody></table></div>'+
+            '<p style="color:#6f7865;font-size:12px;margin:8px 2px 0;line-height:1.5">Atualiza sozinho conforme você cadastra alunos, monta treinos e seus alunos concluem os treinos no app.</p>'+
           '<h3 style="margin:26px 0 10px;font-size:16px">💬 Enviar feedback</h3>'+
           '<div style="background:#12161b;border:1px solid #2a2f37;border-radius:16px;padding:18px 20px">'+
             '<p style="color:#9aa0ab;font-size:14px;margin:0 0 12px">Ideia, sugestão ou erro? Conta pra gente. 💚</p>'+
