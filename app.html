@@ -889,6 +889,18 @@
   .pix-load,.pix-erro{text-align:center;padding:24px;color:var(--muted)}
   .pix-seal{margin-top:14px;text-align:center;font-size:12px;color:var(--muted)}
   .pix-seal b{color:var(--txt,#e8eaee)}
+  /* cupom no modal de pagamento */
+  .cup-area{margin-top:14px;border-top:1px solid var(--line,#262a33);padding-top:12px}
+  .cup-link{background:transparent;border:none;color:var(--pink,#7fff00);font-weight:700;font-size:13px;cursor:pointer;padding:2px 0;text-decoration:underline}
+  .cup-row{display:flex;gap:8px;margin-top:4px}
+  .cup-row input{flex:1;min-width:0;background:var(--elev,#0e1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#262a33);border-radius:10px;padding:11px;font-size:14px;text-transform:uppercase;letter-spacing:.05em}
+  .cup-msg{font-size:13px;margin-top:8px;line-height:1.45}
+  .cup-msg.err{color:#ff7a7a}
+  .cup-ok{margin-top:10px;background:rgba(127,255,0,.10);border:1px solid rgba(127,255,0,.4);border-radius:12px;padding:12px 14px}
+  .cup-ok .cup-resumo{font-weight:800;font-size:14px;color:var(--pink,#7fff00);margin-bottom:2px}
+  .cup-ok .cup-sub{font-size:12.5px;color:var(--muted);line-height:1.45}
+  .cup-ok .btn{width:100%;margin-top:12px}
+  .cup-tag{display:inline-block;font-size:11px;font-weight:800;color:var(--pink,#7fff00);background:rgba(127,255,0,.12);border:1px solid rgba(127,255,0,.4);border-radius:999px;padding:2px 9px;margin-left:6px}
 
   /* assinatura / planos */
   .assin-tab{background:var(--pk-surf,#15171c)!important;border-color:var(--line,#262a33)!important;color:var(--txt,#e8eaee)!important}
@@ -1348,7 +1360,28 @@
         ".gest-grid{display:grid;gap:16px;margin-bottom:16px}"+
         "@media(min-width:900px){.gest-grid{grid-template-columns:1fr 1fr}}"+
         ".gest-card{background:var(--card,#12161b);border:1px solid var(--line,#2a2f37);border-radius:16px;padding:18px 20px}"+
-        ".gest-card>h3{margin:0 0 6px;font-size:16px;font-weight:800}";
+        ".gest-card>h3{margin:0 0 6px;font-size:16px;font-weight:800}"+
+        ".cupg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}"+
+        ".cupg-lbl{display:block;font-size:12px;font-weight:700;color:var(--muted,#9aa0ab);margin-bottom:4px}"+
+        ".cupg-in{width:100%;box-sizing:border-box;background:var(--card,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:10px;font-size:14px}"+
+        ".cupg-item{padding:12px 0;border-top:1px solid var(--line,#2a2f37)}"+
+        ".cupg-item:first-child{border-top:none}"+
+        ".cupg-top{display:flex;align-items:center;gap:10px}"+
+        ".cupg-cod{font-weight:900;font-size:15px;letter-spacing:.04em}"+
+        ".cupg-badge{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;border:1px solid;background:rgba(127,255,0,.08)}"+
+        ".cupg-meta{font-size:12.5px;color:var(--muted,#9aa0ab);margin-top:5px;line-height:1.4}"+
+        ".cupg-acoes{display:flex;gap:8px;margin-top:9px}"+
+        ".cupg-act{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;cursor:pointer;background:var(--pk-elev,#0f1116);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37)}"+
+        ".cupg-act:hover{border-color:var(--pink,#7fff00)}"+
+        ".cupg-act.danger:hover{border-color:#ff7a7a;color:#ff7a7a}"+
+        ".dt-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line,#2a2f37)}"+
+        ".dt-item:first-child{border-top:none}"+
+        ".dt-ic{font-size:20px;flex:0 0 auto;width:26px;text-align:center}"+
+        ".dt-nome{font-weight:700;font-size:14px}"+
+        ".dt-quando{font-size:12.5px;color:var(--muted,#9aa0ab);margin-top:2px}"+
+        ".dt-prox{background:rgba(127,255,0,.06);border-radius:10px;margin:2px -8px;padding-left:8px;padding-right:8px}"+
+        ".dt-prox .dt-nome{color:var(--pink,#7fff00)}"+
+        ".dt-launch .dt-nome{color:var(--txt,#e8eaee)}";
       document.head.appendChild(st);
     }
     var first = primeiroNome();
@@ -1360,6 +1393,18 @@
         '<div class="gest-card"><h3>🚀 Piik Beta Testers</h3><div id="admEmbList"><div class="empty">Carregando…</div></div></div>'+
         '<div class="gest-card"><h3>💬 Feedbacks recebidos <span class="meta-sm" id="admFbCount"></span></h3><div id="admFbList"><div class="empty">Carregando…</div></div></div>'+
       '</div>'+
+      '<div class="gest-grid">'+
+        '<div class="gest-card" id="cupCard">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">🎟️ Cupons</h3>'+
+            '<button class="btn small" onclick="abrirNovoCupom()">+ Novo cupom</button></div>'+
+          '<div id="cupNovoBox"></div>'+
+          '<div id="cupLista" style="margin-top:10px"><div class="empty">Carregando…</div></div>'+
+        '</div>'+
+        '<div class="gest-card" id="datasCard">'+
+          '<h3 style="margin:0 0 4px">📅 Datas importantes do Piik</h3>'+
+          '<div id="datasLista"><div class="empty">Carregando…</div></div>'+
+        '</div>'+
+      '</div>'+
       '<div class="gest-card">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">👥 Usuários cadastrados</h3><span class="meta-sm" id="admUsersCount"></span></div>'+
         '<input id="admUserBusca" class="aluno-search" placeholder="Buscar por nome ou e-mail…" style="width:100%;margin:12px 0 4px;box-sizing:border-box">'+
@@ -1368,6 +1413,153 @@
     mostrar();
     carregarAdmin();
     carregarKpisGestao();
+    carregarCuponsGestao();
+    renderDatasImportantes();
+  }
+
+  /* ================= GESTÃO DE CUPONS ================= */
+  const CUP_PLANOS = [
+    { key:"you_piik", label:"You Piik (R$ 59,90)" },
+    { key:"fit",      label:"Piik Fit (R$ 39,90)" }
+  ];
+  function abrirNovoCupom(){
+    const box=document.getElementById("cupNovoBox"); if(!box) return;
+    if(box.dataset.open==="1"){ box.dataset.open="0"; box.innerHTML=""; return; }
+    box.dataset.open="1";
+    const planoOpts = CUP_PLANOS.map(p=>`<label style="display:flex;align-items:center;gap:7px;font-size:13px"><input type="checkbox" class="cupPlano" value="${p.key}" checked> ${esc(p.label)}</label>`).join("");
+    box.innerHTML =
+      '<div style="background:var(--pk-elev,#0f1116);border:1px solid var(--line,#262a33);border-radius:12px;padding:14px;margin-top:12px">'+
+        '<div class="cupg-grid">'+
+          '<div><label class="cupg-lbl">Código</label><input id="ncCodigo" class="cupg-in" placeholder="EX: LANCAMENTO3" style="text-transform:uppercase"></div>'+
+          '<div><label class="cupg-lbl">Meses grátis</label><input id="ncMeses" class="cupg-in" type="number" min="1" max="24" value="3"></div>'+
+        '</div>'+
+        '<div style="margin-top:10px"><label class="cupg-lbl">Vale para os planos</label><div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px">'+planoOpts+'</div></div>'+
+        '<div class="cupg-grid" style="margin-top:10px">'+
+          '<div><label class="cupg-lbl">Limite de usos <span class="meta-sm">(vazio = ilimitado)</span></label><input id="ncLimite" class="cupg-in" type="number" min="1" placeholder="ex: 50"></div>'+
+          '<div><label class="cupg-lbl">Válido até <span class="meta-sm">(vazio = sem prazo)</span></label><input id="ncValidade" class="cupg-in" type="date"></div>'+
+        '</div>'+
+        '<div style="margin-top:10px"><label class="cupg-lbl">Descrição interna <span class="meta-sm">(opcional)</span></label><input id="ncDesc" class="cupg-in" placeholder="ex: Promo de lançamento"></div>'+
+        '<div id="ncMsg" class="cup-msg" style="margin-top:8px"></div>'+
+        '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="salvarNovoCupom()">Criar cupom</button>'+
+        '<button class="btn ghost" onclick="abrirNovoCupom()">Cancelar</button></div>'+
+        '<p class="meta-sm" style="margin:10px 0 0;line-height:1.5">O cupom já entra <b>ativo</b> e passa a valer na hora. Ele concede <b>meses grátis</b> do plano (sem cobrança) — o acesso é liberado e o vencimento é empurrado. Cupons de desconto em % chegam em breve.</p>'+
+      '</div>';
+    const cod=document.getElementById("ncCodigo"); if(cod) cod.focus();
+  }
+  async function salvarNovoCupom(){
+    const msg=document.getElementById("ncMsg");
+    const codigo=(document.getElementById("ncCodigo").value||"").trim().toUpperCase().replace(/\s+/g,"");
+    const meses=parseInt(document.getElementById("ncMeses").value,10);
+    const limiteRaw=document.getElementById("ncLimite").value;
+    const validadeRaw=document.getElementById("ncValidade").value;
+    const desc=(document.getElementById("ncDesc").value||"").trim();
+    const planos=Array.from(document.querySelectorAll(".cupPlano:checked")).map(c=>c.value);
+    if(!codigo){ msg.className="cup-msg err"; msg.textContent="Defina um código."; return; }
+    if(!/^[A-Z0-9]{3,24}$/.test(codigo)){ msg.className="cup-msg err"; msg.textContent="Use de 3 a 24 letras/números, sem espaços."; return; }
+    if(!(meses>=1)){ msg.className="cup-msg err"; msg.textContent="Informe os meses grátis (mínimo 1)."; return; }
+    if(!planos.length){ msg.className="cup-msg err"; msg.textContent="Escolha ao menos um plano."; return; }
+    const row={ codigo, tipo:"meses_gratis", meses, planos, ativo:true,
+      descricao: desc||null,
+      limite_usos: limiteRaw?parseInt(limiteRaw,10):null,
+      validade: validadeRaw? new Date(validadeRaw+"T23:59:59").toISOString() : null,
+      created_by: ME.id };
+    msg.className="cup-msg"; msg.textContent="Criando…";
+    const { error } = await sb.from("cupons").insert(row);
+    if(error){
+      msg.className="cup-msg err";
+      msg.textContent = /duplicate|unique/i.test(error.message) ? "Já existe um cupom com esse código." : ("Erro: "+error.message);
+      return;
+    }
+    abrirNovoCupom();
+    carregarCuponsGestao();
+  }
+  async function carregarCuponsGestao(){
+    const el=document.getElementById("cupLista"); if(!el) return;
+    const { data, error } = await sb.from("cupons").select("*").order("created_at",{ascending:false});
+    if(error){ el.innerHTML=`<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
+    const cs=data||[];
+    if(!cs.length){ el.innerHTML=`<div class="empty">Nenhum cupom criado ainda. Clique em “+ Novo cupom”.</div>`; return; }
+    const hoje=Date.now();
+    el.innerHTML = cs.map(c=>{
+      const expirado = c.validade && new Date(c.validade).getTime()<hoje;
+      const esgotado = c.limite_usos!=null && (c.usos||0)>=c.limite_usos;
+      let estado, cor;
+      if(!c.ativo){ estado="Pausado"; cor="#e8c14a"; }
+      else if(expirado){ estado="Expirado"; cor="#ff7a7a"; }
+      else if(esgotado){ estado="Esgotado"; cor="#ff7a7a"; }
+      else { estado="Ativo"; cor="var(--pink,#7fff00)"; }
+      const usoTxt = (c.usos||0) + (c.limite_usos!=null?(" / "+c.limite_usos):"") + " uso(s)";
+      const benef = c.tipo==="meses_gratis" ? ((c.meses||1)+" "+((c.meses||1)===1?"mês":"meses")+" grátis")
+                    : c.tipo==="percentual" ? ((c.percentual||0)+"% off")
+                    : ("R$ "+((c.valor||0).toFixed(2).replace(".",","))+" off");
+      const planosTxt = (c.planos&&c.planos.length)? c.planos.map(p=>p==="you_piik"?"You Piik":(p==="fit"?"Fit":p)).join(", ") : "todos";
+      const val = c.validade? ("até "+new Date(c.validade).toLocaleDateString("pt-BR")) : "sem prazo";
+      const acoes = c.ativo
+        ? `<button class="cupg-act" onclick="pausarCupom('${c.id}',true)">Pausar</button><button class="cupg-act danger" onclick="encerrarCupom('${c.id}','${esc(c.codigo)}')">Encerrar</button>`
+        : (expirado||esgotado ? `<button class="cupg-act danger" onclick="encerrarCupom('${c.id}','${esc(c.codigo)}')">Encerrar</button>`
+                              : `<button class="cupg-act" onclick="pausarCupom('${c.id}',false)">Reativar</button><button class="cupg-act danger" onclick="encerrarCupom('${c.id}','${esc(c.codigo)}')">Encerrar</button>`);
+      return `<div class="cupg-item">
+          <div class="cupg-top">
+            <span class="cupg-cod">${esc(c.codigo)}</span>
+            <span class="cupg-badge" style="color:${cor};border-color:${cor}">${estado}</span>
+          </div>
+          <div class="cupg-meta">${benef} · ${esc(planosTxt)} · ${usoTxt} · ${val}${c.descricao?(" · "+esc(c.descricao)):""}</div>
+          <div class="cupg-acoes">${acoes}</div>
+        </div>`;
+    }).join("");
+  }
+  async function pausarCupom(id, pausar){
+    const { error } = await sb.from("cupons").update({ ativo: !pausar }).eq("id", id);
+    if(error){ await piikAlert({ titulo:"Erro", msg:error.message }); return; }
+    carregarCuponsGestao();
+  }
+  async function encerrarCupom(id, codigo){
+    const ok = await piikConfirm({ titulo:"Encerrar cupom?", msg:`O cupom <b>${esc(codigo)}</b> deixa de existir e o código fica livre. Quem já ativou <b>mantém o benefício</b> que recebeu. Se quiser só desligar por um tempo, use <b>Pausar</b>.`, ok:"Sim, encerrar", cancel:"Voltar" });
+    if(!ok) return;
+    const { error } = await sb.from("cupons").delete().eq("id", id);
+    if(error){ await piikAlert({ titulo:"Erro", msg:error.message }); return; }
+    carregarCuponsGestao();
+  }
+
+  /* ================= DATAS IMPORTANTES ================= */
+  const PIIK_DATAS = [
+    { d:null,       nome:"Lançamento do Piik", nota:"data ainda a confirmar", tag:"launch" },
+    { d:"04-06",    nome:"Dia Mundial da Atividade Física" },
+    { d:"07-07",    nome:"Dia Mundial da Saúde" },
+    { d:"09-01",    nome:"Dia do Profissional de Educação Física (BR)" },
+    { d:"10-11",    nome:"Dia Mundial de Prevenção da Obesidade" }
+  ];
+  function renderDatasImportantes(){
+    const el=document.getElementById("datasLista"); if(!el) return;
+    const hoje=new Date(); const y=hoje.getFullYear();
+    const hoje0=new Date(y,hoje.getMonth(),hoje.getDate()).getTime();
+    // calcula a próxima ocorrência de cada data comemorativa
+    const comDatas = PIIK_DATAS.filter(x=>x.d).map(x=>{
+      const [mm,dd]=x.d.split("-").map(n=>parseInt(n,10));
+      let occ=new Date(y,mm-1,dd).getTime();
+      if(occ<hoje0) occ=new Date(y+1,mm-1,dd).getTime();
+      const dias=Math.round((occ-hoje0)/86400000);
+      return {...x, occ, dias, quando:new Date(occ)};
+    }).sort((a,b)=>a.occ-b.occ);
+    const proximaId = comDatas.length? comDatas[0].occ : null;
+    const fmt=dt=>dt.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"});
+    const launch = PIIK_DATAS.find(x=>x.tag==="launch");
+    const linhas=[];
+    if(launch){
+      linhas.push(`<div class="dt-item dt-launch">
+        <div class="dt-ic">🚀</div>
+        <div class="dt-txt"><div class="dt-nome">${esc(launch.nome)}</div><div class="dt-quando">${esc(launch.nota||"")}</div></div>
+      </div>`);
+    }
+    comDatas.forEach(x=>{
+      const prox = x.occ===proximaId;
+      const diasTxt = x.dias===0? "hoje 🎉" : (x.dias===1? "amanhã" : ("em "+x.dias+" dias"));
+      linhas.push(`<div class="dt-item${prox?" dt-prox":""}">
+        <div class="dt-ic">${prox?"⭐":"📌"}</div>
+        <div class="dt-txt"><div class="dt-nome">${esc(x.nome)}</div><div class="dt-quando">${fmt(x.quando)} · ${diasTxt}</div></div>
+      </div>`);
+    });
+    el.innerHTML = linhas.join("");
   }
 
   async function carregarKpisGestao(){
@@ -3191,29 +3383,104 @@
     const mapa = { "Piik Fit":"fit", "You Piik":"you_piik" };
     const plano = mapa[nome];
     if(!plano){ piikAlert("O Piik Light é gratuito — não há o que pagar. 🙂"); return; }
+    // já assina exatamente esse plano e está em dia? avisa e não abre o pagamento
+    const canon = p => p==="pro" ? "fit" : ((p==="you_levo"||p==="youpiik") ? "you_piik" : p);
+    const atual = planoAtual();
+    const st = statusAssinatura();
+    const venc = (ME && ME.assinatura_vencimento) ? new Date(ME.assinatura_vencimento).getTime() : 0;
+    const congelada = !!(ME && ME.conta_congelada);
+    const vigente = st !== "cancelado" && !congelada && (st === "ativo" || venc > Date.now());
+    if(canon(atual) === canon(plano) && vigente){
+      piikAlert({ titulo:"Você já assina esse plano", msg:`Sua assinatura do <b>${esc(nome)}</b> já está ativa. 🙂 Não precisa assinar de novo — é só continuar usando o Piik.` });
+      return;
+    }
     escolherPagamento(plano, nome);
   }
 
   function escolherPagamento(plano, nome){
     fecharPixModais();
+    CUP_PLANO = plano; CUP_NOME = nome;
     const ov = document.createElement("div");
     ov.className = "pix-ov"; ov.id = "pixEscolha";
     ov.innerHTML = `
       <div class="pix-card">
         <button class="pix-x" onclick="fecharPixModais()">✕</button>
         <div class="pix-tit">Como você quer pagar o ${esc(nome)}?</div>
-        <button class="pix-opt" onclick="assinarCartao('${plano}')">
-          <span class="pix-opt-ic">💳</span>
-          <span><b>Cartão de crédito</b><br><span class="pix-opt-sub">Assinatura automática — cobra todo mês sozinho</span></span>
-        </button>
-        <button class="pix-opt" onclick="pagarComPix('${plano}','${esc(nome)}')">
-          <span class="pix-opt-ic">⚡</span>
-          <span><b>Pix</b><br><span class="pix-opt-sub">Você paga o mês e renova quando quiser</span></span>
-        </button>
-        <div class="pix-seal">🔒 Pagamento processado com segurança pelo <b>Mercado Pago</b></div>
+        <div id="pixOpcoes">
+          <button class="pix-opt" onclick="assinarCartao('${plano}')">
+            <span class="pix-opt-ic">💳</span>
+            <span><b>Cartão de crédito</b><br><span class="pix-opt-sub">Assinatura automática — cobra todo mês sozinho</span></span>
+          </button>
+          <button class="pix-opt" onclick="pagarComPix('${plano}','${esc(nome)}')">
+            <span class="pix-opt-ic">⚡</span>
+            <span><b>Pix</b><br><span class="pix-opt-sub">Você paga o mês e renova quando quiser</span></span>
+          </button>
+          <div class="pix-seal">🔒 Pagamento processado com segurança pelo <b>Mercado Pago</b></div>
+        </div>
+        <div class="cup-area">
+          <button class="cup-link" id="cupLink" onclick="abrirCupomCampo()">Tenho um cupom</button>
+          <div id="cupBox" style="display:none">
+            <div class="cup-row">
+              <input id="cupInput" placeholder="Digite o cupom" autocomplete="off" spellcheck="false">
+              <button class="btn small" id="cupBtn" onclick="aplicarCupomPagamento()">Aplicar</button>
+            </div>
+            <div id="cupMsg" class="cup-msg"></div>
+          </div>
+        </div>
       </div>`;
     ov.addEventListener("click", e=>{ if(e.target===ov) fecharPixModais(); });
     document.body.appendChild(ov);
+  }
+
+  /* ===== Cupom no pagamento ===== */
+  let CUP_PLANO = null, CUP_NOME = null;
+  function abrirCupomCampo(){
+    const link=document.getElementById("cupLink"), box=document.getElementById("cupBox");
+    if(link) link.style.display="none";
+    if(box){ box.style.display="block"; const i=document.getElementById("cupInput");
+      if(i){ i.focus(); i.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); aplicarCupomPagamento(); } }; } }
+  }
+  async function aplicarCupomPagamento(){
+    const inp=document.getElementById("cupInput"), msg=document.getElementById("cupMsg"), btn=document.getElementById("cupBtn");
+    if(!inp||!msg) return;
+    const codigo=(inp.value||"").trim().toUpperCase();
+    if(!codigo){ msg.className="cup-msg err"; msg.textContent="Digite um cupom."; return; }
+    msg.className="cup-msg"; msg.textContent="Validando…";
+    if(btn){ btn.disabled=true; }
+    try{
+      const { data, error } = await sb.rpc("validar_cupom", { p_codigo: codigo, p_plano: CUP_PLANO });
+      if(btn){ btn.disabled=false; }
+      const r = data || {};
+      if(error || !r.ok){ msg.className="cup-msg err"; msg.textContent = (r && r.msg) ? r.msg : "Não consegui validar o cupom."; return; }
+      if(r.tipo === "meses_gratis"){
+        msg.className="cup-msg"; msg.innerHTML =
+          `<div class="cup-ok">
+             <div class="cup-resumo">🎁 ${esc(r.resumo)}</div>
+             <div class="cup-sub">Ao ativar, seu acesso ao <b>${esc(r.plano_label)}</b> vale por ${r.meses} ${r.meses===1?"mês":"meses"} — sem cobrança agora. Depois disso você renova por Pix ou cartão.</div>
+             <button class="btn" onclick="confirmarCupomMeses('${esc(codigo)}')">Ativar ${r.meses} ${r.meses===1?"mês":"meses"} grátis</button>
+           </div>`;
+      } else if(r.tipo === "percentual" || r.tipo === "valor_fixo"){
+        // cupons de desconto no Pix — dependem da atualização da função de pagamento (em breve)
+        msg.className="cup-msg err";
+        msg.textContent = "Cupons de desconto no Pix estarão disponíveis em breve. Por enquanto valem os cupons de período grátis.";
+      } else {
+        msg.className="cup-msg err"; msg.textContent="Tipo de cupom não reconhecido.";
+      }
+    }catch(e){ if(btn){ btn.disabled=false; } msg.className="cup-msg err"; msg.textContent="Erro ao validar: "+e.message; }
+  }
+  async function confirmarCupomMeses(codigo){
+    const msg=document.getElementById("cupMsg");
+    try{
+      const { data, error } = await sb.rpc("aplicar_cupom_meses", { p_codigo: codigo, p_plano: CUP_PLANO });
+      const r = data || {};
+      if(error || !r.ok){ if(msg){ msg.className="cup-msg err"; msg.textContent=(r&&r.msg)?r.msg:"Não consegui ativar o cupom."; } return; }
+      fecharPixModais();
+      const dt = r.novo_vencimento ? new Date(r.novo_vencimento) : null;
+      const dtxt = dt ? dt.toLocaleDateString("pt-BR") : "";
+      await piikAlert({ emoji:"🎉", titulo:"Cupom ativado!",
+        msg:`Pronto! Seu acesso está liberado${dtxt?` até <b>${dtxt}</b>`:""}. Aproveite o Piik. 💚` });
+      location.reload();
+    }catch(e){ if(msg){ msg.className="cup-msg err"; msg.textContent="Erro ao ativar: "+e.message; } }
   }
 
   let PIX_POLL = null;
