@@ -35,7 +35,7 @@
     box-shadow:0 24px 60px rgba(0,0,0,.5)}
   .kicker{font-weight:800;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ac);margin-bottom:12px}
   .big-emoji{font-size:46px;line-height:1;margin-bottom:14px}
-  h1{font-weight:900;font-size:27px;line-height:1.12;letter-spacing:-.02em;color:#fff;margin-bottom:12px}
+  h1{font-weight:900;font-size:27px;line-height:1.12;letter-spacing:-.02em;color:#fff;margin-bottom:12px;text-wrap:balance}
   h1 .g{color:var(--ac)}
   p.lead{font-size:16px;line-height:1.55;color:#cdd4c4;margin-bottom:10px}
   p.lead b{color:#fff}
@@ -100,7 +100,7 @@ const SLIDES = [
   { emoji:"🤝", kicker:"O combinado", h:'O que a gente <span class="g">precisa de você</span>.',
     body:'<ul class="list"><li><span class="ic">1</span><span><b>Usar de verdade</b>, com alunos reais — é assim que o Piik melhora.</span></li><li><span class="ic">2</span><span><b>Dar feedback sincero</b>: o que falta, o que travou, o que te ajudou. Tem um botão de feedback dentro do app.</span></li><li><span class="ic">3</span><span><b>Falar quando algo der errado</b> — bug, dúvida, ideia. É só chamar.</span></li></ul>' },
   { emoji:"📘", kicker:"Antes de começar", h:'Dá uma olhada no <span class="g">manual</span>.',
-    body:'<p class="lead">Preparamos um guia rápido explicando como aproveitar o Piik ao máximo desde o primeiro dia.</p><p class="lead">Abre num instante e você pode voltar aqui pra continuar.</p><div class="row" style="margin-top:16px"><a class="btn link" href="'+MANUAL_URL+'" target="_blank" rel="noopener">📘 Abrir o manual completo</a></div>' }
+    body:'<p class="lead">Preparamos um guia rápido explicando como aproveitar o Piik ao máximo desde o primeiro dia.</p><p class="lead">Sem pressa: o manual <b>fica sempre disponível no site</b>, então você pode consultar quando quiser — inclusive depois de criar sua conta.</p><div class="row" style="margin-top:16px"><a class="btn link" href="'+MANUAL_URL+'" target="_blank" rel="noopener">📘 Abrir o manual completo</a></div>' }
 ];
 const TOTAL = SLIDES.length + 1; // slides + cadastro
 
@@ -132,8 +132,8 @@ function telaGate(prefill){
   card.className="card fadein";
   card.innerHTML =
     '<div class="kicker">Convite exclusivo</div>'+
-    '<h1>Você foi convidado(a) pro <span class="g">beta do Piik</span>.</h1>'+
-    '<p class="lead">Digite o <b>e-mail do convite</b> (o mesmo que você passou pra gente) para começar.</p>'+
+    '<h1>Você foi convidado(a)<br>pro <span class="g">beta do&nbsp;Piik</span>.</h1>'+
+    '<p class="lead">Digite o <b>e-mail do convite</b> para começar.</p>'+
     '<label for="gEmail">Seu e-mail</label>'+
     '<input id="gEmail" type="email" inputmode="email" autocomplete="email" placeholder="voce@email.com" value="'+(prefill||"")+'">'+
     '<div id="gMsg" class="msg"></div>'+

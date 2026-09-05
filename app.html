@@ -20,6 +20,7 @@
   .av-thumb img{width:100%;height:100%;object-fit:cover}
   .av-thumb.av-money{font-size:20px;font-weight:800;color:var(--pink-deep)}
   .av-thumb.av-help{font-size:20px;font-weight:800;color:var(--pink-deep)}
+  .av-thumb.av-fb{font-size:18px}
   .ajuda-dicas{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
   .aj-item{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
   .aj-item b{font-size:13.5px;color:var(--txt)}
@@ -1203,6 +1204,7 @@
     montar();
     aberturaPosLogin();
     checarConsentimentoContato();
+    mostrarBoasVindas();
   }
 
   // recém-confirmou o e-mail (?planos=1) → abre a Assinatura já na seção de Planos
@@ -1412,6 +1414,7 @@
           '<div id="datasLista"><div class="empty">Carregando…</div></div>'+
         '</div>'+
       '</div>'+
+      '<div class="gest-grid">'+
       '<div class="gest-card" id="convCard">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">🎟️ Convites — Beta Testers</h3>'+
           '<button class="btn small" onclick="abrirNovoConvite()">+ Novo convite</button></div>'+
@@ -1423,6 +1426,7 @@
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">👥 Usuários cadastrados</h3><span class="meta-sm" id="admUsersCount"></span></div>'+
         '<input id="admUserBusca" class="aluno-search" placeholder="Buscar por nome ou e-mail…" style="width:100%;margin:12px 0 4px;box-sizing:border-box">'+
         '<div id="admUsersList"><div class="empty">Carregando…</div></div>'+
+      '</div>'+
       '</div>';
     mostrar();
     carregarAdmin();
@@ -1807,11 +1811,16 @@
            <span class="av-thumb av-help">?</span>
            <span class="av-cap">ajuda</span>
          </button>`;
+    const feedback = `<button class="perfil-av" onclick="abrirFeedback()">
+           <span class="av-thumb av-fb">💬</span>
+           <span class="av-cap">feedback</span>
+         </button>`;
     const menuItems = `
       <button onclick="go('perfil')">Meu perfil</button>
       <button onclick="sair()">Sair</button>`;
     box.innerHTML = `<div class="top-tiles">
            ${assinatura}
+           ${feedback}
            <span class="menu-anchor">
              ${ajuda}
              <span class="menu-drop" id="perfilMenu">${menuItems}</span>
@@ -1819,6 +1828,75 @@
            ${gatilho}
          </div>`;
   }
+
+  /* ===== Feedback (topo) ===== */
+  function abrirFeedback(){
+    if(typeof fecharMenus==="function") fecharMenus();
+    if(document.getElementById("fbTopOv")) return;
+    window.FB_TOP_TIPO = null;
+    const o=document.createElement("div"); o.className="modal-ov"; o.id="fbTopOv";
+    o.innerHTML=`<div class="modal-cx" style="max-width:440px;text-align:left">
+      <h3 style="margin:0 0 4px">💬 Enviar feedback</h3>
+      <p class="meta-sm" style="margin:0 0 14px;line-height:1.5">Ideia, sugestão ou erro? Conta pra gente — seu retorno ajuda muito a melhorar o Piik. 💚</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button type="button" data-t="ideia" class="fbtop-tipo">💡 Ideia</button>
+        <button type="button" data-t="sugestao" class="fbtop-tipo">✍️ Sugestão</button>
+        <button type="button" data-t="erro" class="fbtop-tipo">🐞 Erro</button>
+      </div>
+      <textarea id="fbTopTxt" rows="5" placeholder="Escreva aqui…" style="width:100%;box-sizing:border-box;background:var(--elev,#0e1216);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:10px;font:inherit;font-size:14px;resize:vertical"></textarea>
+      <div id="fbTopMsg" style="font-size:13px;margin-top:8px;min-height:16px"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn ghost" style="flex:0 0 auto" onclick="fecharFeedback()">Cancelar</button>
+        <button class="btn" style="flex:1" id="fbTopSend" onclick="enviarFeedbackTopo()">Enviar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(o);
+    o.addEventListener("click",e=>{ if(e.target===o) fecharFeedback(); });
+    o.querySelectorAll(".fbtop-tipo").forEach(b=>{
+      b.style.cssText="flex:1;background:var(--pk-elev,#171c22);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:9px;font:inherit;font-size:13px;font-weight:700;cursor:pointer";
+      b.onclick=()=>{
+        window.FB_TOP_TIPO=b.getAttribute("data-t");
+        o.querySelectorAll(".fbtop-tipo").forEach(x=>{ x.style.borderColor="var(--line,#2a2f37)"; x.style.color="var(--txt,#e8eaee)"; x.style.background="var(--pk-elev,#171c22)"; });
+        b.style.borderColor="var(--pink,#7fff00)"; b.style.color="var(--pink,#7fff00)"; b.style.background="rgba(127,255,0,.10)";
+      };
+    });
+    const t=document.getElementById("fbTopTxt"); if(t) t.focus();
+  }
+  function fecharFeedback(){ const m=document.getElementById("fbTopOv"); if(m) m.remove(); }
+  async function enviarFeedbackTopo(){
+    const msg=document.getElementById("fbTopMsg"), btn=document.getElementById("fbTopSend");
+    const tipo=window.FB_TOP_TIPO;
+    const txt=((document.getElementById("fbTopTxt")||{}).value||"").trim();
+    if(!tipo){ msg.style.color="#ff7a7a"; msg.textContent="Escolha: ideia, sugestão ou erro."; return; }
+    if(!txt){ msg.style.color="#ff7a7a"; msg.textContent="Escreva seu feedback."; return; }
+    btn.disabled=true; msg.style.color="var(--muted,#9aa0ab)"; msg.textContent="Enviando…";
+    try{
+      const { error } = await sb.functions.invoke("enviar-feedback",{ body:{ tipo, texto:txt, anexos:[] } });
+      if(error) throw error;
+      msg.style.color="var(--pink,#7fff00)"; msg.textContent="Recebido! Muito obrigado. 💚";
+      setTimeout(fecharFeedback, 1200);
+    }catch(e){ btn.disabled=false; msg.style.color="#ff7a7a"; msg.textContent="Não consegui enviar agora. Tente de novo em instantes."; }
+  }
+
+  /* ===== Boas-vindas (primeiro login do personal) ===== */
+  function mostrarBoasVindas(){
+    if(!ME || ME.role!=="professional") return;
+    const k="piik_bv_"+ME.id;
+    try{ if(localStorage.getItem(k)) return; }catch(e){}
+    try{ localStorage.setItem(k,"1"); }catch(e){}
+    const first = (typeof primeiroNome==="function") ? primeiroNome() : "";
+    const o=document.createElement("div"); o.className="modal-ov"; o.id="bvOv";
+    o.innerHTML=`<div class="modal-cx" style="max-width:450px;text-align:left">
+      <div style="text-align:center;font-size:40px;line-height:1;margin-bottom:6px">👋</div>
+      <h3 style="margin:0 0 10px;text-align:center">Bem-vindo(a) ao Piik${first?", "+esc(first):""}!</h3>
+      <p class="meta-sm" style="margin:0 0 10px;line-height:1.6">Que bom ter você aqui. O Piik foi feito pra deixar o seu trabalho mais profissional — montar treinos, acompanhar seus alunos e, quando quiser, tudo com a <b>sua marca</b>.</p>
+      <p class="meta-sm" style="margin:0 0 10px;line-height:1.6">A gente espera de verdade poder contribuir com o seu dia a dia. E o Piik fica melhor com você: <b>sugestões e feedbacks são sempre bem-vindos</b>.</p>
+      <p class="meta-sm" style="margin:0 0 18px;line-height:1.6">É só clicar em <b>💬 Feedback</b>, aqui no canto superior direito, sempre que tiver uma ideia, uma dúvida ou achar algo pra melhorar.</p>
+      <button class="btn" style="width:100%" onclick="fecharBoasVindas()">Bora começar 🚀</button>
+    </div>`;
+    document.body.appendChild(o);
+  }
+  function fecharBoasVindas(){ const m=document.getElementById("bvOv"); if(m) m.remove(); }
 
   function toggleGrupo(id){
     const g = document.getElementById("grp_"+id);
