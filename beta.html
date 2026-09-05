@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piik — Convite Beta Tester</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --ac:#8bff1f; --ac2:#6fe00a; --ink:#07090b; --txt:#e9eee4; --muted:#9aa48f; --line:#232a1c; --card:#12170f; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{min-height:100%}
+  body{font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt);
+    background:radial-gradient(120% 90% at 50% 6%,#16210d 0%,#0b1108 52%,#07090b 100%);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+  .orb{position:fixed;z-index:0;border-radius:50%;filter:blur(90px);opacity:.4;
+    background:radial-gradient(circle,rgba(139,255,31,.35),transparent 70%);
+    width:560px;height:560px;left:50%;top:2%;transform:translateX(-50%)}
+  .stage{position:relative;z-index:2;width:100%;max-width:520px}
+
+  .logo{text-align:center;font-weight:900;font-size:34px;letter-spacing:-.02em;color:#fff;margin-bottom:6px}
+  .logo i{color:var(--ac);font-style:normal}
+
+  .prog{display:flex;align-items:center;gap:7px;justify-content:center;margin:14px 0 20px;min-height:9px}
+  .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.14);transition:all .2s}
+  .dot.on{background:var(--ac);width:22px;border-radius:99px}
+  .dot.done{background:rgba(139,255,31,.5)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:30px 26px;
+    box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .kicker{font-weight:800;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ac);margin-bottom:12px}
+  .big-emoji{font-size:46px;line-height:1;margin-bottom:14px}
+  h1{font-weight:900;font-size:27px;line-height:1.12;letter-spacing:-.02em;color:#fff;margin-bottom:12px}
+  h1 .g{color:var(--ac)}
+  p.lead{font-size:16px;line-height:1.55;color:#cdd4c4;margin-bottom:10px}
+  p.lead b{color:#fff}
+  .list{margin:12px 0 4px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+  .list li{display:flex;gap:11px;align-items:flex-start;font-size:15px;line-height:1.45;color:#cdd4c4}
+  .list li .ic{flex:0 0 auto;color:var(--ac);font-weight:900;margin-top:1px}
+
+  label{display:block;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+  input{width:100%;background:#0d1209;border:1px solid var(--line);border-radius:12px;color:#fff;
+    padding:13px 14px;font-size:16px;font-family:inherit}
+  input:focus{outline:none;border-color:var(--ac)}
+  input:disabled{opacity:.6}
+  .msg{font-size:14px;margin-top:12px;line-height:1.45;min-height:0}
+  .msg.err{color:#ff8f8f}
+  .msg.ok{color:var(--ac)}
+
+  .row{display:flex;gap:10px;margin-top:22px}
+  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--ac);color:var(--ink);border:none;border-radius:13px;font-weight:800;font-size:16px;
+    padding:14px 18px;cursor:pointer;font-family:inherit;transition:transform .12s,opacity .12s}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:disabled{opacity:.55;cursor:default;transform:none}
+  .btn.ghost{background:transparent;color:var(--txt);border:1.5px solid var(--line);flex:0 0 auto;padding:14px 18px}
+  .btn.ghost:hover{border-color:var(--ac)}
+  .btn.link{background:transparent;border:1px solid rgba(139,255,31,.4);color:var(--ac)}
+
+  .foot{text-align:center;margin-top:18px;color:var(--muted);font-size:12.5px}
+  .foot a{color:var(--ac);text-decoration:none;font-weight:700}
+  .hide{display:none!important}
+  .fadein{animation:fi .28s ease}
+  @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+  <div class="orb"></div>
+  <div class="stage">
+    <div class="logo">P<i>ii</i>k</div>
+    <div class="prog" id="prog"></div>
+    <div class="card" id="card"><div class="lead">Carregando…</div></div>
+    <div class="foot" id="foot"></div>
+  </div>
+
+<script>
+const SUPABASE_URL  = "https://qpsraxnzgybehbwrtqjd.supabase.co";
+const SUPABASE_ANON = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
+const APP_URL = "https://piik.com.br/app.html";
+const MANUAL_URL = "https://piik.com.br/manual.html";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true } });
+
+const $ = id => document.getElementById(id);
+const card = $("card"), progEl = $("prog"), footEl = $("foot");
+let GATED_EMAIL = "", GATED_NOME = "";
+
+/* ---- telas de apresentação ---- */
+const SLIDES = [
+  { emoji:"🎉", kicker:"Você está dentro", h:'Bem-vindo(a) ao <span class="g">beta do Piik</span>.',
+    body:'<p class="lead">Você é um dos <b>primeiros</b> a testar o Piik — e isso te dá uma <b>condição especial e vitalícia</b>: o plano completo, liberado pra você, sem mensalidade, pra sempre.</p><p class="lead">Nas próximas telas a gente te explica tudo. É rapidinho. 💚</p>' },
+  { emoji:"💪", kicker:"O que é o Piik", h:'Seu método, <span class="g">com a sua marca</span>.',
+    body:'<p class="lead">O Piik deixa o personal mais profissional: você monta treinos, faz avaliação física, acompanha a evolução do aluno e ainda coloca <b>a sua logo e as suas cores</b> no app (white-label).</p><p class="lead">Seu aluno abre o app e vê <b>a sua marca</b> — não a nossa.</p>' },
+  { emoji:"🎁", kicker:"Sua condição", h:'O que você <span class="g">ganha</span> no beta.',
+    body:'<ul class="list"><li><span class="ic">✓</span><span><b>Plano You Piik liberado</b> — completo, com white-label, sem pagar.</span></li><li><span class="ic">✓</span><span><b>Condição vitalícia</b> — você entra agora e mantém pra sempre.</span></li><li><span class="ic">✓</span><span><b>Acesso antecipado</b> a tudo que a gente lançar primeiro.</span></li><li><span class="ic">✓</span><span><b>Voz no produto</b> — o que você pedir tem prioridade.</span></li></ul>' },
+  { emoji:"🤝", kicker:"O combinado", h:'O que a gente <span class="g">precisa de você</span>.',
+    body:'<ul class="list"><li><span class="ic">1</span><span><b>Usar de verdade</b>, com alunos reais — é assim que o Piik melhora.</span></li><li><span class="ic">2</span><span><b>Dar feedback sincero</b>: o que falta, o que travou, o que te ajudou. Tem um botão de feedback dentro do app.</span></li><li><span class="ic">3</span><span><b>Falar quando algo der errado</b> — bug, dúvida, ideia. É só chamar.</span></li></ul>' },
+  { emoji:"📘", kicker:"Antes de começar", h:'Dá uma olhada no <span class="g">manual</span>.',
+    body:'<p class="lead">Preparamos um guia rápido explicando como aproveitar o Piik ao máximo desde o primeiro dia.</p><p class="lead">Abre num instante e você pode voltar aqui pra continuar.</p><div class="row" style="margin-top:16px"><a class="btn link" href="'+MANUAL_URL+'" target="_blank" rel="noopener">📘 Abrir o manual completo</a></div>' }
+];
+const TOTAL = SLIDES.length + 1; // slides + cadastro
+
+/* ---- utils ---- */
+function soDigitos(s){ return (s||"").replace(/\D/g,""); }
+function emailValido(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e||""); }
+function cpfValido(cpf){
+  cpf = soDigitos(cpf); if(cpf.length!==11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i);
+  let d1=(s*10)%11; if(d1===10) d1=0; if(d1!==parseInt(cpf[9])) return false;
+  s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i);
+  let d2=(s*10)%11; if(d2===10) d2=0; return d2===parseInt(cpf[10]);
+}
+function mascaraCpf(v){ v=soDigitos(v).slice(0,11);
+  return v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2"); }
+
+/* ---- barra de progresso ---- */
+function renderProg(stepAtual){ // stepAtual: 0=gate (sem dots), 1..TOTAL
+  if(stepAtual<1){ progEl.innerHTML=""; return; }
+  let h="";
+  for(let i=1;i<=TOTAL;i++){ h += '<span class="dot '+(i===stepAtual?"on":(i<stepAtual?"done":""))+'"></span>'; }
+  progEl.innerHTML=h;
+}
+
+/* ================= PORTÃO (e-mail) ================= */
+function telaGate(prefill){
+  renderProg(0);
+  footEl.innerHTML = 'Já tem conta? <a href="'+APP_URL+'">Entrar no app</a>';
+  card.className="card fadein";
+  card.innerHTML =
+    '<div class="kicker">Convite exclusivo</div>'+
+    '<h1>Você foi convidado(a) pro <span class="g">beta do Piik</span>.</h1>'+
+    '<p class="lead">Digite o <b>e-mail do convite</b> (o mesmo que você passou pra gente) para começar.</p>'+
+    '<label for="gEmail">Seu e-mail</label>'+
+    '<input id="gEmail" type="email" inputmode="email" autocomplete="email" placeholder="voce@email.com" value="'+(prefill||"")+'">'+
+    '<div id="gMsg" class="msg"></div>'+
+    '<div class="row"><button class="btn" id="gBtn" onclick="validarGate()">Começar →</button></div>';
+  const inp=$("gEmail"); if(inp){ inp.focus(); inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); validarGate(); } }; }
+}
+async function validarGate(){
+  const inp=$("gEmail"), msg=$("gMsg"), btn=$("gBtn");
+  const email=(inp.value||"").trim().toLowerCase();
+  if(!emailValido(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
+  msg.className="msg"; msg.textContent="Conferindo seu convite…"; btn.disabled=true;
+  try{
+    const { data, error } = await sb.rpc("checar_convite_beta", { p_email: email });
+    btn.disabled=false;
+    const r = data || {};
+    if(error){ msg.className="msg err"; msg.textContent="Não consegui validar agora. Tente de novo em instantes."; return; }
+    if(r.ok){ GATED_EMAIL=email; GATED_NOME=r.nome||""; irSlide(0); return; }
+    if(r.motivo==="ja_usado"){
+      msg.className="msg err";
+      msg.innerHTML='Esse e-mail <b>já criou a conta</b>. É só <a href="'+APP_URL+'" style="color:var(--ac)">entrar no app</a>.';
+    } else {
+      msg.className="msg err";
+      msg.innerHTML='Não encontramos esse e-mail na lista de convidados. Confira se digitou <b>igual ao que você passou pra gente</b> — ou fale com quem te convidou.';
+    }
+  }catch(e){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro: "+e.message; }
+}
+
+/* ================= SLIDES ================= */
+function irSlide(i){
+  if(i<0) i=0; if(i>=SLIDES.length){ telaCadastro(); return; }
+  const s=SLIDES[i]; renderProg(i+1);
+  footEl.innerHTML = "Etapa "+(i+1)+" de "+TOTAL;
+  card.className="card fadein";
+  const voltar = i>0 ? '<button class="btn ghost" onclick="irSlide('+(i-1)+')">Voltar</button>' : '';
+  const proxLbl = (i===SLIDES.length-1) ? "Criar minha conta →" : "Avançar →";
+  card.innerHTML =
+    '<div class="big-emoji">'+s.emoji+'</div>'+
+    '<div class="kicker">'+s.kicker+'</div>'+
+    '<h1>'+s.h+'</h1>'+ s.body +
+    '<div class="row">'+voltar+'<button class="btn" onclick="irSlide('+(i+1)+')">'+proxLbl+'</button></div>';
+}
+
+/* ================= CADASTRO ================= */
+function telaCadastro(){
+  renderProg(TOTAL);
+  footEl.innerHTML = "Etapa "+TOTAL+" de "+TOTAL+" — quase lá!";
+  card.className="card fadein";
+  card.innerHTML =
+    '<div class="big-emoji">🚀</div>'+
+    '<div class="kicker">Sua conta</div>'+
+    '<h1>Bora criar sua conta de <span class="g">Beta Tester</span>.</h1>'+
+    '<p class="lead">Só faltam alguns dados. Seu acesso já vem com a <b>condição vitalícia</b>.</p>'+
+    '<label for="cNome">Nome completo</label>'+
+    '<input id="cNome" type="text" autocomplete="name" placeholder="Seu nome">'+
+    '<label for="cCpf">CPF</label>'+
+    '<input id="cCpf" type="text" inputmode="numeric" placeholder="000.000.000-00">'+
+    '<label for="cEmail">E-mail (do convite)</label>'+
+    '<input id="cEmail" type="email" value="'+GATED_EMAIL+'" disabled>'+
+    '<label for="cPass">Crie uma senha</label>'+
+    '<input id="cPass" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres">'+
+    '<div id="cMsg" class="msg"></div>'+
+    '<div class="row"><button class="btn ghost" onclick="irSlide('+(SLIDES.length-1)+')">Voltar</button>'+
+    '<button class="btn" id="cBtn" onclick="finalizarCadastro()">Criar minha conta</button></div>';
+  const cpf=$("cCpf"); if(cpf) cpf.oninput=()=>{ cpf.value=mascaraCpf(cpf.value); };
+  const nome=$("cNome"); if(nome) nome.focus();
+}
+async function finalizarCadastro(){
+  const nome=($("cNome").value||"").trim();
+  const cpf=soDigitos($("cCpf").value);
+  const pass=$("cPass").value;
+  const msg=$("cMsg"), btn=$("cBtn");
+  if(!nome){ msg.className="msg err"; msg.textContent="Digite seu nome."; return; }
+  if(!cpfValido(cpf)){ msg.className="msg err"; msg.textContent="Digite um CPF válido."; return; }
+  if(!pass || pass.length<6){ msg.className="msg err"; msg.textContent="A senha precisa ter ao menos 6 caracteres."; return; }
+  btn.disabled=true; msg.className="msg"; msg.textContent="Criando sua conta…";
+  // CPF já usado como personal?
+  try{
+    const { data: emUso } = await sb.rpc("cpf_em_uso", { p_cpf: cpf, p_categoria: "personal" });
+    if(emUso){ btn.disabled=false; msg.className="msg err"; msg.textContent="Já existe uma conta de personal com esse CPF. Se a conta é sua, entre com o e-mail dela."; return; }
+  }catch(_){}
+  try{
+    const { data, error } = await sb.auth.signUp({
+      email: GATED_EMAIL, password: pass,
+      options: { data:{ full_name: nome, role:"professional", cpf }, emailRedirectTo: APP_URL }
+    });
+    if(error && !/already registered|already been registered|exists|registered/i.test(error.message||"")){
+      throw error;
+    }
+    // libera a condição vitalícia + trava o convite (só funciona porque a conta acaba de existir)
+    try{ await sb.rpc("ativar_beta", { p_email: GATED_EMAIL }); }catch(_){}
+    if(!error && data && data.session){ location.href = APP_URL; return; }
+    telaConfirma();
+  }catch(e){
+    btn.disabled=false; msg.className="msg err";
+    msg.textContent = /rate|Email rate|29 seconds|too many/i.test(e.message||"") ? "Muitas tentativas. Aguarde um minuto e tente de novo." : ("Não consegui criar: "+e.message);
+  }
+}
+function telaConfirma(){
+  renderProg(TOTAL); footEl.innerHTML="";
+  card.className="card fadein";
+  card.innerHTML =
+    '<div class="big-emoji">📩</div>'+
+    '<div class="kicker">Falta um passo</div>'+
+    '<h1>Confirme seu <span class="g">e-mail</span>.</h1>'+
+    '<p class="lead">Enviamos um link de confirmação para <b>'+GATED_EMAIL+'</b>. Abra o e-mail, confirme, e você já entra no Piik com tudo liberado.</p>'+
+    '<p class="lead" style="color:var(--muted);font-size:14px">Não chegou? Olhe o spam/promoções. Pode levar 1 ou 2 minutos.</p>'+
+    '<div class="row"><a class="btn" href="'+APP_URL+'">Ir para o app</a></div>';
+}
+
+/* ================= INÍCIO ================= */
+(function init(){
+  let pref=""; try{ pref=(new URLSearchParams(location.search).get("e")||"").trim().toLowerCase(); }catch(e){}
+  telaGate(pref);
+})();
+</script>
+</body>
+</html>

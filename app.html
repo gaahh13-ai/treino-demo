@@ -1406,6 +1406,13 @@
           '<div id="datasLista"><div class="empty">Carregando…</div></div>'+
         '</div>'+
       '</div>'+
+      '<div class="gest-card" id="convCard">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">🎟️ Convites — Beta Testers</h3>'+
+          '<button class="btn small" onclick="abrirNovoConvite()">+ Novo convite</button></div>'+
+        '<p class="meta-sm" style="margin:6px 0 0;line-height:1.5">Libere um e-mail, copie o link e mande pra pessoa. Ela abre a trilha de boas-vindas — e só quem está aqui consegue se cadastrar (1 conta por e-mail).</p>'+
+        '<div id="convNovoBox"></div>'+
+        '<div id="convLista" style="margin-top:10px"><div class="empty">Carregando…</div></div>'+
+      '</div>'+
       '<div class="gest-card">'+
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h3 style="margin:0">👥 Usuários cadastrados</h3><span class="meta-sm" id="admUsersCount"></span></div>'+
         '<input id="admUserBusca" class="aluno-search" placeholder="Buscar por nome ou e-mail…" style="width:100%;margin:12px 0 4px;box-sizing:border-box">'+
@@ -1415,6 +1422,7 @@
     carregarAdmin();
     carregarKpisGestao();
     carregarCuponsGestao();
+    carregarConvitesGestao();
     renderDatasImportantes();
   }
 
@@ -1561,6 +1569,78 @@
       </div>`);
     });
     el.innerHTML = linhas.join("");
+  }
+
+  /* ================= CONVITES (BETA TESTERS) ================= */
+  const BETA_URL = "https://piik.com.br/beta.html";
+  function abrirNovoConvite(){
+    const box=document.getElementById("convNovoBox"); if(!box) return;
+    if(box.dataset.open==="1"){ box.dataset.open="0"; box.innerHTML=""; return; }
+    box.dataset.open="1";
+    box.innerHTML =
+      '<div style="background:var(--pk-elev,#0f1116);border:1px solid var(--line,#262a33);border-radius:12px;padding:14px;margin-top:12px">'+
+        '<div class="cupg-grid">'+
+          '<div><label class="cupg-lbl">E-mail da pessoa</label><input id="ncvEmail" class="cupg-in" type="email" placeholder="pessoa@email.com" style="text-transform:lowercase"></div>'+
+          '<div><label class="cupg-lbl">Nome <span class="meta-sm">(opcional)</span></label><input id="ncvNome" class="cupg-in" placeholder="Como você chama a pessoa"></div>'+
+        '</div>'+
+        '<div id="ncvMsg" class="cup-msg" style="margin-top:8px"></div>'+
+        '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" onclick="salvarNovoConvite()">Liberar e gerar link</button>'+
+        '<button class="btn ghost" onclick="abrirNovoConvite()">Cancelar</button></div>'+
+      '</div>';
+    const e=document.getElementById("ncvEmail"); if(e) e.focus();
+  }
+  async function salvarNovoConvite(){
+    const msg=document.getElementById("ncvMsg");
+    const email=(document.getElementById("ncvEmail").value||"").trim().toLowerCase();
+    const nome=(document.getElementById("ncvNome").value||"").trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.className="cup-msg err"; msg.textContent="Digite um e-mail válido."; return; }
+    msg.className="cup-msg"; msg.textContent="Liberando…";
+    const { error } = await sb.from("beta_convites").insert({ email, nome:nome||null, status:"pendente", created_by: ME.id });
+    if(error){
+      msg.className="cup-msg err";
+      msg.textContent = /duplicate|unique|already/i.test(error.message) ? "Esse e-mail já foi convidado." : ("Erro: "+error.message);
+      return;
+    }
+    abrirNovoConvite();
+    await carregarConvitesGestao();
+    // copia o link já na hora
+    copiarTexto(BETA_URL + "?e=" + encodeURIComponent(email));
+    await piikAlert({ emoji:"🎟️", titulo:"Convite liberado!", msg:`O link já foi <b>copiado</b>. É só mandar pra <b>${esc(email)}</b>.<br><br><span style="font-size:12px;color:#9aa0ab">${esc(BETA_URL)}?e=…</span>` });
+  }
+  async function carregarConvitesGestao(){
+    const el=document.getElementById("convLista"); if(!el) return;
+    const { data, error } = await sb.from("beta_convites").select("*").order("criado_em",{ascending:false});
+    if(error){ el.innerHTML=`<div class="empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
+    const cs=data||[];
+    if(!cs.length){ el.innerHTML=`<div class="empty">Nenhum convite ainda. Clique em “+ Novo convite”.</div>`; return; }
+    el.innerHTML = cs.map(c=>{
+      const cad = c.status==="cadastrado";
+      const badge = cad
+        ? `<span class="cupg-badge" style="color:var(--pink,#7fff00);border-color:var(--pink,#7fff00)">Cadastrado</span>`
+        : `<span class="cupg-badge" style="color:#e8c14a;border-color:#6a5a1e">Aguardando</span>`;
+      const quando = cad && c.usado_em ? ("entrou em "+new Date(c.usado_em).toLocaleDateString("pt-BR"))
+                     : ("convidado em "+(c.criado_em?new Date(c.criado_em).toLocaleDateString("pt-BR"):"—"));
+      const acoes = cad
+        ? `<span class="meta-sm" style="align-self:center">✅ já criou a conta</span>`
+        : `<button class="cupg-act" onclick="copiarLinkConvite('${esc(c.email)}',this)">Copiar link</button><button class="cupg-act danger" onclick="removerConvite('${esc(c.email)}')">Remover</button>`;
+      return `<div class="cupg-item">
+          <div class="cupg-top"><span class="cupg-cod" style="font-size:14px;text-transform:none;letter-spacing:0">${esc(c.email)}</span>${badge}</div>
+          <div class="cupg-meta">${c.nome?esc(c.nome)+" · ":""}${quando}</div>
+          <div class="cupg-acoes">${acoes}</div>
+        </div>`;
+    }).join("");
+  }
+  function copiarTexto(t){ try{ navigator.clipboard.writeText(t); }catch(e){ try{ const i=document.createElement("input"); i.value=t; document.body.appendChild(i); i.select(); document.execCommand("copy"); i.remove(); }catch(_){} } }
+  function copiarLinkConvite(email, btn){
+    copiarTexto(BETA_URL + "?e=" + encodeURIComponent(email));
+    if(btn){ const o=btn.textContent; btn.textContent="Copiado!"; setTimeout(()=>{ btn.textContent=o; }, 1500); }
+  }
+  async function removerConvite(email){
+    const ok = await piikConfirm({ titulo:"Remover convite?", msg:`O e-mail <b>${esc(email)}</b> deixa de estar liberado e o link para de funcionar pra ele. Você pode convidar de novo depois.`, ok:"Sim, remover", cancel:"Voltar" });
+    if(!ok) return;
+    const { error } = await sb.from("beta_convites").delete().eq("email", email);
+    if(error){ await piikAlert({ titulo:"Erro", msg:error.message }); return; }
+    carregarConvitesGestao();
   }
 
   async function carregarKpisGestao(){
