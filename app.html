@@ -1812,7 +1812,9 @@
            <span class="av-thumb av-help">?</span>
            <span class="av-cap">ajuda</span>
          </button>`;
-    const feedback = `<button class="perfil-av" onclick="abrirFeedback()">
+    // Beta testers têm o feedback na tela dedicada; para eles não mostramos o botão do topo.
+    const ehBeta = !!(ME && ME.embaixador === true);
+    const feedback = ehBeta ? "" : `<button class="perfil-av" onclick="abrirFeedback()">
            <span class="av-thumb av-fb">💬</span>
            <span class="av-cap">feedback</span>
          </button>`;
@@ -1882,6 +1884,7 @@
   /* ===== Boas-vindas (primeiro login do personal) ===== */
   function mostrarBoasVindas(){
     if(!ME || ME.role!=="professional") return;
+    if(ME.embaixador===true) return; // beta testers já recebem as boas-vindas na trilha do beta
     const k="piik_bv_"+ME.id;
     try{ if(localStorage.getItem(k)) return; }catch(e){}
     try{ localStorage.setItem(k,"1"); }catch(e){}
