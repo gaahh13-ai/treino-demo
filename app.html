@@ -1884,18 +1884,26 @@
   /* ===== Boas-vindas (primeiro login do personal) ===== */
   function mostrarBoasVindas(){
     if(!ME || ME.role!=="professional") return;
-    if(ME.embaixador===true) return; // beta testers já recebem as boas-vindas na trilha do beta
     const k="piik_bv_"+ME.id;
-    try{ if(localStorage.getItem(k)) return; }catch(e){}
+    let visto = (ME.bv_visto===true);
+    try{ if(localStorage.getItem(k)) visto=true; }catch(e){}
+    if(visto) return;
+    // marca como visto: no banco (vale pra qualquer aparelho) + local (reforço)
+    ME.bv_visto = true;
     try{ localStorage.setItem(k,"1"); }catch(e){}
+    try{ sb.from("profiles").update({ bv_visto:true }).eq("id", ME.id); }catch(e){}
     const first = (typeof primeiroNome==="function") ? primeiroNome() : "";
+    const ehBeta = (ME.embaixador===true);
+    const ondeFeedback = ehBeta
+      ? `É só abrir a sua tela <b>🧪 Beta Tester</b> (no menu) — lá você acompanha os objetivos do teste e manda seu feedback sempre que quiser.`
+      : `É só clicar em <b>💬 Feedback</b>, aqui no canto superior direito, sempre que tiver uma ideia, uma dúvida ou achar algo pra melhorar.`;
     const o=document.createElement("div"); o.className="modal-ov"; o.id="bvOv";
     o.innerHTML=`<div class="modal-cx" style="max-width:450px;text-align:left">
       <div style="text-align:center;font-size:40px;line-height:1;margin-bottom:6px">👋</div>
       <h3 style="margin:0 0 10px;text-align:center">Bem-vindo(a) ao Piik${first?", "+esc(first):""}!</h3>
       <p class="meta-sm" style="margin:0 0 10px;line-height:1.6">Que bom ter você aqui. O Piik foi feito pra deixar o seu trabalho mais profissional — montar treinos, acompanhar seus alunos e, quando quiser, tudo com a <b>sua marca</b>.</p>
       <p class="meta-sm" style="margin:0 0 10px;line-height:1.6">A gente espera de verdade poder contribuir com o seu dia a dia. E o Piik fica melhor com você: <b>sugestões e feedbacks são sempre bem-vindos</b>.</p>
-      <p class="meta-sm" style="margin:0 0 18px;line-height:1.6">É só clicar em <b>💬 Feedback</b>, aqui no canto superior direito, sempre que tiver uma ideia, uma dúvida ou achar algo pra melhorar.</p>
+      <p class="meta-sm" style="margin:0 0 18px;line-height:1.6">${ondeFeedback}</p>
       <button class="btn" style="width:100%" onclick="fecharBoasVindas()">Bora começar 🚀</button>
     </div>`;
     document.body.appendChild(o);
