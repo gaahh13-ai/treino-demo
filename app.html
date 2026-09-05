@@ -1157,6 +1157,12 @@
     if(!ME.cpf && user.user_metadata && user.user_metadata.cpf){
       try{ await sb.from("profiles").update({ cpf:user.user_metadata.cpf }).eq("id", ME.id); ME.cpf = user.user_metadata.cpf; }catch(e){}
     }
+    // downgrade agendado cujo período já venceu → aplica agora (vira o plano mais barato)
+    if(ME.plano_agendado && ME.assinatura_vencimento && new Date(ME.assinatura_vencimento).getTime() <= Date.now()){
+      const _novo = ME.plano_agendado;
+      try{ await sb.from("profiles").update({ plano:_novo, plano_agendado:null }).eq("id", ME.id);
+        ME.plano = _novo; ME.plano_agendado = null; }catch(e){}
+    }
     // conta já excluída → sem acesso
     if(ME.deletado_em){
       await sb.auth.signOut();
@@ -1258,7 +1264,7 @@
   function planoAtual(){ return (ME && ME.plano || "").toLowerCase(); }
   function statusAssinatura(){ return (ME && ME.assinatura_status || "").toLowerCase(); }
   function alunosAtivosCount(){ return (STUDENTS||[]).filter(s => (s.status||"active")==="active" && !(s.demo||s.is_demo)).length; }
-  function limiteAlunos(){ if(ME && ME.role==="creator") return Infinity; const p=planoAtual(); if(p==="you_piik") return Infinity; if(p==="fit") return LIMITE_ALUNOS_FIT; return 0; }
+  function limiteAlunos(){ if(ME && ME.role==="creator") return Infinity; const p=planoAtual(); if(p==="you_piik"||p==="fit"||p==="pro") return Infinity; return 0; }
   function atingiuLimiteAlunos(){ return alunosAtivosCount() >= limiteAlunos(); }
   function checarInadimplencia(){
     if(!ehProfPiik()) return;
@@ -3230,7 +3236,7 @@
     ],
     personal: [
       { nome:"Piik Fit", preco:"R$ 39,90", sub:"/mês", destaque:false, itens:[
-        {ok:true,  t:"Até 40 alunos"},
+        {ok:true,  t:"Alunos ilimitados"},
         {ok:true,  t:"Montagem de treinos ilimitada"},
         {ok:true,  t:"Avaliações físicas dos alunos"},
         {ok:true,  t:"Dashboard de desempenho e retenção"},
@@ -3239,8 +3245,7 @@
         {ok:false, t:"Suporte dedicado"}
       ]},
       { nome:"You Piik", preco:"R$ 59,90", sub:"/mês", destaque:true, itens:[
-        {ok:true,  t:"Tudo do Piik Fit"},
-        {ok:true,  t:"Alunos ilimitados"},
+        {ok:true,  t:"Tudo do Piik Fit — com alunos ilimitados"},
         {ok:true,  t:"White-label completo: seu logo e suas cores"},
         {ok:true,  t:"Suporte dedicado"}
       ]}
@@ -3358,9 +3363,14 @@
     // vencimento (útil pra quem paga por Pix mês a mês)
     const ateRaw = ME && (ME.assinatura_ate || ME.assinatura_vencimento);
     const ate = (ateRaw && new Date(ateRaw).getTime() > Date.now()) ? fmtDataCurta(ateRaw) : null;
+    const agAlvo = (ME && ME.plano_agendado) ? (ME.plano_agendado||"").toLowerCase() : null;
+    const downNote = (agAlvo && !gratis)
+      ? `<div style="margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.4);font-size:13px;line-height:1.5">🔻 <b>Mudança agendada.</b> Você mantém todos os benefícios até${ate?` <b>${ate}</b>`:` o fim do período`}; depois sua conta passa para o <b>${esc(PLANO_LABEL[agAlvo]||agAlvo)}</b>. Para desfazer, abra <b>Planos</b> e escolha seu plano atual de novo.</div>`
+      : "";
     return `<div class="assin-atual${gratis?" light":""}">
       <span class="aa-tag">Sua assinatura</span>
       <div class="aa-plano">${esc(nome)}</div>
+      ${downNote}
       ${gratis
         ? `<div class="aa-sub">Plano gratuito — abra <b>Planos</b> ao lado para fazer upgrade. 👉</div>`
         : (ativa
@@ -3460,22 +3470,88 @@
   }
 
   // clicar em "Assinar" abre a escolha do meio de pagamento (cartão ou Pix)
+  const _canonPlano = p => p==="pro" ? "fit" : ((p==="you_levo"||p==="youpiik") ? "you_piik" : (p||""));
+  const _rankPlano  = p => ({light:0, fit:1, you_piik:2}[_canonPlano(p)] || 0);
   async function assinarPlano(nome){
     const mapa = { "Piik Fit":"fit", "You Piik":"you_piik" };
     const plano = mapa[nome];
     if(!plano){ piikAlert("O Piik Light é gratuito — não há o que pagar. 🙂"); return; }
-    // já assina exatamente esse plano e está em dia? avisa e não abre o pagamento
-    const canon = p => p==="pro" ? "fit" : ((p==="you_levo"||p==="youpiik") ? "you_piik" : p);
-    const atual = planoAtual();
+    const atual = _canonPlano(planoAtual());
+    const alvo  = _canonPlano(plano);
     const st = statusAssinatura();
     const venc = (ME && ME.assinatura_vencimento) ? new Date(ME.assinatura_vencimento).getTime() : 0;
     const congelada = !!(ME && ME.conta_congelada);
     const vigente = st !== "cancelado" && !congelada && (st === "ativo" || venc > Date.now());
-    if(canon(atual) === canon(plano) && vigente){
-      piikAlert({ titulo:"Você já assina esse plano", msg:`Sua assinatura do <b>${esc(nome)}</b> já está ativa. 🙂 Não precisa assinar de novo — é só continuar usando o Piik.` });
+    const agendado = _canonPlano(ME && ME.plano_agendado);
+
+    // já tem esse plano, em dia, com um downgrade agendado → oferece cancelar a mudança
+    if(vigente && atual === alvo && agendado){
+      const nomeAg = PLANO_LABEL[agendado] || agendado;
+      const ok = await piikConfirm({ titulo:"Cancelar a mudança agendada?",
+        msg:`Você agendou a mudança para o <b>${esc(nomeAg)}</b> no fim do período. Quer <b>cancelar</b> e continuar no <b>${esc(nome)}</b>?`,
+        ok:"Sim, continuar no "+esc(nome), cancel:"Voltar" });
+      if(ok) await cancelarDowngrade();
       return;
     }
+    // já assina exatamente esse plano, em dia → só avisa
+    if(vigente && atual === alvo){
+      piikAlert({ titulo:"Você já assina esse plano", msg:`Sua assinatura do <b>${esc(nome)}</b> já está ativa. 🙂 Não precisa assinar de novo.` });
+      return;
+    }
+    // downgrade: plano mais barato que o atual e conta em dia → agenda pro fim do ciclo
+    if(vigente && _rankPlano(alvo) < _rankPlano(atual)){
+      return agendarDowngrade(alvo, nome);
+    }
+    // upgrade ou nova assinatura → pagamento normal (imediato)
     escolherPagamento(plano, nome);
+  }
+
+  async function agendarDowngrade(alvo, nome){
+    const vencD = (ME && ME.assinatura_vencimento) ? new Date(ME.assinatura_vencimento) : null;
+    const dtxt = (vencD && vencD.getTime() > Date.now()) ? vencD.toLocaleDateString("pt-BR") : "o fim do período já pago";
+    const comoCobra = window.TEM_CARTAO
+      ? `No <b>cartão</b>, você não precisa fazer nada: a próxima cobrança já será a do <b>${esc(nome)}</b>.`
+      : `No <b>Pix/débito</b>, quando chegar perto do vencimento, você paga já o valor do <b>${esc(nome)}</b>.`;
+    const ok = await piikConfirm({
+      titulo:"Mudar para o "+esc(nome)+"?",
+      msg:`Você continua com <b>todos os benefícios do seu plano atual até ${dtxt}</b> — o período que você já pagou. Depois disso, sua conta passa para o <b>${esc(nome)}</b>.<br><br>${comoCobra}`,
+      ok:"Confirmar mudança", cancel:"Voltar"
+    });
+    if(!ok) return;
+    try{
+      const { error } = await sb.from("profiles").update({ plano_agendado: alvo }).eq("id", ME.id);
+      if(error) throw error;
+      ME.plano_agendado = alvo;
+      if(window.TEM_CARTAO){
+        try{
+          const { data:{ session } } = await sb.auth.getSession();
+          await fetch(SUPABASE_URL + "/functions/v1/trocar-plano", { method:"POST",
+            headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+session.access_token },
+            body: JSON.stringify({ para: alvo }) });
+        }catch(_){}
+      }
+      await piikAlert({ emoji:"✅", titulo:"Mudança agendada!",
+        msg:`Tudo certo. Você segue no seu plano atual, com todos os benefícios, até <b>${dtxt}</b> — depois passa para o <b>${esc(nome)}</b>.` });
+      if(typeof carregarMinhaAssinatura==="function") carregarMinhaAssinatura();
+    }catch(e){ piikAlert("Não consegui agendar a mudança: " + e.message); }
+  }
+
+  async function cancelarDowngrade(){
+    try{
+      const { error } = await sb.from("profiles").update({ plano_agendado: null }).eq("id", ME.id);
+      if(error) throw error;
+      ME.plano_agendado = null;
+      if(window.TEM_CARTAO){
+        try{
+          const { data:{ session } } = await sb.auth.getSession();
+          await fetch(SUPABASE_URL + "/functions/v1/trocar-plano", { method:"POST",
+            headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+session.access_token },
+            body: JSON.stringify({ para: "cancelar" }) });
+        }catch(_){}
+      }
+      await piikAlert({ titulo:"Mudança cancelada", msg:"Beleza! Você continua no seu plano atual normalmente." });
+      if(typeof carregarMinhaAssinatura==="function") carregarMinhaAssinatura();
+    }catch(e){ piikAlert("Erro ao cancelar: " + e.message); }
   }
 
   function escolherPagamento(plano, nome){
