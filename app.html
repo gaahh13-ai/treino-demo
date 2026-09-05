@@ -7369,7 +7369,7 @@
       }catch(e){}
       var obj1 = nAlunos>=5;
       var obj2 = nComTreino>=5;
-      var obj3 = totalAlunos>0 && nCom2===totalAlunos;
+      var obj3 = nCom2 >= 5;
 
       var ov=document.createElement('div'); ov.id='piik-bt-ov';
       ov.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#07090b;overflow:auto;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#e8eaee';
@@ -7394,7 +7394,7 @@
             '<tbody>'+
               linhaObj('Cadastrar no mínimo <b>5 alunos</b>', nAlunos+' de 5 alunos', obj1)+
               linhaObj('Montar treino para no mínimo <b>5 alunos</b> <span style="color:#6f7865">(vale 1 por aluno)</span>', nComTreino+' de 5 com treino', obj2)+
-              linhaObj('<b>Todos os alunos</b> concluírem 2 treinos no app', (totalAlunos? (nCom2+' de '+totalAlunos+' alunos'):'sem alunos ainda'), obj3)+
+              linhaObj('<b>5 alunos</b> concluírem 2 treinos no app', nCom2+' de 5 alunos', obj3)+
             '</tbody></table></div>'+
             '<p style="color:#6f7865;font-size:12px;margin:8px 2px 0;line-height:1.5">Atualiza sozinho conforme você cadastra alunos, monta treinos e seus alunos concluem os treinos no app.</p>'+
           '<h3 style="margin:26px 0 10px;font-size:16px">💬 Enviar feedback</h3>'+
