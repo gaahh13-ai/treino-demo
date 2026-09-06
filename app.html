@@ -3620,8 +3620,48 @@
     if(vigente && _rankPlano(alvo) < _rankPlano(atual)){
       return agendarDowngrade(alvo, nome);
     }
-    // upgrade ou nova assinatura → pagamento normal (imediato)
+    // upgrade entre planos pagos, conta em dia → vale na hora, sem cobrança extra (Opção A)
+    if(vigente && atual !== "light" && _rankPlano(alvo) > _rankPlano(atual)){
+      return aplicarUpgrade(alvo, nome);
+    }
+    // nova assinatura (ou conta fora de dia) → pagamento normal (imediato)
     escolherPagamento(plano, nome);
+  }
+
+  // Upgrade imediato (Opção A): libera o plano melhor na hora, sem cobrança extra;
+  // o valor novo entra só na próxima renovação. A troca de plano é registrada
+  // automaticamente no Histórico (trigger de plano_historico).
+  async function aplicarUpgrade(alvo, nome){
+    const vencD = (ME && ME.assinatura_vencimento) ? new Date(ME.assinatura_vencimento) : null;
+    const dtxt = (vencD && vencD.getTime() > Date.now()) ? vencD.toLocaleDateString("pt-BR") : "o fim do período já pago";
+    const valorNovo = fmtBRL(alvo === "you_piik" ? 59.90 : 39.90);
+    const comoCobra = window.TEM_CARTAO
+      ? `No <b>cartão</b>, você não paga nada agora: o novo valor (<b>${valorNovo}/mês</b>) entra só na próxima renovação, em <b>${dtxt}</b>.`
+      : `No <b>Pix/débito</b>, você não paga nada agora: o novo valor (<b>${valorNovo}/mês</b>) entra na próxima cobrança, perto de <b>${dtxt}</b>.`;
+    const ok = await piikConfirm({
+      titulo:"Subir para o "+esc(nome)+" agora?",
+      msg:`Seu plano vira <b>${esc(nome)}</b> <b>na hora</b>, com todos os recursos liberados imediatamente — e <b>sem cobrança extra</b> pelo período que você já pagou.<br><br>${comoCobra}`,
+      ok:"Confirmar upgrade", cancel:"Voltar"
+    });
+    if(!ok) return;
+    try{
+      // vira o plano na hora; limpa qualquer downgrade agendado
+      const { error } = await sb.from("profiles").update({ plano: alvo, plano_agendado: null }).eq("id", ME.id);
+      if(error) throw error;
+      ME.plano = alvo; ME.plano_agendado = null;
+      // cartão: ajusta o valor da assinatura recorrente para a próxima cobrança
+      if(window.TEM_CARTAO){
+        try{
+          const { data:{ session } } = await sb.auth.getSession();
+          await fetch(SUPABASE_URL + "/functions/v1/trocar-plano", { method:"POST",
+            headers:{ "Content-Type":"application/json", "Authorization":"Bearer "+session.access_token },
+            body: JSON.stringify({ para: alvo }) });
+        }catch(_){}
+      }
+      await piikAlert({ emoji:"🚀", titulo:"Upgrade feito!",
+        msg:`Pronto — você já está no <b>${esc(nome)}</b>, com tudo liberado. O novo valor entra só na próxima renovação, em <b>${dtxt}</b>.` });
+      location.reload();  // recarrega para aplicar recursos do novo plano (personalização, limites, marca)
+    }catch(e){ piikAlert("Não consegui fazer o upgrade: " + e.message); }
   }
 
   async function agendarDowngrade(alvo, nome){
