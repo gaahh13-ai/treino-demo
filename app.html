@@ -114,7 +114,7 @@
   .shell{display:grid;grid-template-columns:212px minmax(0,1fr);gap:20px;align-items:start}
   .panel{min-width:0}
   .sidebar{background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:18px;padding:10px;
-           box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px}
+           box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px;display:flex;flex-direction:column;min-height:calc(100vh - 190px)}
   .navitem{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
            padding:11px 12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--txt);cursor:pointer;text-align:left}
   .navitem:hover{background:var(--pk-surf2,#1d2027)}
@@ -200,6 +200,8 @@
 
   /* tela "Meus alunos": detalhe + coluna de alunos */
   .alunos-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start;margin-bottom:16px}
+  .det-wrap{display:flex;flex-direction:column;min-width:0}
+  #detHost>.card{margin:14px 0 0}
   .alunos-col{background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:18px;padding:14px;
     box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px;order:-1}
   .alunos-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -795,7 +797,7 @@
 
   @media(max-width:760px){
     .shell{grid-template-columns:1fr}
-    .sidebar{position:static;display:flex;gap:6px;overflow-x:auto;padding:8px;-webkit-overflow-scrolling:touch}
+    .sidebar{position:static;display:flex;flex-direction:row;min-height:0;gap:6px;overflow-x:auto;padding:8px;-webkit-overflow-scrolling:touch}
     .navitem{white-space:nowrap;padding:9px 12px;font-size:13px;width:auto}
     .form-grid{grid-template-columns:1fr}
   }
@@ -817,7 +819,7 @@
     font-family:'Rajdhani','Inter',sans-serif!important;letter-spacing:.4px}
   body{background:var(--pk-bg,#0a0b0d)!important;color:var(--txt)!important}
   nav.top{background:var(--pk-nav,rgba(10,11,13,.92))!important;border-bottom:1px solid var(--line,#20242c)!important}
-  .logo-piik{font-weight:700;font-style:italic;font-size:23px;color:var(--txt,#fff);letter-spacing:2px;line-height:1}
+  .logo-piik{font-weight:700;font-style:italic;font-size:30px;color:var(--txt,#fff);letter-spacing:2px;line-height:1}
   .logo-piik .ac{color:var(--pink,#7fff00)}
   /* superfícies escuras */
   .card,.sidebar,.aluno-detalhe,.modal-cx,.ex-card,.treino-pill,.ret-row,.ret-card,.tr-ex,
@@ -4253,9 +4255,12 @@
     return `<h2>Meus alunos</h2>
       <div id="gruposBar" class="grupos-bar"></div>
       <div class="alunos-layout">
-        <section class="card aluno-detalhe" id="alunoDetalhe">
-          <div class="empty">👉 Selecione um aluno na lista ao lado para ver as opções.</div>
-        </section>
+        <div class="det-wrap">
+          <section class="card aluno-detalhe" id="alunoDetalhe">
+            <div class="empty">👉 Selecione um aluno na lista ao lado para ver as opções.</div>
+          </section>
+          <div id="detHost"></div>
+        </div>
         <aside class="alunos-col">
           <div class="alunos-head">
             <h3>Alunos</h3>
@@ -4902,6 +4907,7 @@
     const btn = document.getElementById("btnFin");
     if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
     _fecharPaineisAluno(id,"finList_");
+    fecharTodasJanelas();
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     FIN_AL.id = id; FIN_AL.comp = FIN_AL.comp || compAtual();
@@ -5370,6 +5376,12 @@
       const antigo = JANELAS.shift();
       const c = document.getElementById(antigo); if(c) c.style.display = "none";
     }
+    // hospeda o card no lado direito, dentro da área do aluno (não mais numa faixa embaixo)
+    const host = document.getElementById("detHost");
+    const card = document.getElementById(cardId);
+    if(host && card && card.parentElement !== host) host.appendChild(card);
+    // um por vez: fecha os painéis inline (avaliações/anotações/retorno/financeiro)
+    if(typeof _fecharPaineisAluno === "function" && SELECTED_STUDENT) _fecharPaineisAluno(SELECTED_STUDENT, null);
     syncBtnTreinos();
   }
   function fecharJanela(cardId){
@@ -5875,6 +5887,7 @@
     const btn = document.getElementById("btnAvals");
     if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
     _fecharPaineisAluno(id,"assessList_");
+    fecharTodasJanelas();   // um por vez: fecha o Treino/forms se estiverem abertos
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     // próxima avaliação agendada (usa a tabela de agendamentos)
@@ -5915,6 +5928,7 @@
     const btn = document.getElementById("btnRetorno");
     if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
     _fecharPaineisAluno(id,"retornoList_");
+    fecharTodasJanelas();
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     const { data, error } = await sb.from("sessoes")
@@ -5947,6 +5961,7 @@
     const btn = document.getElementById("btnNotas");
     if(el.innerHTML){ el.innerHTML=""; if(btn) btn.classList.remove("ativo"); return; }
     _fecharPaineisAluno(id,"notasList_");
+    fecharTodasJanelas();
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     await renderAnotacoes(id);
@@ -7623,7 +7638,7 @@
       lbl.textContent='🧪 Beta Tester';
       lbl.style.color='#07090b';
       // destaque: mais para baixo, cor chamativa
-      item.style.cssText='margin-top:22px;background:linear-gradient(135deg,#7fff00,#46c93a);color:#07090b;border:none;border-radius:12px;font-weight:800;box-shadow:0 4px 14px rgba(127,255,0,.25);text-align:center';
+      item.style.cssText='margin-top:auto;background:linear-gradient(135deg,#7fff00,#46c93a);color:#07090b;border:none;border-radius:12px;font-weight:800;box-shadow:0 4px 14px rgba(127,255,0,.25);text-align:center';
       item.addEventListener('click',function(ev){ ev.preventDefault(); ev.stopPropagation(); abrir(); },true);
       base.parentElement.appendChild(item);   // sempre no fim da lista (mais para baixo)
       return true;
