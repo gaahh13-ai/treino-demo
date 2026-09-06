@@ -3020,7 +3020,7 @@
     const frase = frases[((info.feitos||0) + (info.dur||0)) % frases.length];
     let dataFull = "";
     try{ dataFull = new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" }); }catch(e){ dataFull = ""; }
-    // white-label: usa o LOGO do personal; senão, o logo do Piik
+    // marca personalizada: usa o LOGO do personal; senão, o logo do Piik
     const brand = window.PIIK_BRAND || null;
     const logoHTML = (brand && brand.logo_url)
       ? `<img class="pb-logo-img" src="${esc(brand.logo_url)}" alt="">`
@@ -3331,12 +3331,12 @@
         {ok:true,  t:"Avaliações físicas dos alunos"},
         {ok:true,  t:"Dashboard de desempenho e retenção"},
         {ok:true,  t:"Controle financeiro dos alunos"},
-        {ok:false, t:"White-label completo: seu logo e suas cores"},
+        {ok:false, t:"Sua marca: seu logo e suas cores no app"},
         {ok:false, t:"Suporte dedicado"}
       ]},
       { nome:"You Piik", preco:"R$ 59,90", sub:"/mês", destaque:true, itens:[
         {ok:true,  t:"Tudo do Piik Fit — com alunos ilimitados"},
-        {ok:true,  t:"White-label completo: seu logo e suas cores"},
+        {ok:true,  t:"Sua marca: seu logo e suas cores no app"},
         {ok:true,  t:"Suporte dedicado"}
       ]}
     ]
@@ -7234,7 +7234,7 @@
     if(!user) return;
     const { data:perfil } = await _sb.from('profiles').select('role,plano').eq('id',user.id).single();
     if(!perfil || !(perfil.role==='professional'||perfil.role==='creator')) return;
-    // Personalização (white-label) é exclusiva do plano mais caro (You Piik). Creator sempre tem.
+    // Personalização (marca personalizada) é exclusiva do plano mais caro (You Piik). Creator sempre tem.
     const _plano = (perfil.plano||'').toLowerCase();
     const _podePerso = perfil.role==='creator' || _plano==='you_piik' || _plano==='pro';
     if(!_podePerso) return;
@@ -7463,7 +7463,7 @@
 })();
 </script>
 
-<!-- Piik white-label: aplica a marca do personal (cores, fundo, textos, logo) no site -->
+<!-- Piik marca personalizada: aplica a marca do personal (cores, fundo, textos, logo) no site -->
 <script>
 (function(){
   function hx(h){h=(h||'').trim().replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c;}).join('');var n=parseInt(h,16);return isNaN(n)?null:[(n>>16)&255,(n>>8)&255,n&255];}
@@ -7528,10 +7528,10 @@
       if(!user)return;
       var pr=await _sb.from('profiles').select('role,professional_id,brand_off').eq('id',user.id).single();
       var perfil=pr.data; if(!perfil)return;
-      if(perfil.brand_off===true) return;   // marca (white-label) desativada só para esta conta — reversível pelo banco
+      if(perfil.brand_off===true) return;   // marca personalizada desativada só para esta conta — reversível pelo banco
       var profId=(perfil.role==='professional'||perfil.role==='creator')?user.id:perfil.professional_id;
       if(!profId)return;
-      // A marca (white-label) só é aplicada se o profissional dono estiver no plano You Piik (mais caro).
+      // A marca personalizada só é aplicada se o profissional dono estiver no plano You Piik (mais caro).
       var ppr=await _sb.from('profiles').select('plano,role').eq('id',profId).maybeSingle();
       var pprof=ppr&&ppr.data?ppr.data:null;
       var pplano=(pprof&&pprof.plano||'').toLowerCase();
