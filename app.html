@@ -3464,7 +3464,7 @@
     const ate = (ateRaw && new Date(ateRaw).getTime() > Date.now()) ? fmtDataCurta(ateRaw) : null;
     const agAlvo = (ME && ME.plano_agendado) ? (ME.plano_agendado||"").toLowerCase() : null;
     const downNote = (agAlvo && !gratis)
-      ? `<div style="margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.4);font-size:13px;line-height:1.5">🔻 <b>Mudança agendada.</b> Você mantém todos os benefícios até${ate?` <b>${ate}</b>`:` o fim do período`}; depois sua conta passa para o <b>${esc(PLANO_LABEL[agAlvo]||agAlvo)}</b>. Para desfazer, abra <b>Planos</b> e escolha seu plano atual de novo.</div>`
+      ? `<div style="margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(255,176,32,.12);border:1px solid rgba(255,176,32,.4);font-size:13px;line-height:1.5">🔻 <b>Mudança agendada.</b> Você mantém todos os benefícios até${ate?` <b>${ate}</b>`:` o fim do período`}; depois sua conta passa para o <b>${esc(PLANO_LABEL[agAlvo]||agAlvo)}</b>. Esse prazo também fica registrado na aba <b>Histórico</b>. Para desfazer, abra <b>Planos</b> e escolha seu plano atual de novo.</div>`
       : "";
     return `<div class="assin-atual${gratis?" light":""}">
       <span class="aa-tag">Sua assinatura</span>
@@ -3505,6 +3505,18 @@
       cadastro:    {lbl:"Conta criada",                  tag:"Light",     cls:"pe"},
       ajuste:      {lbl:"Mudança de plano",              tag:"Ajuste",    cls:"pe"}
     };
+    // mudança de plano AGENDADA (downgrade): ainda não aconteceu, mas mostra o prazo aqui
+    let agendadoRow = "";
+    if(ME && ME.plano_agendado){
+      const alvo = PLANO_LABEL[(ME.plano_agendado||"").toLowerCase()] || ME.plano_agendado;
+      const venc = (ME.assinatura_vencimento && new Date(ME.assinatura_vencimento).getTime() > Date.now()) ? fmtDataCurta(ME.assinatura_vencimento) : null;
+      agendadoRow = `<div class="assin-hist-row">
+        <span class="ah-plano">${esc(alvo)}<br><span style="font-size:11px;opacity:.75;font-weight:400">Mudança agendada${venc?` · a partir de ${venc}`:""}</span></span>
+        <span class="ah-data">${venc||"—"}</span>
+        <span class="ah-valor">—</span>
+        <span class="fin-tag pe">Agendado</span>
+      </div>`;
+    }
     const hist = (PLANO_HIST||[]).map(h=>{
       const nome = PLANO_LABEL[h.plano_para] || h.plano_para || "—";
       const m = MOTIVO[h.motivo] || MOTIVO.ajuste;
@@ -3519,12 +3531,12 @@
         <span class="fin-tag ${cls}">${tag}</span>
       </div>`;
     }).join("");
-    if(!vinc && !(PLANO_HIST && PLANO_HIST.length)){
+    if(!vinc && !agendadoRow && !(PLANO_HIST && PLANO_HIST.length)){
       return `<div class="empty">Nenhum registro de plano ainda.</div>`;
     }
     return `<div class="assin-hist">
       <div class="ah-tit">Histórico de plano</div>
-      ${vinc}${hist}
+      ${vinc}${agendadoRow}${hist}
     </div>`;
   }
 
@@ -3637,7 +3649,7 @@
         }catch(_){}
       }
       await piikAlert({ emoji:"✅", titulo:"Mudança agendada!",
-        msg:`Tudo certo. Você segue no seu plano atual, com todos os benefícios, até <b>${dtxt}</b> — depois passa para o <b>${esc(nome)}</b>.` });
+        msg:`Tudo certo. Você segue no seu plano atual, com todos os benefícios, até <b>${dtxt}</b> — depois passa para o <b>${esc(nome)}</b>.<br><br>Esse prazo fica registrado na aba <b>Histórico</b>.` });
       if(typeof carregarMinhaAssinatura==="function") carregarMinhaAssinatura();
     }catch(e){ piikAlert("Não consegui agendar a mudança: " + e.message); }
   }
