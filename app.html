@@ -2052,7 +2052,7 @@
     else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); PRAZOS_CARREGADOS=false; carregarDesempenho(); carregarQuemTreinou(); carregarPrazos(); }
     else if(id === "financeiro"){ p.innerHTML = viewFinanceiro(); carregarFinanceiro(); }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
-    else if(id === "inicio"){    p.innerHTML = viewAlunos(); }   // tela inicial: menu + card "escolha um aluno" (sem abrir a lista)
+    else if(id === "inicio"){    p.innerHTML = viewAlunos(); const _d=document.getElementById("alunoDetalhe"); if(_d) _d.innerHTML=""; }   // tela inicial: menu + card vazio (sem descrição)
     atualizarPill();
     bannerCongelada();
     bannerVencimentoPix();
