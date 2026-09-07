@@ -314,6 +314,44 @@
   .kb-add:hover{border-color:var(--pink);color:var(--pink)}
   .kb-addcol{flex:0 0 152px;align-items:center;justify-content:center;border:1.5px dashed var(--line);background:transparent;color:var(--muted);font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:14px;cursor:pointer;min-height:88px;border-radius:14px}
   .kb-addcol:hover{border-color:var(--pink);color:var(--pink)}
+  /* passo inicial: estrutura do treino (dias + prazo) */
+  .treino-setup{background:var(--pk-surf2,#1d2027);border:1px solid var(--line);border-radius:14px;padding:20px 22px;max-width:520px}
+  .ts-tit{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:19px;letter-spacing:.3px;color:var(--txt)}
+  .ts-sub{font-size:13px;color:var(--muted);margin:4px 0 18px;line-height:1.45}
+  .ts-field{margin-bottom:18px}
+  .ts-field>label{display:block;font-size:13px;font-weight:700;margin-bottom:8px;color:var(--txt)}
+  .ts-dias{display:flex;gap:8px;flex-wrap:wrap}
+  .ts-dia{width:44px;height:44px;border-radius:11px;border:1px solid var(--line);background:var(--pk-elev,#0f1116);color:var(--txt);font-weight:800;font-size:16px;font-family:'Rajdhani','Inter',sans-serif;cursor:pointer}
+  .ts-dia.on{background:var(--pink,#7fff00);color:var(--on-accent,#0a0b0d);border-color:var(--pink,#7fff00)}
+  .ts-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+  .ts-chip{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--pk-elev,#0f1116);border:1px solid var(--line);color:var(--muted)}
+  .treino-setup select{width:100%;background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:10px;font-size:14px;font-family:inherit}
+  /* Treinos: topo (atual/passados + novo), barra de info, passados */
+  .tr-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .tr-seg{display:inline-flex;background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .trseg{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:14px;padding:9px 15px;border-radius:9px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px}
+  .trseg.on{background:var(--pink,#7fff00);color:var(--on-accent,#0a0b0d)}
+  .trseg-cnt{font-size:11px;font-weight:800;opacity:.75}
+  .tr-novo{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:15px;background:var(--pink,#7fff00);color:var(--on-accent,#0a0b0d);border:none;border-radius:11px;padding:11px 18px;cursor:pointer}
+  .tr-info{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--pk-surf2,#1d2027);border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:14px;flex-wrap:wrap}
+  .tr-info .ib-l{display:flex;align-items:center;gap:13px;min-width:0}
+  .ib-dot{width:10px;height:10px;border-radius:50%;background:var(--pink,#7fff00);box-shadow:0 0 10px var(--pink,#7fff00);flex:0 0 auto}
+  .ib-dot.amber{background:#e8c14a;box-shadow:0 0 10px #e8c14a}
+  .ib-tit{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:20px;line-height:1.05;color:var(--txt)}
+  .ib-sub{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .ib-sub b{color:var(--txt)}
+  .tr-prazo{display:flex;align-items:center;gap:8px;background:var(--pk-elev,#0f1116);border:1px solid var(--line);border-radius:10px;padding:6px 8px 6px 12px;font-size:13px;font-weight:700;color:var(--txt);white-space:nowrap}
+  .tr-prazo select{background:var(--card2,#12161b);color:var(--pink-deep);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;font-weight:700;font-family:inherit}
+  .tr-subrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .tr-hint{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .tr-past-list{display:flex;flex-direction:column;gap:9px}
+  .tr-past{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:12px;padding:13px 15px;cursor:pointer;color:var(--txt)}
+  .tr-past:hover{border-color:var(--pink-deep)}
+  .tp-ic{font-size:18px;flex:0 0 auto}
+  .tp-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .tp-nome{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:16px}
+  .tp-sub{font-size:12px;color:var(--muted)}
+  .tp-go{flex:0 0 auto;font-weight:700;font-size:13px;color:var(--pink-deep)}
   .ex-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .ex-add-cta{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
   .ex-form-card{border:1px solid var(--pink);box-shadow:0 6px 20px rgba(0,0,0,.25)}
@@ -1021,7 +1059,7 @@
   let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
   let EXERCICIOS = [], EX_FILTRO = "", FAVORITOS = new Set();
   let COMENTARIOS = {};   // comentários do aluno por exercício (ficha_exercicio_id -> texto)
-  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false, MONTAGEM_LIBERADA = false, MODO_EDICAO = false, KANBAN = true;
+  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false, MONTAGEM_LIBERADA = false, MODO_EDICAO = false, KANBAN = true, VENDO_PASSADOS = false;
   // primeiro treino do aluno: sem dias e sem treinos passados
   function ehPrimeiroTreino(){ return FICHA && FICHA_DIAS.length === 0 && FICHAS_TODAS.filter(f=>!f.ativa).length === 0; }
   let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [], ULTIMO_POR_DIA = {};
@@ -4419,8 +4457,7 @@
 
       <div class="card" id="fichaCard" style="display:none">
         <span class="close-x" onclick="fecharTreino()">✕</span>
-        <h3>🏋️ Treino — <span id="fichaAluno"></span></h3>
-        <p>Monte o treino do aluno em dias (A, B, C…). Ele vê tudo no app, na aba "Meu treino".</p>
+        <h3 style="margin-bottom:14px">🏋️ Treino — <span id="fichaAluno"></span></h3>
         <input type="hidden" id="fichaStudentId">
         <div id="fichaHeader" class="ficha-head"></div>
         <div id="fichaDias" style="margin:12px 0"></div>
@@ -6554,7 +6591,7 @@
     if(error){ piikAlert("Erro ao salvar o prazo: "+error.message); return; }
     FICHA.duracao_meses = meses;
     const f = FICHAS_TODAS.find(x=>x.id===FICHA.id); if(f) f.duracao_meses = meses;
-    const el = document.getElementById("fichaVence"); if(el) el.innerHTML = textoVencimento(FICHA);
+    atualizarInfoBar();
   }
 
   async function carregarFicha(studentId){
@@ -6574,7 +6611,7 @@
       document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Este aluno demo ainda não tem treino montado.</div>`;
       return;
     }
-    FICHA = ativa; FICHA_READONLY = demo; MONTAGEM_LIBERADA = false; MODO_EDICAO = false;
+    FICHA = ativa; FICHA_READONLY = demo; MONTAGEM_LIBERADA = false; MODO_EDICAO = false; VENDO_PASSADOS = false;
     await abrirFichaDias();
   }
 
@@ -6591,44 +6628,78 @@
   function renderFichaHeader(){
     const h = document.getElementById("fichaHeader");
     if(!h) return;
-    const passadas = FICHAS_TODAS.filter(f=>!f.ativa);
-    const selPassadas = passadas.length
-      ? `<select onchange="if(this.value)abrirPassada(this.value)">
-           <option value="">Treinos passados (${passadas.length})…</option>
-           ${passadas.map(f=>`<option value="${f.id}">${fmtDiaMes(f.created_at)}</option>`).join("")}
-         </select>`
-      : `<span class="meta-sm">Sem treinos passados ainda.</span>`;
-    const st = STUDENTS.find(x=>x.id===FICHA.student_id);
-    const modal = (st && st.modalidade) || "online";
-    const presencaBlock = (!FICHA_READONLY && ["presencial","misto"].includes(modal) && FICHA_DIAS.length)
-      ? `<div class="presenca-box">
-           <div class="presenca-tit">Registrar presença de hoje${modal==="misto"?' <span class="meta-sm">(treinos presenciais)</span>':''}</div>
-           <div class="presenca-btns">
-             ${FICHA_DIAS.map(d=>`<button class="btn ghost small" onclick="marcarPresenca('${d.id}')">${esc(d.label)}</button>`).join("")}
-           </div>
-         </div>`
-      : "";
+    const nPass = FICHAS_TODAS.filter(f=>!f.ativa).length;
+    const atualOn = !FICHA_READONLY && !VENDO_PASSADOS;
+    const passOn  = VENDO_PASSADOS || FICHA_READONLY;
+    const seg = `<div class="tr-seg">
+        <button class="trseg ${atualOn?'on':''}" onclick="verTreinoAtual()">📋 Treino atual</button>
+        ${nPass ? `<button class="trseg ${passOn?'on':''}" onclick="verTreinosPassados()">🕐 Passados <span class="trseg-cnt">${nPass}</span></button>` : ``}
+      </div>`;
+    const novo = FICHA_READONLY ? `` : `<button class="tr-novo" onclick="novoTreino()">＋ Novo treino</button>`;
+    h.innerHTML = `<div class="tr-top">${seg}${novo}</div>`;
+  }
+  // faixa de identidade do treino (dias, criação, vencimento, prazo) ou aviso de somente leitura
+  function renderInfoBar(){
     if(FICHA_READONLY){
-      h.innerHTML = `
-        <div><span class="tag">treino de ${fmtDiaMes(FICHA.created_at)} · somente leitura</span></div>
-        <button class="btn small" onclick="voltarAtual()">← Voltar ao treino atual</button>`;
-    } else {
-      h.innerHTML = `
-        <div><b>Treino atual</b></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          ${selPassadas}
-          <button class="btn small" onclick="novoTreino()">＋ Novo treino</button>
+      return `<div class="tr-info readonly" id="trInfo">
+        <div class="ib-l"><span class="ib-dot amber"></span>
+          <div><div class="ib-tit">Treino de ${fmtDiaMes(FICHA.created_at)}</div>
+          <div class="ib-sub">somente leitura · treino anterior</div></div></div>
+        <button class="btn small" onclick="verTreinoAtual()">← Voltar ao treino atual</button>
+      </div>`;
+    }
+    const n = FICHA_DIAS.length;
+    return `<div class="tr-info" id="trInfo">
+      <div class="ib-l"><span class="ib-dot"></span>
+        <div>
+          <div class="ib-tit">Treino de ${n} dia${n===1?'':'s'}</div>
+          <div class="ib-sub">criado em ${fmtDiaMes(FICHA.created_at)} · ${textoVencimento(FICHA)}</div>
         </div>
-        <div class="prazo-edit">
-          <span class="meta-sm">Recomendado por</span>
+      </div>
+      <div class="ib-r">
+        <span class="tr-prazo">🗓 Prazo:
           <select onchange="salvarPrazoFicha(this.value)">
-            <option value="">— meses —</option>
+            <option value="" ${!FICHA.duracao_meses?'selected':''}>definir</option>
             ${opcoesMeses(FICHA.duracao_meses)}
           </select>
-          <span id="fichaVence">${textoVencimento(FICHA)}</span>
-        </div>
-        ${presencaBlock}`;
-    }
+        </span>
+      </div>
+    </div>`;
+  }
+  function atualizarInfoBar(){ const el=document.getElementById("trInfo"); if(el) el.outerHTML = renderInfoBar(); }
+  // bloco de presença (para alunos presencial/misto)
+  function presencaBlockHTML(){
+    if(FICHA_READONLY || !FICHA_DIAS.length) return "";
+    const st = STUDENTS.find(x=>x.id===FICHA.student_id);
+    const modal = (st && st.modalidade) || "online";
+    if(!["presencial","misto"].includes(modal)) return "";
+    return `<div class="presenca-box">
+        <div class="presenca-tit">Registrar presença de hoje${modal==="misto"?' <span class="meta-sm">(treinos presenciais)</span>':''}</div>
+        <div class="presenca-btns">${FICHA_DIAS.map(d=>`<button class="btn ghost small" onclick="marcarPresenca('${d.id}')">${esc(d.label)}</button>`).join("")}</div>
+      </div>`;
+  }
+  // lista de treinos passados (aba "Passados")
+  function renderPassadosLista(){
+    const cont = document.getElementById("fichaConteudo"); if(!cont) return;
+    const passadas = FICHAS_TODAS.filter(f=>!f.ativa).sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
+    if(!passadas.length){ cont.innerHTML = `<div class="empty">Nenhum treino passado ainda. Quando você criar um novo treino, o anterior fica guardado aqui.</div>`; return; }
+    cont.innerHTML = `<div class="tr-past-list">` + passadas.map(f=>{
+      const meses = f.duracao_meses ? `${f.duracao_meses} ${Number(f.duracao_meses)===1?'mês':'meses'}` : 'sem prazo';
+      return `<button class="tr-past" onclick="abrirPassada('${f.id}')">
+        <span class="tp-ic">🕐</span>
+        <span class="tp-main"><span class="tp-nome">Treino de ${fmtDiaMes(f.created_at)}</span><span class="tp-sub">prazo: ${meses}</span></span>
+        <span class="tp-go">ver ›</span>
+      </button>`;
+    }).join("") + `</div>`;
+  }
+  async function verTreinoAtual(){
+    VENDO_PASSADOS = false;
+    if(FICHA_READONLY){ await voltarAtual(); return; }
+    renderFichaHeader(); renderDias();
+  }
+  function verTreinosPassados(){
+    VENDO_PASSADOS = true;
+    renderFichaHeader(); renderDias();
   }
 
   async function marcarPresenca(diaId){
@@ -6644,8 +6715,8 @@
 
   function novoTreino(){
     if(document.getElementById("novoTreinoModal")) return;
-    // treino atual vazio (sem dias): nada a duplicar — libera a área de montagem logo abaixo
-    if(FICHA_DIAS.length === 0){ MONTAGEM_LIBERADA = true; renderDias(); return; }
+    // treino atual vazio (sem dias): nada a duplicar — vai direto pro passo de estrutura (dias + prazo)
+    if(FICHA_DIAS.length === 0){ MONTAGEM_LIBERADA = false; renderDias(); return; }
     const ov = document.createElement("div");
     ov.id = "novoTreinoModal"; ov.className = "modal-ov";
     ov.onclick = (e)=>{ if(e.target===ov) fecharNovoTreino(); };
@@ -6657,7 +6728,7 @@
         <select id="ntMeses" style="width:100%;margin-bottom:16px;background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:9px 10px;font-size:14px">${opcoesMeses(3)}</select>
         <button class="btn" style="width:100%;margin-bottom:8px" onclick="criarNovoTreino(true)">Duplicar o treino atual</button>
         <p class="meta-sm" style="margin:-2px 0 12px">Copia todos os dias e exercícios — você ajusta só o que mudar, mantendo o histórico do treino anterior.</p>
-        <button class="btn ghost" style="width:100%;margin-bottom:8px" onclick="criarNovoTreino(false)">Começar em branco</button>
+        <button class="btn ghost" style="width:100%;margin-bottom:8px" onclick="criarNovoTreino(false)">Montar do zero (escolher dias e prazo)</button>
         <button class="btn ghost" style="width:100%" onclick="fecharNovoTreino()">Cancelar</button>
       </div>`;
     document.body.appendChild(ov);
@@ -6697,41 +6768,50 @@
   async function abrirPassada(fichaId){
     const f = FICHAS_TODAS.find(x=>x.id===fichaId);
     if(!f) return;
-    FICHA = f; FICHA_READONLY = true;
+    FICHA = f; FICHA_READONLY = true; VENDO_PASSADOS = false;
     await abrirFichaDias();
   }
 
   async function voltarAtual(){
+    VENDO_PASSADOS = false;
     const ativa = FICHAS_TODAS.find(f=>f.ativa);
     if(!ativa){ await carregarFicha(FICHA.student_id); return; }
     FICHA = ativa; FICHA_READONLY = false;
     await abrirFichaDias();
   }
 
+  // um treino novo/em branco (sem dias) precisa primeiro definir a estrutura (nº de dias + prazo)
+  function precisaSetup(){ return !!(FICHA && !FICHA_READONLY && FICHA_DIAS.length === 0 && !MONTAGEM_LIBERADA); }
   function renderDias(){
     const box = document.getElementById("fichaDias");
     if(!box) return;
     const cont = document.getElementById("fichaConteudo");
-    // primeiro treino ainda não liberado: mostra só o quadro "Treino atual", sem a área de montagem
-    if(ehPrimeiroTreino() && !MONTAGEM_LIBERADA){
+    // aba "Passados": lista dos treinos anteriores
+    if(VENDO_PASSADOS){ box.innerHTML = ""; renderPassadosLista(); return; }
+    // treino novo: antes de liberar exercícios, escolhe nº de dias e prazo
+    if(precisaSetup()){
       box.innerHTML = "";
-      if(cont) cont.innerHTML = "";
+      renderSetupTreino();
       return;
     }
-    // barra de modo: Kanban (tudo aberto) x Um dia por vez
-    const toggle = `<div class="ficha-modos">
-        <button class="fm ${KANBAN?"on":""}" onclick="setKanban(true)">▦ Kanban</button>
-        <button class="fm ${KANBAN?"":"on"}" onclick="setKanban(false)">☰ Um dia por vez</button>
+    const head = renderInfoBar() + presencaBlockHTML();
+    // barra de modo: Kanban (tudo aberto) x Um dia por vez + dica de edição
+    const toggle = `<div class="tr-subrow">
+        <div class="ficha-modos">
+          <button class="fm ${KANBAN?"on":""}" onclick="setKanban(true)">▦ Kanban</button>
+          <button class="fm ${KANBAN?"":"on"}" onclick="setKanban(false)">☰ Um dia por vez</button>
+        </div>
+        ${FICHA_READONLY?``:`<span class="tr-hint">👆 toque num exercício para editar</span>`}
       </div>`;
     if(KANBAN){
-      box.innerHTML = toggle;
+      box.innerHTML = head + toggle;
       renderKanban();
       return;
     }
     const chips = FICHA_DIAS.map(d=>
       `<button class="chip-f ${d.id===FICHA_DIA?"sel":""}" onclick="selDia('${d.id}')">${esc(d.label)}</button>`
     ).join("") + (FICHA_READONLY ? "" : `<button class="chip-f" style="border-style:dashed" onclick="addDia()">＋ Dia</button>`);
-    box.innerHTML = toggle + `<div class="ficha-chips">${chips}</div>`;
+    box.innerHTML = head + toggle + `<div class="ficha-chips">${chips}</div>`;
     renderConteudoDia();
   }
 
@@ -6739,6 +6819,62 @@
   function setKanban(v){ KANBAN = v; MODO_EDICAO = false; renderDias(); }
   // abre o editor de um dia específico a partir do Kanban
   function editarDiaKanban(id){ KANBAN = false; FICHA_DIA = id; MODO_EDICAO = true; renderDias(); }
+
+  // ---- passo inicial do treino: escolher nº de dias + prazo antes dos exercícios ----
+  function renderSetupTreino(){
+    const cont = document.getElementById("fichaConteudo"); if(!cont) return;
+    const st = STUDENTS.find(x=>x.id===(FICHA && FICHA.student_id));
+    const nome = st ? nomeAluno(st) : "o aluno";
+    const mesesSel = (FICHA && FICHA.duracao_meses) ? Number(FICHA.duracao_meses) : 3;
+    window.TS_DIAS = window.TS_DIAS || 3;
+    cont.innerHTML = `
+      <div class="treino-setup">
+        <div class="ts-tit">🏗️ Estrutura do treino</div>
+        <p class="ts-sub">Antes de adicionar os exercícios, defina como será o treino de <b>${esc(nome)}</b>.</p>
+        <div class="ts-field">
+          <label>Quantos dias terá o treino? <span class="meta-sm" style="font-weight:500;opacity:.8">(Treino A, B, C…)</span></label>
+          <div class="ts-dias" id="tsDias">
+            ${[1,2,3,4,5,6,7,8].map(n=>`<button type="button" class="ts-dia ${n===window.TS_DIAS?"on":""}" data-n="${n}" onclick="selTsDias(${n})">${n}</button>`).join("")}
+          </div>
+          <div class="ts-preview" id="tsPreview"></div>
+        </div>
+        <div class="ts-field">
+          <label>Prazo recomendado <span class="meta-sm" style="font-weight:500;opacity:.8">(avisamos 7 dias antes de vencer)</span></label>
+          <select id="tsMeses">${opcoesMeses(mesesSel)}</select>
+        </div>
+        <button class="btn" id="tsGo" style="width:100%;margin-top:4px" onclick="iniciarMontagemTreino()">Começar a montar →</button>
+      </div>`;
+    atualizarTsPreview();
+  }
+  function selTsDias(n){
+    window.TS_DIAS = n;
+    document.querySelectorAll("#tsDias .ts-dia").forEach(b=>b.classList.toggle("on", Number(b.dataset.n)===n));
+    atualizarTsPreview();
+  }
+  function atualizarTsPreview(){
+    const el = document.getElementById("tsPreview"); if(!el) return;
+    const L = "ABCDEFGH", n = window.TS_DIAS || 3;
+    el.innerHTML = Array.from({length:n}, (_,i)=>`<span class="ts-chip">Treino ${L[i]||(i+1)}</span>`).join("");
+  }
+  async function iniciarMontagemTreino(){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    if(!FICHA) return;
+    const n = window.TS_DIAS || 3;
+    const meses = parseInt((document.getElementById("tsMeses")||{}).value || "", 10) || null;
+    const btn = document.getElementById("tsGo"); if(btn){ btn.disabled = true; btn.textContent = "Criando…"; }
+    const L = "ABCDEFGH";
+    const linhas = Array.from({length:n}, (_,i)=>({ ficha_id:FICHA.id, student_id:FICHA.student_id, professional_id:ME.id, label:"Treino "+(L[i]||(i+1)), ordem:i }));
+    const { error } = await sb.from("ficha_dias").insert(linhas);
+    if(error){ piikAlert("Erro ao criar os dias: "+error.message); if(btn){ btn.disabled=false; btn.textContent="Começar a montar →"; } return; }
+    if(meses){
+      await sb.from("fichas").update({ duracao_meses:meses }).eq("id", FICHA.id);
+      FICHA.duracao_meses = meses;
+      const f = FICHAS_TODAS.find(x=>x.id===FICHA.id); if(f) f.duracao_meses = meses;
+    }
+    MONTAGEM_LIBERADA = true;
+    window.TS_DIAS = 3;
+    await abrirFichaDias();   // recarrega os dias + cabeçalho e mostra o Kanban já com as colunas
+  }
 
   // Kanban: todos os dias abertos lado a lado (visão geral do programa)
   async function renderKanban(){
