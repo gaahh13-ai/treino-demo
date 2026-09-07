@@ -310,7 +310,9 @@
   .kb-exc.clickable:hover{border-color:var(--pink-deep)}
   .kb-top{display:flex;align-items:center;gap:8px}
   .kb-num{flex:0 0 auto;width:21px;height:21px;border-radius:6px;background:var(--pk-surf2,#1d2027);color:var(--pink-deep);font-weight:800;font-size:11.5px;display:flex;align-items:center;justify-content:center}
-  .kb-nome{font-size:13px;font-weight:700;line-height:1.2;color:var(--txt)}
+  .kb-nome{font-size:13px;font-weight:700;line-height:1.2;color:var(--txt);flex:1;min-width:0}
+  .kb-del{margin-left:auto;flex:0 0 auto;width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--pk-surf2,#1d2027);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+  .kb-del:hover{border-color:#ff6b6b;color:#ff6b6b;background:rgba(255,107,107,.12)}
   .kb-pcs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;padding-left:29px}
   .kb-pc{font-size:10.5px;font-weight:700;color:var(--muted);background:var(--pk-surf2,#1d2027);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
   .kb-pc.a{color:var(--pink-deep);border-color:rgba(127,255,0,.3)}
@@ -349,7 +351,7 @@
   .ib-sub{font-size:12.5px;color:var(--muted);margin-top:4px}
   .ib-sub b{color:var(--txt)}
   .tr-prazo{display:flex;align-items:center;gap:8px;background:var(--pk-elev,#0f1116);border:1px solid var(--line);border-radius:10px;padding:6px 8px 6px 12px;font-size:13px;font-weight:700;color:var(--txt);white-space:nowrap}
-  .tr-prazo select{background:var(--card2,#12161b);color:var(--pink-deep);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;font-weight:700;font-family:inherit}
+  .tr-prazo select,.tr-prazo input[type=date]{background:var(--card2,#12161b);color:var(--pink-deep);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;font-weight:700;font-family:inherit}
   .tr-subrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
   .tr-hint{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
   .tr-past-list{display:flex;flex-direction:column;gap:9px}
@@ -5195,13 +5197,14 @@
       STUDENTS = studs || [];
     }
     const { data: fichas } = await sb.from("fichas")
-      .select("id,student_id,created_at,duracao_meses")
+      .select("id,student_id,created_at,duracao_meses,data_fim")
       .eq("professional_id", ME.id).eq("ativa", true);
     const nomeDe = id => { const s = STUDENTS.find(x=>x.id===id); return s ? nomeAluno(s) : "Aluno"; };
-    const comPrazo = (fichas||[]).filter(f=>f.duracao_meses)
+    const temPrazo = f => !!(f.data_fim || f.duracao_meses);
+    const comPrazo = (fichas||[]).filter(temPrazo)
       .map(f=>({ f, dias: diasParaVencer(f), nome: nomeDe(f.student_id) }))
       .sort((a,b)=> a.dias - b.dias);
-    const semPrazo = (fichas||[]).filter(f=>!f.duracao_meses).map(f=>nomeDe(f.student_id));
+    const semPrazo = (fichas||[]).filter(f=>!temPrazo(f)).map(f=>nomeDe(f.student_id));
 
     // badge de quantos vencem em 7 dias ou menos (inclui vencidos)
     const alerta = comPrazo.filter(x=>x.dias <= 7).length;
@@ -6589,26 +6592,40 @@
     for(let m=1;m<=12;m++) o += `<option value="${m}" ${Number(sel)===m?"selected":""}>${m} ${m===1?"mês":"meses"}</option>`;
     return o;
   }
+  // data-fim do treino: usa a data_fim fixa (editável por calendário); se não houver, calcula por created_at + meses (compat)
   function vencimentoDe(f){
-    if(!f || !f.created_at || !f.duracao_meses) return null;
-    const d = new Date(f.created_at);
-    d.setMonth(d.getMonth() + Number(f.duracao_meses));
-    return d;
+    if(!f) return null;
+    if(f.data_fim){ const d = new Date(String(f.data_fim).slice(0,10)+"T12:00:00"); return isNaN(d.getTime())?null:d; }
+    if(f.created_at && f.duracao_meses){ const d = new Date(f.created_at); d.setMonth(d.getMonth()+Number(f.duracao_meses)); return d; }
+    return null;
   }
+  function fimISO(f){ const v=vencimentoDe(f); if(!v) return ""; const off=v.getTimezoneOffset(); const d=new Date(v.getTime()-off*60000); return d.toISOString().slice(0,10); }
   function diasParaVencer(f){
     const v = vencimentoDe(f); if(!v) return null;
-    return Math.ceil((v.getTime() - Date.now())/86400000);
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const fim = new Date(v); fim.setHours(0,0,0,0);
+    return Math.round((fim.getTime() - hoje.getTime())/86400000);
   }
+  // usado na barra de info: só o "faltam X dias" (a data em si aparece no calendário ao lado)
   function textoVencimento(f){
     const v = vencimentoDe(f);
-    if(!v) return `<span class="meta-sm" style="opacity:.7">sem prazo definido</span>`;
+    if(!v) return `<b style="opacity:.7">sem prazo definido</b>`;
     const dias = diasParaVencer(f);
-    const data = v.toLocaleDateString("pt-BR");
-    let cor = "var(--muted)", extra = `em ${dias} dias`;
-    if(dias < 0){ cor = "#ff6b6b"; extra = `venceu há ${Math.abs(dias)} dias`; }
-    else if(dias <= 7){ cor = "#ffb020"; extra = `vence em ${dias} dia${dias===1?"":"s"}`; }
-    else if(dias === 0){ cor = "#ffb020"; extra = "vence hoje"; }
-    return `<span class="meta-sm">vence em <b>${data}</b> · <b style="color:${cor}">${extra}</b></span>`;
+    let cor = "var(--pink-deep)", extra = `faltam ${dias} dias`;
+    if(dias < 0){ cor = "#ff6b6b"; extra = `venceu há ${Math.abs(dias)} dia${Math.abs(dias)===1?"":"s"}`; }
+    else if(dias === 0){ cor = "#ffb020"; extra = "termina hoje"; }
+    else if(dias <= 7){ cor = "#ffb020"; extra = `faltam ${dias} dia${dias===1?"":"s"}`; }
+    return `<b style="color:${cor}">${extra}</b>`;
+  }
+  async function salvarDataFim(v){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    if(!FICHA) return;
+    const val = v || null;
+    const { error } = await sb.from("fichas").update({ data_fim: val }).eq("id", FICHA.id);
+    if(error){ piikAlert("Erro ao salvar a data: "+error.message); return; }
+    FICHA.data_fim = val;
+    const f = FICHAS_TODAS.find(x=>x.id===FICHA.id); if(f) f.data_fim = val;
+    atualizarInfoBar();
   }
   async function salvarPrazoFicha(v){
     if(contaCongelada()){ avisoCongelada(); return; }
@@ -6684,11 +6701,8 @@
         </div>
       </div>
       <div class="ib-r">
-        <span class="tr-prazo">🗓 Prazo:
-          <select onchange="salvarPrazoFicha(this.value)">
-            <option value="" ${!FICHA.duracao_meses?'selected':''}>definir</option>
-            ${opcoesMeses(FICHA.duracao_meses)}
-          </select>
+        <span class="tr-prazo">🗓 Termina em
+          <input type="date" value="${fimISO(FICHA)}" onchange="salvarDataFim(this.value)">
         </span>
       </div>
     </div>`;
@@ -6846,6 +6860,14 @@
   function setKanban(v){ KANBAN = v; MODO_EDICAO = false; renderDias(); }
   // abre o editor de um dia específico a partir do Kanban
   function editarDiaKanban(id){ KANBAN = false; FICHA_DIA = id; MODO_EDICAO = true; renderDias(); }
+  // remove um exercício direto do Kanban
+  async function excluirExKanban(exId){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    if(!(await piikConfirm({ titulo:"Remover exercício?", msg:"Este exercício sai do treino do aluno. Você pode adicionar de novo depois.", ok:"Remover", cancel:"Cancelar" }))) return;
+    const { error } = await sb.from("ficha_exercicios").delete().eq("id", exId);
+    if(error){ piikAlert("Erro ao remover: "+error.message); return; }
+    renderKanban();
+  }
 
   // ---- passo inicial do treino: escolher nº de dias + prazo antes dos exercícios ----
   function renderSetupTreino(){
@@ -6894,9 +6916,15 @@
     const { error } = await sb.from("ficha_dias").insert(linhas);
     if(error){ piikAlert("Erro ao criar os dias: "+error.message); if(btn){ btn.disabled=false; btn.textContent="Começar a montar →"; } return; }
     if(meses){
-      await sb.from("fichas").update({ duracao_meses:meses }).eq("id", FICHA.id);
-      FICHA.duracao_meses = meses;
-      const f = FICHAS_TODAS.find(x=>x.id===FICHA.id); if(f) f.duracao_meses = meses;
+      // fixa a data-fim = criação + meses (a partir daqui, só muda pelo calendário)
+      let data_fim = null;
+      const base = new Date(FICHA.created_at || Date.now());
+      base.setMonth(base.getMonth() + meses);
+      const off = base.getTimezoneOffset();
+      data_fim = new Date(base.getTime() - off*60000).toISOString().slice(0,10);
+      await sb.from("fichas").update({ duracao_meses:meses, data_fim }).eq("id", FICHA.id);
+      FICHA.duracao_meses = meses; FICHA.data_fim = data_fim;
+      const f = FICHAS_TODAS.find(x=>x.id===FICHA.id); if(f){ f.duracao_meses = meses; f.data_fim = data_fim; }
     }
     MONTAGEM_LIBERADA = true;
     window.TS_DIAS = 3;
@@ -6929,8 +6957,9 @@
           const info = [ esquemaPresc(x), (x.carga_alvo!=null?`${x.carga_alvo} kg`:""), (ultimo && x.descanso_seg!=null?`⏱ ${x.descanso_seg}s`:"") ].filter(Boolean);
           const chips = info.map((t,i)=>`<span class="kb-pc${i===0?" a":""}">${esc(t)}</span>`).join("");
           const clk = FICHA_READONLY ? "" : ` onclick="editarDiaKanban('${d.id}')"`;
+          const del = FICHA_READONLY ? "" : `<button class="kb-del" title="Remover exercício" onclick="event.stopPropagation();excluirExKanban('${x.id}')">✕</button>`;
           return `<div class="kb-exc${clic}"${clk}>
-              <div class="kb-top"><span class="kb-num">${n}</span><span class="kb-nome">${esc(x.nome_cache||"Exercício")}</span></div>
+              <div class="kb-top"><span class="kb-num">${n}</span><span class="kb-nome">${esc(x.nome_cache||"Exercício")}</span>${del}</div>
               ${chips?`<div class="kb-pcs">${chips}</div>`:""}
             </div>`;
         }).join("");
