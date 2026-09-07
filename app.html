@@ -170,6 +170,51 @@
   .fin-al-hist{border-top:1px dashed var(--line);padding-top:10px}
   .fin-hist-tit{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
   .fin-hist-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;font-size:13px}
+  /* ---- Acordos (versionado) ---- */
+  .acordo-wrap{display:flex;flex-direction:column;gap:14px}
+  .ac-sec{background:var(--pk-surf2);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+  .ac-cur{border:1px solid rgba(127,255,0,.28);background:linear-gradient(180deg,rgba(127,255,0,.05),transparent)}
+  .ac-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .ac-t{font-weight:800;font-size:15px;display:flex;align-items:center;gap:7px}
+  .ac-hactions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .cchip{font-size:11px;font-weight:800;padding:5px 11px;border-radius:999px;white-space:nowrap}
+  .cchip.ok{background:rgba(127,255,0,.16);color:var(--pink-deep)}
+  .cchip.wait{background:#2a2410;color:#e0b83a}
+  .ac-kv{display:flex;flex-wrap:wrap;gap:12px 26px}
+  .ac-kv .k{font-size:10.5px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.4px}
+  .ac-kv .v{font-size:15px;font-weight:700;margin-top:2px}
+  .ac-kv .v.big{font-size:20px;color:var(--pink-deep)}
+  .ac-item{display:flex;flex-direction:column}
+  .ac-aulas{margin-top:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .achip{display:inline-flex;align-items:center;gap:6px;background:var(--pk-elev);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700}
+  .achip .d{color:var(--pink-deep)}
+  .ac-obs{margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .ac-obs b{color:var(--txt)}
+  .ac-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.ac-grid2{grid-template-columns:1fr}}
+  .ac-empty{border:1px dashed var(--line);border-radius:14px;padding:22px 16px;text-align:center;color:var(--muted);font-size:13.5px}
+  /* form novo acordo */
+  .ac-form{display:flex;flex-direction:column;gap:14px}
+  .ac-frow{display:flex;gap:12px;flex-wrap:wrap}
+  .ac-fld{display:flex;flex-direction:column;gap:5px;flex:1;min-width:120px}
+  .ac-fld label{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .ac-fld input,.ac-fld select{background:var(--pk-elev,#0f1116);color:var(--txt,#e8eaee);border:1px solid var(--line);border-radius:9px;padding:10px 11px;font-size:14px;font-weight:600;width:100%}
+  .ac-seg{display:inline-flex;background:var(--pk-elev);border:1px solid var(--line);border-radius:10px;padding:4px}
+  .ac-seg button{font-weight:800;font-size:13px;padding:8px 15px;border-radius:7px;border:none;background:transparent;color:var(--muted);cursor:pointer}
+  .ac-seg button.on{background:var(--pink,#7fff00);color:var(--on-accent,#0a0b0d)}
+  .ac-est{font-size:12.5px;color:var(--muted);background:var(--pk-elev);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .ac-est b{color:var(--pink-deep)}
+  .ac-dias{display:flex;flex-wrap:wrap;gap:8px}
+  .ac-dia{display:flex;align-items:center;gap:6px;background:var(--pk-elev);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .ac-dia .dn{font-size:12px;font-weight:800;width:30px}
+  .ac-dia input[type=time]{background:transparent;border:none;color:var(--txt);font-size:13px;font-weight:700;padding:2px}
+  .ac-dia input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink,#7fff00)}
+  .ac-dia.off{opacity:.45}
+  /* card do aluno (student side) */
+  .meu-acordo .ma-line{font-size:14px;margin-top:4px}
+  .meu-acordo .ma-line b{color:var(--pink-deep)}
+  .meu-acordo .ma-aulas{font-size:13px;color:var(--muted);margin-top:6px}
+  .ma-ciente{background:rgba(127,255,0,.1);border:1px solid rgba(127,255,0,.3);color:var(--pink-deep);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;margin-top:12px;display:flex;align-items:center;gap:8px}
   @media(max-width:760px){
     .fin-cards{grid-template-columns:repeat(2,1fr)}
     .fin-row{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
@@ -2038,7 +2083,7 @@
     }
     const p = document.getElementById("panel"); if(!p) return;
 
-    if(id === "dash")      p.innerHTML = viewDash();
+    if(id === "dash")     { p.innerHTML = viewDash(); if(ME.role==="student") carregarMeuAcordo(); }
     else if(id === "avaliacoes"){ p.innerHTML = viewAvaliacoes(); carregarMinhasAvaliacoes(); }
     else if(id === "meutreino"){  p.innerHTML = viewMeuTreino();  carregarMeuTreino(); }
     else if(id === "consultas"){  p.innerHTML = viewConsultas();  carregarMinhasConsultas(); }
@@ -2116,8 +2161,10 @@
         </div>
         <button class="btn" onclick="go('meutreino')">Acessar meu treino →</button>
       </div>` : "";
+    const acordoCard = (ME.role === "student") ? `<div class="card meu-acordo" id="meuAcordoCard" style="display:none"></div>` : "";
     return `<h2>Dashboard</h2>
       ${heroTreino}
+      ${acordoCard}
       <div class="treino-hero">
         <div class="ico-big">📊</div>
         <div style="flex:1;min-width:180px">
@@ -2126,6 +2173,56 @@
         </div>
         <a class="btn" href="dashboard.html">Abrir meu dashboard →</a>
       </div>`;
+  }
+
+  /* ---------- ALUNO: SEU ACORDO COM O PERSONAL ---------- */
+  let MEU_ACORDO = null;
+  async function carregarMeuAcordo(){
+    const card = document.getElementById("meuAcordoCard");
+    if(!card) return;
+    let a = null;
+    try{
+      const { data } = await sb.from("acordos").select("*")
+        .eq("student_id", ME.id).eq("ativo", true).order("criado_em",{ascending:false}).limit(1);
+      a = data && data[0];
+    }catch(e){ card.style.display="none"; return; }   // tabela ausente: ignora
+    MEU_ACORDO = a || null;
+    if(!a){ card.style.display="none"; return; }
+    renderMeuAcordo();
+    card.style.display="";
+  }
+  function renderMeuAcordo(){
+    const card = document.getElementById("meuAcordoCard");
+    if(!card || !MEU_ACORDO) return;
+    const a = MEU_ACORDO;
+    const valTxt = a.modelo==="aula"
+      ? `<b>${fmtBRL(a.valor)}</b> por aula`
+      : `<b>${fmtBRL(a.valor)}</b>/mês`;
+    const horas = acHorariosArr(a);
+    const aulas = horas.length
+      ? `<div class="ma-aulas">Aulas: ${horas.map(h=>`${esc(h.d)} ${esc(h.h)}`).join(" · ")}</div>` : "";
+    const cienciaBtn = a.aceito
+      ? `<div class="ma-ciente">✓ Você deu ciência deste acordo em ${fmtDate(a.aceito_em)}</div>`
+      : `<button class="btn" id="btnCiente" style="margin-top:12px" onclick="aceitarMeuAcordo()">✓ Estou ciente deste acordo</button>`;
+    card.innerHTML = `
+      <h3>🤝 Seu acordo com o personal</h3>
+      <div class="ma-line">${acModeloLabel(a)} · ${valTxt} · vence dia ${a.dia_venc||5} · ${acFormaLabel(a.forma_pgto)} · desde ${fmtDate(a.data_inicio||a.criado_em)}</div>
+      ${aulas}
+      ${a.obs?`<div class="ma-aulas">📝 ${esc(a.obs)}</div>`:""}
+      ${cienciaBtn}`;
+  }
+  async function aceitarMeuAcordo(){
+    if(!MEU_ACORDO) return;
+    const btn = document.getElementById("btnCiente");
+    if(btn){ btn.disabled=true; btn.textContent="Registrando…"; }
+    const { error } = await sb.rpc("aceitar_acordo", { p_acordo: MEU_ACORDO.id });
+    if(error){
+      if(btn){ btn.disabled=false; btn.textContent="✓ Estou ciente deste acordo"; }
+      piikAlert("Não consegui registrar sua ciência: "+error.message); return;
+    }
+    MEU_ACORDO.aceito = true; MEU_ACORDO.aceito_em = new Date().toISOString();
+    renderMeuAcordo();
+    piikAlert({ emoji:"🤝", titulo:"Ciência registrada!", msg:"Seu personal foi avisado de que você está ciente do acordo." });
   }
 
   async function conectarPeloDash(){
@@ -5038,14 +5135,26 @@
     renderFinanceiro();
   }
 
-  /* ---------- FINANCEIRO DIRETO DO ALUNO (atalho na tela do aluno) ---------- */
-  let FIN_AL = { id:null, comp:null, mens:null, pags:[] };
+  /* ---------- FINANCEIRO POR ALUNO — ACORDOS VERSIONADOS ---------- */
+  const AC_DIAS = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+  let FIN_AL = { id:null, comp:null, ativo:null, acordos:[], pags:[] };
   function statusFinComp(comp, dia, pago){
     if(pago) return "pago";
     const [y,mo] = comp.split("-").map(Number);
     const venc = new Date(y, mo-1, dia||5, 23,59,59);
     return Date.now() > venc.getTime() ? "atrasado" : "pendente";
   }
+  function acModeloLabel(a){ return (a && a.modelo==="aula") ? "Por aula" : "Mensal"; }
+  function acFormaLabel(f){ return ({pix:"Pix",dinheiro:"Dinheiro",cartao:"Cartão",transferencia:"Transferência",boleto:"Boleto"}[f]) || (f? esc(f) : "—"); }
+  // valor mensal efetivo do acordo (mensal = valor; por aula = valor × aulas/semana × 4,33)
+  function acValorMensal(a){
+    if(!a) return 0;
+    const v = Number(a.valor)||0;
+    if(a.modelo==="aula"){ const n = Number(a.aulas_semana)|| (Array.isArray(a.horarios)?a.horarios.length:0) || 0; return Math.round(v*n*4.33*100)/100; }
+    return v;
+  }
+  function acHorariosArr(a){ return (a && Array.isArray(a.horarios)) ? a.horarios : []; }
+
   async function verFinanceiroAluno(id){
     const el = document.getElementById("finList_"+id);
     if(!el) return;
@@ -5056,65 +5165,105 @@
     if(btn) btn.classList.add("ativo");
     el.innerHTML = `<div class="empty">Carregando…</div>`;
     FIN_AL.id = id; FIN_AL.comp = FIN_AL.comp || compAtual();
-    const { data: mensArr } = await sb.from("mensalidades").select("*").eq("student_id", id);
-    FIN_AL.mens = (mensArr && mensArr[0]) || null;
+    const { data: acs } = await sb.from("acordos").select("*").eq("student_id", id).order("criado_em",{ascending:false});
+    FIN_AL.acordos = acs || [];
+    FIN_AL.ativo = FIN_AL.acordos.find(a=>a.ativo) || null;
     const { data: pags } = await sb.from("pagamentos").select("*").eq("student_id", id).order("competencia",{ascending:false});
     FIN_AL.pags = pags || [];
     renderFinAluno(id);
   }
+
   function renderFinAluno(id){
     const el = document.getElementById("finList_"+id); if(!el) return;
-    const m = FIN_AL.mens || {};
-    const valor = Number(m.valor)||0;
-    const dia = m.dia_venc || 5;
+    const a = FIN_AL.ativo;
+
+    // ----- Acordo atual (somente leitura) -----
+    let curHTML;
+    if(a){
+      const ciente = a.aceito
+        ? `<span class="cchip ok">✓ Ciente em ${fmtDate(a.aceito_em)}</span>`
+        : `<span class="cchip wait">⏳ Aguardando ciência do aluno</span>`;
+      const vLabel = a.modelo==="aula"
+        ? `<span class="v big">${fmtBRL(a.valor)}</span> <span class="meta-sm" style="margin:0">/ aula</span>`
+        : `<span class="v big">${fmtBRL(a.valor)}</span>`;
+      const aulas = acHorariosArr(a).length
+        ? `<div class="ac-aulas"><span class="meta-sm" style="margin:0;font-weight:700">Aulas:</span>${acHorariosArr(a).map(h=>`<span class="achip">${esc(h.d)} <span class="d">${esc(h.h)}</span></span>`).join("")}</div>`
+        : "";
+      const estAula = a.modelo==="aula"
+        ? `<div class="ac-obs">≈ <b>${fmtBRL(acValorMensal(a))}</b>/mês (${a.aulas_semana||acHorariosArr(a).length||0} aulas/semana)</div>` : "";
+      curHTML = `<div class="ac-sec ac-cur">
+        <div class="ac-h">
+          <div class="ac-t">🤝 Acordo atual</div>
+          <div class="ac-hactions">${ciente}<button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Novo acordo</button></div>
+        </div>
+        <div class="ac-kv">
+          <div class="ac-item"><span class="k">Modelo</span><span class="v">${acModeloLabel(a)}</span></div>
+          <div class="ac-item"><span class="k">${a.modelo==="aula"?"Valor por aula":"Mensalidade"}</span>${vLabel}</div>
+          <div class="ac-item"><span class="k">Vencimento</span><span class="v">todo dia ${a.dia_venc||5}</span></div>
+          <div class="ac-item"><span class="k">Pagamento</span><span class="v">${acFormaLabel(a.forma_pgto)}</span></div>
+          <div class="ac-item"><span class="k">Vigente desde</span><span class="v">${fmtDate(a.data_inicio||a.criado_em)}</span></div>
+        </div>
+        ${aulas}${estAula}
+        ${a.obs?`<div class="ac-obs">📝 ${esc(a.obs)}</div>`:""}
+      </div>`;
+    }else{
+      curHTML = `<div class="ac-empty">Nenhum acordo definido ainda.<br><br>
+        <button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Definir acordo</button></div>`;
+    }
+
+    // ----- Este mês -----
+    const dia = a ? (a.dia_venc||5) : 5;
     const comp = FIN_AL.comp;
     const pagComp = FIN_AL.pags.find(p=>p.competencia===comp);
     const st = statusFinComp(comp, dia, !!pagComp);
-    const chip = st==="pago"     ? `<span class="fin-tag pg">Pago</span>`
-               : st==="atrasado" ? `<span class="fin-tag at">Atrasado</span>`
-               :                    `<span class="fin-tag pe">Pendente</span>`;
+    const chip = st==="pago" ? `<span class="fin-tag pg">Pago${pagComp?` · ${fmtBRL(pagComp.valor)}`:""}</span>`
+               : st==="atrasado" ? `<span class="fin-tag at">Em atraso · vence ${String(dia).padStart(2,"0")}/${comp.split("-")[1]}</span>`
+               : `<span class="fin-tag pe">Pendente · vence ${String(dia).padStart(2,"0")}/${comp.split("-")[1]}</span>`;
     const acao = pagComp
       ? `<button class="btn ghost small" onclick="finAlunoPagar('${id}',false)">Desfazer</button>`
-      : `<button class="btn small" onclick="finAlunoPagar('${id}',true)">Registrar pagamento</button>`;
-    const hist = FIN_AL.pags.length
-      ? FIN_AL.pags.slice(0,8).map(p=>`<div class="fin-hist-row"><span>${compLabel(p.competencia)}</span><span class="fin-tag pg">Pago · ${fmtBRL(p.valor)}</span></div>`).join("")
-      : `<div class="meta-sm">Nenhum pagamento registrado ainda.</div>`;
-    el.innerHTML = `<div class="fin-aluno">
-      <div class="fin-al-plano">
-        <label class="fin-campo">Mensalidade R$ <input id="finAlVal_${id}" class="fin-in" type="number" step="0.01" min="0" value="${valor}"></label>
-        <label class="fin-campo">venc. dia <input id="finAlDia_${id}" class="fin-in fin-dia" type="number" min="1" max="28" value="${dia}"></label>
-        <button class="btn small ghost" onclick="finAlunoSalvarPlano('${id}')">Salvar</button>
-      </div>
+      : (a ? `<button class="btn small" onclick="finAlunoPagar('${id}',true)">Registrar pagamento</button>` : "");
+    const mesHTML = `<div class="ac-sec">
+      <div class="ac-t" style="margin-bottom:12px">💵 Este mês</div>
       <div class="fin-al-mes">
         <button class="chev" onclick="finAlunoMes('${id}',-1)">‹</button>
         <span class="fin-al-mesnome">${compLabel(comp)}</span>
         <button class="chev" onclick="finAlunoMes('${id}',1)">›</button>
-        ${chip}
-        ${acao}
+        ${chip}${acao}
       </div>
-      <div class="fin-al-hist"><div class="fin-hist-tit">Últimos pagamentos</div>${hist}</div>
     </div>`;
+
+    // ----- Histórico de acordos + Últimos pagamentos -----
+    const antigos = FIN_AL.acordos.filter(x=>!x.ativo);
+    const histAc = antigos.length
+      ? antigos.map(x=>{
+          const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : `${fmtBRL(x.valor)}/mês`;
+          const ini = fmtDate(x.data_inicio||x.criado_em);
+          const fim = x.encerrado_em ? fmtDate(x.encerrado_em) : "—";
+          return `<div class="fin-hist-row"><span><b>${per}</b> · ${acFormaLabel(x.forma_pgto)}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
+        }).join("")
+      : `<div class="meta-sm">Nenhum acordo anterior.</div>`;
+    const histPg = FIN_AL.pags.length
+      ? FIN_AL.pags.slice(0,8).map(p=>`<div class="fin-hist-row"><span>${compLabel(p.competencia)}</span><span class="fin-tag pg">Pago · ${fmtBRL(p.valor)}</span></div>`).join("")
+      : `<div class="meta-sm">Nenhum pagamento registrado ainda.</div>`;
+    const gridHTML = `<div class="ac-grid2">
+      <div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">📜 Histórico de acordos</div><div class="fin-al-hist" style="border:none;padding:0">${histAc}</div></div>
+      <div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">🧾 Últimos pagamentos</div><div class="fin-al-hist" style="border:none;padding:0">${histPg}</div></div>
+    </div>`;
+
+    el.innerHTML = `<div class="acordo-wrap">${curHTML}${mesHTML}${gridHTML}</div>`;
   }
+
   function finAlunoMes(id, delta){
     let [y,m] = (FIN_AL.comp||compAtual()).split("-").map(Number);
     m += delta; if(m<1){m=12;y--;} if(m>12){m=1;y++;}
     FIN_AL.comp = y+"-"+String(m).padStart(2,"0");
     renderFinAluno(id);
   }
-  async function finAlunoSalvarPlano(id){
-    if(contaCongelada()){ avisoCongelada(); return; }
-    const v = Math.max(0, Number((document.getElementById("finAlVal_"+id)||{}).value)||0);
-    let d = Math.round(Number((document.getElementById("finAlDia_"+id)||{}).value)||5); d = Math.min(28, Math.max(1, d));
-    const { error } = await sb.from("mensalidades")
-      .upsert({ student_id:id, professional_id:ME.id, valor:v, dia_venc:d }, { onConflict:"student_id" });
-    if(error){ piikAlert("Não consegui salvar: "+error.message); return; }
-    FIN_AL.mens = { student_id:id, valor:v, dia_venc:d };
-    renderFinAluno(id);
-  }
+
   async function finAlunoPagar(id, pagar){
     if(contaCongelada()){ avisoCongelada(); return; }
     if(pagar){
-      const valor = Number((FIN_AL.mens||{}).valor)||0;
+      const valor = acValorMensal(FIN_AL.ativo);
       const { data, error } = await sb.from("pagamentos")
         .upsert({ student_id:id, professional_id:ME.id, competencia:FIN_AL.comp, valor, pago_em:new Date().toISOString() },
                 { onConflict:"student_id,competencia" }).select().single();
@@ -5127,6 +5276,131 @@
       FIN_AL.pags = FIN_AL.pags.filter(p=>p.competencia!==FIN_AL.comp);
     }
     renderFinAluno(id);
+  }
+
+  /* ----- Modal: Novo acordo ----- */
+  function abrirNovoAcordo(id){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    const base = FIN_AL.ativo || {};
+    const hoje = new Date().toISOString().slice(0,10);
+    const horBase = acHorariosArr(base);
+    const diasHTML = AC_DIAS.map(d=>{
+      const h = horBase.find(x=>x.d===d);
+      const on = !!h;
+      return `<div class="ac-dia${on?"":" off"}" id="acDia_${d}">
+        <input type="checkbox" ${on?"checked":""} onchange="acToggleDia('${d}',this.checked)">
+        <span class="dn">${d}</span>
+        <input type="time" value="${on?esc(h.h):"07:00"}" ${on?"":"disabled"} id="acHora_${d}">
+      </div>`;
+    }).join("");
+    const modeloAula = base.modelo==="aula";
+    const o = document.createElement("div"); o.className="modal-ov"; o.id="acOv";
+    o.innerHTML = `<div class="modal-cx" style="max-width:520px;text-align:left;max-height:88vh;overflow:auto">
+      <h3 style="margin:0 0 4px">Novo acordo</h3>
+      <p class="meta-sm" style="margin:0 0 16px">O acordo anterior vira histórico. O aluno recebe o novo acordo no app dele para dar ciência.</p>
+      <div class="ac-form">
+        <div class="ac-frow">
+          <div class="ac-fld"><label>Modelo de cobrança</label>
+            <span class="ac-seg"><button type="button" class="${modeloAula?"":"on"}" id="acMod_mensal" onclick="acSetModelo('mensal')">Mensal</button><button type="button" class="${modeloAula?"on":""}" id="acMod_aula" onclick="acSetModelo('aula')">Por aula</button></span>
+          </div>
+          <div class="ac-fld"><label id="acValLbl">${modeloAula?"Valor por aula (R$)":"Mensalidade (R$)"}</label>
+            <input type="number" step="0.01" min="0" id="acValor" value="${base.valor!=null?base.valor:""}" oninput="acRecalcEst()" placeholder="0,00"></div>
+          <div class="ac-fld"><label>Vencimento (dia)</label>
+            <input type="number" min="1" max="28" id="acDiaVenc" value="${base.dia_venc||5}"></div>
+        </div>
+        <div class="ac-frow">
+          <div class="ac-fld"><label>Forma de pagamento</label>
+            <select id="acForma">
+              ${["pix","dinheiro","cartao","transferencia","boleto"].map(f=>`<option value="${f}" ${base.forma_pgto===f?"selected":""}>${acFormaLabel(f)}</option>`).join("")}
+            </select></div>
+          <div class="ac-fld"><label>Vigente desde</label>
+            <input type="date" id="acInicio" value="${base.data_inicio? String(base.data_inicio).slice(0,10) : hoje}"></div>
+        </div>
+        <div class="ac-fld"><label>Aulas na semana (presencial)</label>
+          <div class="ac-dias">${diasHTML}</div></div>
+        <div class="ac-est" id="acEst" style="display:${modeloAula?"block":"none"}"></div>
+        <div class="ac-fld"><label>Observações (opcional)</label>
+          <input type="text" id="acObs" value="${base.obs?esc(base.obs):""}" placeholder="ex.: inclui avaliação a cada 3 meses"></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn" style="flex:1" onclick="salvarNovoAcordo('${id}')">Salvar acordo</button>
+          <button class="btn ghost" style="flex:0 0 auto" onclick="document.getElementById('acOv').remove()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(o);
+    o.addEventListener("click",e=>{ if(e.target===o) o.remove(); });
+    acRecalcEst();
+  }
+  function acSetModelo(m){
+    const bm=document.getElementById("acMod_mensal"), ba=document.getElementById("acMod_aula");
+    if(!bm||!ba) return;
+    bm.classList.toggle("on", m==="mensal"); ba.classList.toggle("on", m==="aula");
+    const lbl=document.getElementById("acValLbl"); if(lbl) lbl.textContent = m==="aula"?"Valor por aula (R$)":"Mensalidade (R$)";
+    const est=document.getElementById("acEst"); if(est) est.style.display = m==="aula"?"block":"none";
+    acRecalcEst();
+  }
+  function acToggleDia(d, on){
+    const row=document.getElementById("acDia_"+d); const inp=document.getElementById("acHora_"+d);
+    if(row) row.classList.toggle("off", !on);
+    if(inp) inp.disabled = !on;
+    acRecalcEst();
+  }
+  function acColetaHorarios(){
+    const arr=[];
+    AC_DIAS.forEach(d=>{
+      const cb=document.querySelector(`#acDia_${d} input[type=checkbox]`);
+      const hr=document.getElementById("acHora_"+d);
+      if(cb && cb.checked) arr.push({ d, h:(hr&&hr.value)||"07:00" });
+    });
+    return arr;
+  }
+  function acRecalcEst(){
+    const est=document.getElementById("acEst"); if(!est) return;
+    const aula = document.getElementById("acMod_aula") && document.getElementById("acMod_aula").classList.contains("on");
+    if(!aula){ est.style.display="none"; return; }
+    const v = Number((document.getElementById("acValor")||{}).value)||0;
+    const n = acColetaHorarios().length;
+    est.style.display="block";
+    est.innerHTML = n && v
+      ? `💡 ${fmtBRL(v)} × ${n} ${n===1?"aula":"aulas"}/semana ≈ <b>${fmtBRL(Math.round(v*n*4.33*100)/100)}/mês</b>`
+      : `💡 Marque os dias de aula e informe o valor por aula para ver a estimativa mensal.`;
+  }
+  async function salvarNovoAcordo(id){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    const modelo = (document.getElementById("acMod_aula") && document.getElementById("acMod_aula").classList.contains("on")) ? "aula" : "mensal";
+    const valor = Math.max(0, Number((document.getElementById("acValor")||{}).value)||0);
+    if(!valor){ piikAlert("Informe o valor do acordo."); return; }
+    let dia = Math.round(Number((document.getElementById("acDiaVenc")||{}).value)||5); dia=Math.min(28,Math.max(1,dia));
+    const forma = (document.getElementById("acForma")||{}).value || "pix";
+    const inicio = (document.getElementById("acInicio")||{}).value || new Date().toISOString().slice(0,10);
+    const horarios = acColetaHorarios();
+    const obs = ((document.getElementById("acObs")||{}).value||"").trim();
+    const aulas_semana = modelo==="aula" ? horarios.length : null;
+
+    const btnOv = document.getElementById("acOv");
+    // encerra o acordo ativo atual
+    if(FIN_AL.ativo){
+      const { error:e1 } = await sb.from("acordos").update({ ativo:false, encerrado_em:new Date().toISOString() }).eq("id", FIN_AL.ativo.id);
+      if(e1){ piikAlert("Não consegui encerrar o acordo anterior: "+e1.message); return; }
+    }
+    // insere o novo
+    const { data:novo, error:e2 } = await sb.from("acordos").insert({
+      professional_id:ME.id, student_id:id, modelo, valor, aulas_semana,
+      dia_venc:dia, forma_pgto:forma, data_inicio:inicio, horarios, obs:obs||null,
+      ativo:true, aceito:false
+    }).select().single();
+    if(e2){ piikAlert("Não consegui salvar o acordo: "+e2.message); return; }
+    // espelha valor mensal efetivo + vencimento em mensalidades (compat. com cobrança existente)
+    await sb.from("mensalidades").upsert(
+      { student_id:id, professional_id:ME.id, valor:acValorMensal(novo), dia_venc:dia },
+      { onConflict:"student_id" });
+    if(btnOv) btnOv.remove();
+    // recarrega estado
+    FIN_AL.acordos.unshift(novo);
+    if(FIN_AL.ativo){ const old=FIN_AL.acordos.find(a=>a.id===FIN_AL.ativo.id); if(old){ old.ativo=false; old.encerrado_em=new Date().toISOString(); } }
+    FIN_AL.ativo = novo;
+    renderFinAluno(id);
+    piikAlert({ emoji:"🤝", titulo:"Acordo salvo!", msg:"O aluno vai ver o novo acordo no app dele e poderá dar <b>ciência</b>." });
   }
 
   /* ---------- PROFISSIONAL: DESEMPENHO / RETENÇÃO ---------- */
