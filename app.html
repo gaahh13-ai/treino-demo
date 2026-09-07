@@ -6860,13 +6860,35 @@
   function setKanban(v){ KANBAN = v; MODO_EDICAO = false; renderDias(); }
   // abre o editor de um dia específico a partir do Kanban
   function editarDiaKanban(id){ KANBAN = false; FICHA_DIA = id; MODO_EDICAO = true; renderDias(); }
-  // remove um exercício direto do Kanban
-  async function excluirExKanban(exId){
+  // remove um exercício direto do Kanban — sem reconstruir a tela (mantém a rolagem parada)
+  async function excluirExKanban(exId, btn){
     if(contaCongelada()){ avisoCongelada(); return; }
     if(!(await piikConfirm({ titulo:"Remover exercício?", msg:"Este exercício sai do treino do aluno. Você pode adicionar de novo depois.", ok:"Remover", cancel:"Cancelar" }))) return;
     const { error } = await sb.from("ficha_exercicios").delete().eq("id", exId);
     if(error){ piikAlert("Erro ao remover: "+error.message); return; }
-    renderKanban();
+    const card = (btn && btn.closest) ? btn.closest(".kb-exc") : null;
+    const col = card ? card.closest(".kb-col") : null;
+    if(!card || !col){ renderKanban(); return; }   // fallback
+    const biset = card.closest(".kb-biset");
+    card.remove();
+    // se o bi-set ficou com um só, desfaz o quadro (deixa o card solto)
+    if(biset && biset.querySelectorAll(".kb-exc").length <= 1){
+      const rem = biset.querySelector(".kb-exc");
+      if(rem) biset.parentNode.insertBefore(rem, biset);
+      biset.remove();
+    }
+    // renumera os exercícios e atualiza a contagem da coluna
+    const cards = col.querySelectorAll(".kb-exc");
+    cards.forEach((c,i)=>{ const num=c.querySelector(".kb-num"); if(num) num.textContent = i+1; });
+    const sub = col.querySelector(".kb-cnt-sub"); if(sub) sub.textContent = `${cards.length} exercício${cards.length===1?"":"s"}`;
+    if(!cards.length){
+      const body = col.querySelector(".kb-body");
+      if(body && !body.querySelector(".kb-empty")){
+        const add = body.querySelector(".kb-add");
+        const e = document.createElement("div"); e.className="kb-empty"; e.textContent="Sem exercícios ainda.";
+        body.insertBefore(e, add || null);
+      }
+    }
   }
 
   // ---- passo inicial do treino: escolher nº de dias + prazo antes dos exercícios ----
@@ -6957,7 +6979,7 @@
           const info = [ esquemaPresc(x), (x.carga_alvo!=null?`${x.carga_alvo} kg`:""), (ultimo && x.descanso_seg!=null?`⏱ ${x.descanso_seg}s`:"") ].filter(Boolean);
           const chips = info.map((t,i)=>`<span class="kb-pc${i===0?" a":""}">${esc(t)}</span>`).join("");
           const clk = FICHA_READONLY ? "" : ` onclick="editarDiaKanban('${d.id}')"`;
-          const del = FICHA_READONLY ? "" : `<button class="kb-del" title="Remover exercício" onclick="event.stopPropagation();excluirExKanban('${x.id}')">✕</button>`;
+          const del = FICHA_READONLY ? "" : `<button class="kb-del" title="Remover exercício" onclick="event.stopPropagation();excluirExKanban('${x.id}',this)">✕</button>`;
           return `<div class="kb-exc${clic}"${clk}>
               <div class="kb-top"><span class="kb-num">${n}</span><span class="kb-nome">${esc(x.nome_cache||"Exercício")}</span>${del}</div>
               ${chips?`<div class="kb-pcs">${chips}</div>`:""}
