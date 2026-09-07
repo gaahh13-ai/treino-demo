@@ -115,6 +115,14 @@
   .panel{min-width:0}
   .sidebar{background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:18px;padding:10px;
            box-shadow:0 8px 22px rgba(180,90,140,.06);position:sticky;top:86px;display:flex;flex-direction:column;min-height:calc(100vh - 190px)}
+  #navMenu{display:flex;flex-direction:column;flex:1;min-height:0}
+  #railAlunos{display:flex;flex-direction:column;flex:1;min-height:0}
+  .rail-back{display:flex;align-items:center;gap:8px;font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:14px;color:var(--pink-deep);background:var(--pk-elev,#0f1116);border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;margin-bottom:12px}
+  .rail-back:hover{border-color:var(--pink-deep)}
+  .rail-tit{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:20px;margin:2px 4px 10px}
+  #railAlunos .grupos-bar{margin-bottom:10px}
+  #railAlunos #alunoSearch{display:block;margin-bottom:10px}
+  #railAlunos #alunosLista{flex:1;min-height:0;overflow-y:auto;max-height:none}
   .navitem{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
            padding:11px 12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--txt);cursor:pointer;text-align:left}
   .navitem:hover{background:var(--pk-surf2,#1d2027)}
@@ -847,6 +855,8 @@
   @media(max-width:760px){
     .shell{grid-template-columns:1fr}
     .sidebar{position:static;display:flex;flex-direction:row;min-height:0;gap:6px;overflow-x:auto;padding:8px;-webkit-overflow-scrolling:touch}
+    .sidebar.railmode{flex-direction:column;overflow-x:visible}
+    .sidebar.railmode #alunosLista{max-height:320px}
     .navitem{white-space:nowrap;padding:9px 12px;font-size:13px;width:auto}
     .form-grid{grid-template-columns:1fr}
   }
@@ -1428,7 +1438,10 @@
       <div class="role-chip chip-${role}">${rotulo}</div>
       <div id="vinculoBanner"></div>
       <div class="shell">
-        <aside class="sidebar">${itens}</aside>
+        <aside class="sidebar" id="sidebar">
+          <div id="navMenu">${itens}</div>
+          <div id="railAlunos" style="display:none"></div>
+        </aside>
         <section class="panel" id="panel"></section>
       </div>`;
     mostrar();
@@ -2006,6 +2019,7 @@
   }
   function go(id){
     VIEW = id;
+    if(id !== "alunos" && typeof voltarMenu === "function") voltarMenu();  // volta a barra pro menu ao sair dos alunos
     if(typeof pararDescanso==="function") pararDescanso();
     document.body.classList.remove("exec-modo");   // volta os botões do topo ao sair da execução
     MODO_FOCO = false;                              // sai do modo foco ao navegar
@@ -2029,7 +2043,7 @@
     else if(id === "perfil"){ p.innerHTML = viewPerfil(); }
     else if(id === "assinatura"){ p.innerHTML = viewAssinatura(); carregarMinhaAssinatura(); }
     else if(id === "admin"){ p.innerHTML = viewAdmin(); carregarAdmin(); }
-    else if(id === "alunos"){    if(PENDING_GRUPO===undefined) GRUPO_FILTRO=null; p.innerHTML = viewAlunos();    loadStudents(); }
+    else if(id === "alunos"){    if(PENDING_GRUPO===undefined) GRUPO_FILTRO=null; p.innerHTML = viewAlunos(); abrirRailAlunos(); loadStudents(); }
     else if(id === "grupos"){    p.innerHTML = viewGrupos(); carregarGruposView(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
@@ -2040,6 +2054,31 @@
     bannerCongelada();
     bannerVencimentoPix();
     window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  // barra esquerda em modo "drill-in": vira a lista de alunos (com voltar ao menu)
+  function abrirRailAlunos(){
+    const nav = document.getElementById("navMenu");
+    const rail = document.getElementById("railAlunos");
+    const sb = document.getElementById("sidebar");
+    if(!rail) return;
+    rail.innerHTML =
+      `<button class="rail-back" onclick="voltarMenu()">← Menu</button>
+       <div class="rail-tit">Meus alunos</div>
+       <div id="gruposBar" class="grupos-bar"></div>
+       <input id="alunoSearch" class="aluno-search" placeholder="🔍 Buscar aluno…" oninput="filtrarAlunos()">
+       <div id="alunosLista"><div class="empty">Carregando…</div></div>`;
+    if(nav) nav.style.display = "none";
+    rail.style.display = "flex";
+    if(sb) sb.classList.add("railmode");
+  }
+  function voltarMenu(){
+    const nav = document.getElementById("navMenu");
+    const rail = document.getElementById("railAlunos");
+    const sb = document.getElementById("sidebar");
+    if(rail){ rail.style.display = "none"; }
+    if(nav){ nav.style.display = "flex"; }
+    if(sb){ sb.classList.remove("railmode"); }
   }
 
   // pílula flutuante "treino em andamento" (aparece fora da tela de execução)
@@ -4303,23 +4342,11 @@
     if(btn) btn.setAttribute("aria-expanded", abrir ? "true" : "false");
   }
   function viewAlunos(){
-    return `<h2>Meus alunos</h2>
-      <div id="gruposBar" class="grupos-bar"></div>
-      <div class="alunos-layout">
-        <div class="det-wrap">
-          <section class="card aluno-detalhe" id="alunoDetalhe">
-            <div class="empty">👉 Selecione um aluno na lista ao lado para ver as opções.</div>
-          </section>
-          <div id="detHost"></div>
-        </div>
-        <aside class="alunos-col">
-          <div class="alunos-head">
-            <h3>Alunos</h3>
-            <button class="btn small ghost" title="Buscar aluno" onclick="toggleBuscaAluno()">🔍</button>
-          </div>
-          <input id="alunoSearch" class="aluno-search" style="display:none" placeholder="Buscar aluno…" oninput="filtrarAlunos()">
-          <div id="alunosLista"><div class="empty">Carregando…</div></div>
-        </aside>
+    return `<div class="det-wrap" style="margin-bottom:16px">
+        <section class="card aluno-detalhe" id="alunoDetalhe">
+          <div class="empty">👈 Escolha um aluno na lista à esquerda para ver os treinos, avaliações e mais.</div>
+        </section>
+        <div id="detHost"></div>
       </div>
 
       <div class="card" id="assessCard" style="display:none">
@@ -5426,7 +5453,7 @@
     // se o aluno selecionado ainda existe e está ativo, mantém o detalhe
     if(SELECTED_STUDENT && ativos.some(s=>s.id===SELECTED_STUDENT)) selecionarAluno(SELECTED_STUDENT);
     else if(SELECTED_STUDENT){ SELECTED_STUDENT=null; const d=document.getElementById("alunoDetalhe");
-      if(d) d.innerHTML = `<div class="empty">👉 Selecione um aluno na lista ao lado para ver as opções.</div>`; }
+      if(d) d.innerHTML = `<div class="empty">👈 Escolha um aluno na lista à esquerda para ver os treinos, avaliações e mais.</div>`; }
 
     const arq = document.getElementById("archivedBox");
     if(arq) arq.innerHTML = arqs.length
