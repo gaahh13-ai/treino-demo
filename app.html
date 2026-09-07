@@ -211,12 +211,19 @@
   .ac-seg button.on{background:var(--pink,#7fff00);color:var(--on-accent,#0a0b0d)}
   .ac-est{font-size:12.5px;color:var(--muted);background:var(--pk-elev);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
   .ac-est b{color:var(--pink-deep)}
-  .ac-dias{display:flex;flex-wrap:wrap;gap:8px}
-  .ac-dia{display:flex;align-items:center;gap:6px;background:var(--pk-elev);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-  .ac-dia .dn{font-size:12px;font-weight:800;width:30px}
-  .ac-dia input[type=time]{background:transparent;border:none;color:var(--txt);font-size:13px;font-weight:700;padding:2px}
-  .ac-dia input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink,#7fff00)}
-  .ac-dia.off{opacity:.45}
+  .ac-dias{display:flex;flex-direction:column;gap:8px}
+  .ac-dia2{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--pk-elev);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .ac-dia2.off{opacity:.5}
+  .ac-diahead{display:flex;align-items:center;gap:7px;min-width:66px;cursor:pointer;flex:0 0 auto}
+  .ac-diahead input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink,#7fff00)}
+  .ac-dia2 .dn{font-size:13px;font-weight:800}
+  .ac-horas{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+  .ac-hslot{display:inline-flex;align-items:center;gap:2px;background:var(--pk-surf2);border:1px solid var(--line);border-radius:8px;padding:2px 4px 2px 8px}
+  .ac-hslot .ac-time{background:transparent;border:none;color:var(--txt);font-size:13px;font-weight:700;padding:3px 0;width:auto}
+  .ac-remh{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:11px;padding:0 5px;line-height:1}
+  .ac-remh:hover{color:#ff7a6b}
+  .ac-addh{border:1px dashed var(--line);background:transparent;color:var(--muted);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;flex:0 0 auto}
+  .ac-dia2.off .ac-horas,.ac-dia2.off .ac-addh{display:none}
   /* card do aluno (student side) */
   .meu-acordo .ma-line{font-size:14px;margin-top:4px}
   .meu-acordo .ma-line b{color:var(--pink-deep)}
@@ -2214,9 +2221,9 @@
                  : a.modelo==="treino" ? `<b>${fmtBRL(a.valor)}</b> por treino`
                  : `<b>${fmtBRL(a.valor)}</b>/mês`;
     const venc = a.modelo==="treino" ? "" : ` · vence dia ${a.dia_venc||5}`;
-    const horas = acHorariosArr(a);
-    const aulas = horas.length
-      ? `<div class="ma-aulas">Aulas: ${horas.map(h=>`${esc(h.d)} ${esc(h.h)}`).join(" · ")}</div>` : "";
+    const grps = acHorGrupos(a);
+    const aulas = grps.length
+      ? `<div class="ma-aulas">Aulas: ${grps.map(g=>`${esc(g.d)} ${g.horas.map(esc).join("/")}`).join(" · ")}</div>` : "";
     let cobsBox = "";
     if(a.modelo==="treino" && MEU_COBS.length){
       cobsBox = `<div class="ma-aulas" style="margin-top:10px"><b>Cobranças em aberto:</b></div>` +
@@ -5170,13 +5177,18 @@
   function acFormaLabel(f){ return ({pix:"Pix",dinheiro:"Dinheiro",cartao:"Cartão",transferencia:"Transferência",boleto:"Boleto"}[f]) || (f? esc(f) : "—"); }
   function acHorariosArr(a){ return (a && Array.isArray(a.horarios)) ? a.horarios : []; }
   const AC_WD = {Dom:0,Seg:1,Ter:2,Qua:3,Qui:4,Sex:5,"Sáb":6};
-  // quantas aulas caem num mês (conta cada dia-da-semana escolhido nas datas reais do mês)
+  // agrupa horários por dia (na ordem da semana), cada dia com sua lista de horas
+  function acHorGrupos(a){
+    const map={}; acHorariosArr(a).forEach(h=>{ (map[h.d]=map[h.d]||[]).push(h.h); });
+    return AC_DIAS.filter(d=>map[d]).map(d=>({ d, horas: map[d].slice().sort() }));
+  }
+  // quantas aulas caem num mês — conta cada horário nas datas reais do mês (vários horários no mesmo dia contam cada um)
   function acAulasNoMes(a, comp){
-    const dias = acHorariosArr(a).map(h=>AC_WD[h.d]).filter(x=>x!=null);
-    if(!dias.length) return 0;
+    const perWd={}; acHorariosArr(a).forEach(h=>{ const wd=AC_WD[h.d]; if(wd!=null) perWd[wd]=(perWd[wd]||0)+1; });
+    if(!Object.keys(perWd).length) return 0;
     const [y,m] = comp.split("-").map(Number);
     const last = new Date(y, m, 0).getDate();
-    let n=0; for(let d=1; d<=last; d++){ if(dias.includes(new Date(y, m-1, d).getDay())) n++; }
+    let n=0; for(let d=1; d<=last; d++){ const wd=new Date(y, m-1, d).getDay(); if(perWd[wd]) n+=perWd[wd]; }
     return n;
   }
   // valor a cobrar num mês específico (mensal = valor fixo; por aula = valor × aulas reais do mês)
@@ -5223,8 +5235,9 @@
       const vSuf = a.modelo==="aula" ? ` <span class="meta-sm" style="margin:0">/ aula</span>`
                  : ehTreino ? ` <span class="meta-sm" style="margin:0">/ treino</span>` : "";
       const vLabel = `<span class="v big">${fmtBRL(a.valor)}</span>${vSuf}`;
-      const aulas = acHorariosArr(a).length
-        ? `<div class="ac-aulas"><span class="meta-sm" style="margin:0;font-weight:700">Aulas:</span>${acHorariosArr(a).map(h=>`<span class="achip">${esc(h.d)} <span class="d">${esc(h.h)}</span></span>`).join("")}</div>`
+      const grpsCard = acHorGrupos(a);
+      const aulas = grpsCard.length
+        ? `<div class="ac-aulas"><span class="meta-sm" style="margin:0;font-weight:700">Aulas:</span>${grpsCard.map(g=>`<span class="achip">${esc(g.d)} <span class="d">${g.horas.map(esc).join(" · ")}</span></span>`).join("")}</div>`
         : "";
       const estAula = a.modelo==="aula"
         ? `<div class="ac-obs">💡 Cobrança por aula: cada mês soma as aulas que caem no mês (veja em <b>Este mês</b>).</div>`
@@ -5442,14 +5455,15 @@
     if(contaCongelada()){ avisoCongelada(); return; }
     const base = FIN_AL.ativo || {};
     const hoje = new Date().toISOString().slice(0,10);
-    const horBase = acHorariosArr(base);
+    const grpBase = {}; acHorariosArr(base).forEach(h=>{ (grpBase[h.d]=grpBase[h.d]||[]).push(h.h); });
     const diasHTML = AC_DIAS.map(d=>{
-      const h = horBase.find(x=>x.d===d);
-      const on = !!h;
-      return `<div class="ac-dia${on?"":" off"}" id="acDia_${d}">
-        <input type="checkbox" ${on?"checked":""} onchange="acToggleDia('${d}',this.checked)">
-        <span class="dn">${d}</span>
-        <input type="time" value="${on?esc(h.h):"07:00"}" ${on?"":"disabled"} id="acHora_${d}">
+      const horas = (grpBase[d]||[]).slice().sort();
+      const on = horas.length>0;
+      const slots = (on?horas:["07:00"]).map(h=>acHoraSlotHTML(h)).join("");
+      return `<div class="ac-dia2${on?"":" off"}" id="acDia_${d}">
+        <label class="ac-diahead"><input type="checkbox" ${on?"checked":""} onchange="acToggleDia('${d}',this.checked)"><span class="dn">${d}</span></label>
+        <div class="ac-horas" id="acHoras_${d}">${slots}</div>
+        <button type="button" class="ac-addh" onclick="acAddHorario('${d}')">＋ horário</button>
       </div>`;
     }).join("");
     const m0 = base.modelo || "mensal";
@@ -5481,7 +5495,7 @@
           <div class="ac-fld"><label>Vigente desde</label>
             <input type="date" id="acInicio" value="${base.data_inicio? String(base.data_inicio).slice(0,10) : hoje}"></div>
         </div>
-        <div class="ac-fld" id="acAulasWrap" style="display:${m0==="aula"?"flex":"none"}"><label>Aulas na semana (presencial)</label>
+        <div class="ac-fld" id="acAulasWrap" style="display:${m0==="treino"?"none":"flex"}"><label>Dias e horários das aulas (presencial) <span class="meta-sm" style="margin:0;font-weight:400">— opcional, pode ter mais de um horário no dia</span></label>
           <div class="ac-dias">${diasHTML}</div></div>
         <div class="ac-est" id="acEst" style="display:${m0==="aula"?"block":"none"}"></div>
         <div class="ac-fld"><label>Observações (opcional)</label>
@@ -5505,23 +5519,40 @@
     ["mensal","aula","treino"].forEach(k=>{ const b=document.getElementById("acMod_"+k); if(b) b.classList.toggle("on", k===m); });
     const lbl=document.getElementById("acValLbl"); if(lbl) lbl.textContent = m==="aula"?"Valor por aula (R$)":(m==="treino"?"Valor por treino (R$)":"Mensalidade (R$)");
     const venc=document.getElementById("acVencWrap"); if(venc) venc.style.display = m==="treino"?"none":"flex";
-    const aulasW=document.getElementById("acAulasWrap"); if(aulasW) aulasW.style.display = m==="aula"?"flex":"none";
+    const aulasW=document.getElementById("acAulasWrap"); if(aulasW) aulasW.style.display = m==="treino"?"none":"flex";
     const est=document.getElementById("acEst"); if(est) est.style.display = m==="aula"?"block":"none";
     const hint=document.getElementById("acModHint"); if(hint) hint.textContent = m==="treino"?"Aluno online — cobrança esporádica, uma por treino entregue.":(m==="aula"?"Presencial — cada mês soma as aulas que caem no mês.":"Recorrente — valor fixo todo mês.");
     acRecalcEst();
   }
+  function acHoraSlotHTML(h){
+    return `<span class="ac-hslot"><input type="time" class="ac-time" value="${esc(h||"07:00")}" onchange="acRecalcEst()"><button type="button" class="ac-remh" onclick="acRemHorario(this)" title="Remover horário">✕</button></span>`;
+  }
   function acToggleDia(d, on){
-    const row=document.getElementById("acDia_"+d); const inp=document.getElementById("acHora_"+d);
-    if(row) row.classList.toggle("off", !on);
-    if(inp) inp.disabled = !on;
+    const row=document.getElementById("acDia_"+d); if(!row) return;
+    row.classList.toggle("off", !on);
+    if(on){ const cont=document.getElementById("acHoras_"+d); if(cont && !cont.querySelector(".ac-time")) cont.insertAdjacentHTML("beforeend", acHoraSlotHTML("07:00")); }
+    acRecalcEst();
+  }
+  function acAddHorario(d){
+    const row=document.getElementById("acDia_"+d); if(!row) return;
+    const cb=row.querySelector("input[type=checkbox]"); if(cb && !cb.checked){ cb.checked=true; row.classList.remove("off"); }
+    const cont=document.getElementById("acHoras_"+d); if(cont) cont.insertAdjacentHTML("beforeend", acHoraSlotHTML("07:00"));
+    acRecalcEst();
+  }
+  function acRemHorario(btn){
+    const slot=btn.closest(".ac-hslot"); const cont=slot&&slot.parentElement; if(!cont) return;
+    if(cont.querySelectorAll(".ac-hslot").length<=1){
+      const row=cont.closest(".ac-dia2"); const cb=row&&row.querySelector("input[type=checkbox]");
+      if(cb) cb.checked=false; if(row) row.classList.add("off");
+    }else{ slot.remove(); }
     acRecalcEst();
   }
   function acColetaHorarios(){
     const arr=[];
     AC_DIAS.forEach(d=>{
-      const cb=document.querySelector(`#acDia_${d} input[type=checkbox]`);
-      const hr=document.getElementById("acHora_"+d);
-      if(cb && cb.checked) arr.push({ d, h:(hr&&hr.value)||"07:00" });
+      const row=document.getElementById("acDia_"+d); if(!row) return;
+      const cb=row.querySelector("input[type=checkbox]"); if(!cb || !cb.checked) return;
+      row.querySelectorAll(".ac-time").forEach(inp=>{ arr.push({ d, h: inp.value||"07:00" }); });
     });
     return arr;
   }
