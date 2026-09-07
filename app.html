@@ -193,6 +193,13 @@
   .ac-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:640px){.ac-grid2{grid-template-columns:1fr}}
   .ac-empty{border:1px dashed var(--line);border-radius:14px;padding:22px 16px;text-align:center;color:var(--muted);font-size:13.5px}
+  /* cobranças por treino */
+  .cob-lista{display:flex;flex-direction:column;gap:9px}
+  .cob-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--pk-elev);border:1px solid var(--line);border-radius:11px;padding:11px 13px;flex-wrap:wrap}
+  .cob-desc{font-size:14px;font-weight:700}
+  .cob-acoes{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .cob-x{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;flex:0 0 auto}
+  .cob-x:hover{color:#ff7a6b;border-color:#ff7a6b}
   /* form novo acordo */
   .ac-form{display:flex;flex-direction:column;gap:14px}
   .ac-frow{display:flex;gap:12px;flex-wrap:wrap}
@@ -2176,7 +2183,7 @@
   }
 
   /* ---------- ALUNO: SEU ACORDO COM O PERSONAL ---------- */
-  let MEU_ACORDO = null;
+  let MEU_ACORDO = null, MEU_COBS = [];
   async function carregarMeuAcordo(){
     const card = document.getElementById("meuAcordoCard");
     if(!card) return;
@@ -2188,6 +2195,14 @@
     }catch(e){ card.style.display="none"; return; }   // tabela ausente: ignora
     MEU_ACORDO = a || null;
     if(!a){ card.style.display="none"; return; }
+    MEU_COBS = [];
+    if(a.modelo==="treino"){
+      try{
+        const { data:cobs } = await sb.from("cobrancas_aluno").select("*")
+          .eq("student_id", ME.id).eq("pago", false).order("criado_em",{ascending:false});
+        MEU_COBS = cobs || [];
+      }catch(e){ MEU_COBS = []; }
+    }
     renderMeuAcordo();
     card.style.display="";
   }
@@ -2195,20 +2210,27 @@
     const card = document.getElementById("meuAcordoCard");
     if(!card || !MEU_ACORDO) return;
     const a = MEU_ACORDO;
-    const valTxt = a.modelo==="aula"
-      ? `<b>${fmtBRL(a.valor)}</b> por aula`
-      : `<b>${fmtBRL(a.valor)}</b>/mês`;
+    const valTxt = a.modelo==="aula" ? `<b>${fmtBRL(a.valor)}</b> por aula`
+                 : a.modelo==="treino" ? `<b>${fmtBRL(a.valor)}</b> por treino`
+                 : `<b>${fmtBRL(a.valor)}</b>/mês`;
+    const venc = a.modelo==="treino" ? "" : ` · vence dia ${a.dia_venc||5}`;
     const horas = acHorariosArr(a);
     const aulas = horas.length
       ? `<div class="ma-aulas">Aulas: ${horas.map(h=>`${esc(h.d)} ${esc(h.h)}`).join(" · ")}</div>` : "";
+    let cobsBox = "";
+    if(a.modelo==="treino" && MEU_COBS.length){
+      cobsBox = `<div class="ma-aulas" style="margin-top:10px"><b>Cobranças em aberto:</b></div>` +
+        MEU_COBS.slice(0,6).map(c=>`<div class="ma-aulas" style="margin-top:4px">• ${esc(c.descricao||"Treino")} — <b style="color:var(--pink-deep)">${fmtBRL(c.valor)}</b>${c.vencimento?` (vence ${fmtDate(c.vencimento)})`:""}</div>`).join("");
+    }
     const cienciaBtn = a.aceito
       ? `<div class="ma-ciente">✓ Você deu ciência deste acordo em ${fmtDate(a.aceito_em)}</div>`
       : `<button class="btn" id="btnCiente" style="margin-top:12px" onclick="aceitarMeuAcordo()">✓ Estou ciente deste acordo</button>`;
     card.innerHTML = `
       <h3>🤝 Seu acordo com o personal</h3>
-      <div class="ma-line">${acModeloLabel(a)} · ${valTxt} · vence dia ${a.dia_venc||5} · ${acFormaLabel(a.forma_pgto)} · desde ${fmtDate(a.data_inicio||a.criado_em)}</div>
+      <div class="ma-line">${acModeloLabel(a)} · ${valTxt}${venc} · ${acFormaLabel(a.forma_pgto)} · desde ${fmtDate(a.data_inicio||a.criado_em)}</div>
       ${aulas}
       ${a.obs?`<div class="ma-aulas">📝 ${esc(a.obs)}</div>`:""}
+      ${cobsBox}
       ${cienciaBtn}`;
   }
   async function aceitarMeuAcordo(){
@@ -5137,14 +5159,14 @@
 
   /* ---------- FINANCEIRO POR ALUNO — ACORDOS VERSIONADOS ---------- */
   const AC_DIAS = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
-  let FIN_AL = { id:null, comp:null, ativo:null, acordos:[], pags:[] };
+  let FIN_AL = { id:null, comp:null, ativo:null, acordos:[], pags:[], cobs:[] };
   function statusFinComp(comp, dia, pago){
     if(pago) return "pago";
     const [y,mo] = comp.split("-").map(Number);
     const venc = new Date(y, mo-1, dia||5, 23,59,59);
     return Date.now() > venc.getTime() ? "atrasado" : "pendente";
   }
-  function acModeloLabel(a){ return (a && a.modelo==="aula") ? "Por aula" : "Mensal"; }
+  function acModeloLabel(a){ const m=a&&a.modelo; return m==="aula"?"Por aula":(m==="treino"?"Por treino":"Mensal"); }
   function acFormaLabel(f){ return ({pix:"Pix",dinheiro:"Dinheiro",cartao:"Cartão",transferencia:"Transferência",boleto:"Boleto"}[f]) || (f? esc(f) : "—"); }
   function acHorariosArr(a){ return (a && Array.isArray(a.horarios)) ? a.horarios : []; }
   const AC_WD = {Dom:0,Seg:1,Ter:2,Qua:3,Qui:4,Sex:5,"Sáb":6};
@@ -5179,6 +5201,10 @@
     FIN_AL.ativo = FIN_AL.acordos.find(a=>a.ativo) || null;
     const { data: pags } = await sb.from("pagamentos").select("*").eq("student_id", id).order("competencia",{ascending:false});
     FIN_AL.pags = pags || [];
+    try{
+      const { data: cobs } = await sb.from("cobrancas_aluno").select("*").eq("student_id", id).order("criado_em",{ascending:false});
+      FIN_AL.cobs = cobs || [];
+    }catch(e){ FIN_AL.cobs = []; }
     renderFinAluno(id);
   }
 
@@ -5192,14 +5218,18 @@
       const ciente = a.aceito
         ? `<span class="cchip ok">✓ Ciente em ${fmtDate(a.aceito_em)}</span>`
         : `<span class="cchip wait">⏳ Aguardando ciência do aluno</span>`;
-      const vLabel = a.modelo==="aula"
-        ? `<span class="v big">${fmtBRL(a.valor)}</span> <span class="meta-sm" style="margin:0">/ aula</span>`
-        : `<span class="v big">${fmtBRL(a.valor)}</span>`;
+      const ehTreino = a.modelo==="treino";
+      const valK = a.modelo==="aula" ? "Valor por aula" : (ehTreino ? "Valor por treino" : "Mensalidade");
+      const vSuf = a.modelo==="aula" ? ` <span class="meta-sm" style="margin:0">/ aula</span>`
+                 : ehTreino ? ` <span class="meta-sm" style="margin:0">/ treino</span>` : "";
+      const vLabel = `<span class="v big">${fmtBRL(a.valor)}</span>${vSuf}`;
       const aulas = acHorariosArr(a).length
         ? `<div class="ac-aulas"><span class="meta-sm" style="margin:0;font-weight:700">Aulas:</span>${acHorariosArr(a).map(h=>`<span class="achip">${esc(h.d)} <span class="d">${esc(h.h)}</span></span>`).join("")}</div>`
         : "";
       const estAula = a.modelo==="aula"
-        ? `<div class="ac-obs">💡 Cobrança por aula: cada mês soma as aulas que caem no mês (veja em <b>Este mês</b>).</div>` : "";
+        ? `<div class="ac-obs">💡 Cobrança por aula: cada mês soma as aulas que caem no mês (veja em <b>Este mês</b>).</div>`
+        : ehTreino ? `<div class="ac-obs">💡 Cobrança por treino (online): esporádica — lance uma cobrança a cada treino entregue em <b>Cobranças</b>.</div>` : "";
+      const vencItem = ehTreino ? "" : `<div class="ac-item"><span class="k">Vencimento</span><span class="v">todo dia ${a.dia_venc||5}</span></div>`;
       curHTML = `<div class="ac-sec ac-cur">
         <div class="ac-h">
           <div class="ac-t">🤝 Acordo atual</div>
@@ -5207,8 +5237,8 @@
         </div>
         <div class="ac-kv">
           <div class="ac-item"><span class="k">Modelo</span><span class="v">${acModeloLabel(a)}</span></div>
-          <div class="ac-item"><span class="k">${a.modelo==="aula"?"Valor por aula":"Mensalidade"}</span>${vLabel}</div>
-          <div class="ac-item"><span class="k">Vencimento</span><span class="v">todo dia ${a.dia_venc||5}</span></div>
+          <div class="ac-item"><span class="k">${valK}</span>${vLabel}</div>
+          ${vencItem}
           <div class="ac-item"><span class="k">Pagamento</span><span class="v">${acFormaLabel(a.forma_pgto)}</span></div>
           <div class="ac-item"><span class="k">Vigente desde</span><span class="v">${fmtDate(a.data_inicio||a.criado_em)}</span></div>
         </div>
@@ -5220,55 +5250,71 @@
         <button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Definir acordo</button></div>`;
     }
 
-    // ----- Este mês -----
-    const dia = a ? (a.dia_venc||5) : 5;
-    const comp = FIN_AL.comp;
-    const pagComp = FIN_AL.pags.find(p=>p.competencia===comp);
-    const st = statusFinComp(comp, dia, !!pagComp);
-    const chip = st==="pago" ? `<span class="fin-tag pg">Pago${pagComp?` · ${fmtBRL(pagComp.valor)}`:""}</span>`
-               : st==="atrasado" ? `<span class="fin-tag at">Em atraso · vence ${String(dia).padStart(2,"0")}/${comp.split("-")[1]}</span>`
-               : `<span class="fin-tag pe">Pendente · vence ${String(dia).padStart(2,"0")}/${comp.split("-")[1]}</span>`;
-    const acao = pagComp
-      ? `<button class="btn ghost small" onclick="finAlunoPagar('${id}',false)">Desfazer</button>`
-      : (a ? `<button class="btn small" onclick="finAlunoPagar('${id}',true)">Registrar pagamento</button>` : "");
-    // valor a cobrar neste mês (só aparece se ainda não foi pago; se pago o chip já mostra o valor)
-    let valLinha = "";
-    if(a && !pagComp){
-      const vMes = acValorMes(a, comp);
-      valLinha = a.modelo==="aula"
-        ? `<div class="ac-obs" style="margin-top:10px"><b style="color:var(--pink-deep)">${fmtBRL(vMes)}</b> neste mês · ${acAulasNoMes(a,comp)} aula(s) × ${fmtBRL(a.valor)}</div>`
-        : `<div class="ac-obs" style="margin-top:10px"><b style="color:var(--pink-deep)">${fmtBRL(vMes)}</b> neste mês</div>`;
-    }
-    const mesHTML = `<div class="ac-sec">
-      <div class="ac-t" style="margin-bottom:12px">💵 Este mês</div>
-      <div class="fin-al-mes">
-        <button class="chev" onclick="finAlunoMes('${id}',-1)">‹</button>
-        <span class="fin-al-mesnome">${compLabel(comp)}</span>
-        <button class="chev" onclick="finAlunoMes('${id}',1)">›</button>
-        ${chip}${acao}
-      </div>
-      ${valLinha}
-    </div>`;
+    const ehTreinoAtivo = a && a.modelo==="treino";
 
-    // ----- Histórico de acordos + Últimos pagamentos -----
+    // ----- Bloco central: "Este mês" (mensal/aula) OU "Cobranças" (por treino) -----
+    let centralHTML;
+    if(ehTreinoAtivo){
+      centralHTML = renderCobsSection(id);
+    }else{
+      const dia = a ? (a.dia_venc||5) : 5;
+      const comp = FIN_AL.comp;
+      const pagComp = FIN_AL.pags.find(p=>p.competencia===comp);
+      const st = statusFinComp(comp, dia, !!pagComp);
+      const chip = st==="pago" ? `<span class="fin-tag pg">Pago${pagComp?` · ${fmtBRL(pagComp.valor)}`:""}</span>`
+                 : st==="atrasado" ? `<span class="fin-tag at">Em atraso · vence ${String(dia).padStart(2,"0")}/${comp.split("-")[1]}</span>`
+                 : `<span class="fin-tag pe">Pendente · vence ${String(dia).padStart(2,"0")}/${comp.split("-")[1]}</span>`;
+      const acao = pagComp
+        ? `<button class="btn ghost small" onclick="finAlunoPagar('${id}',false)">Desfazer</button>`
+        : (a ? `<button class="btn small" onclick="finAlunoPagar('${id}',true)">Registrar pagamento</button>` : "");
+      let valLinha = "";
+      if(a && !pagComp){
+        const vMes = acValorMes(a, comp);
+        valLinha = a.modelo==="aula"
+          ? `<div class="ac-obs" style="margin-top:10px"><b style="color:var(--pink-deep)">${fmtBRL(vMes)}</b> neste mês · ${acAulasNoMes(a,comp)} aula(s) × ${fmtBRL(a.valor)}</div>`
+          : `<div class="ac-obs" style="margin-top:10px"><b style="color:var(--pink-deep)">${fmtBRL(vMes)}</b> neste mês</div>`;
+      }
+      centralHTML = `<div class="ac-sec">
+        <div class="ac-t" style="margin-bottom:12px">💵 Este mês</div>
+        <div class="fin-al-mes">
+          <button class="chev" onclick="finAlunoMes('${id}',-1)">‹</button>
+          <span class="fin-al-mesnome">${compLabel(comp)}</span>
+          <button class="chev" onclick="finAlunoMes('${id}',1)">›</button>
+          ${chip}${acao}
+        </div>
+        ${valLinha}
+      </div>`;
+    }
+
+    // ----- Histórico de acordos + (Últimos pagamentos OU Últimas cobranças) -----
     const antigos = FIN_AL.acordos.filter(x=>!x.ativo);
     const histAc = antigos.length
       ? antigos.map(x=>{
-          const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : `${fmtBRL(x.valor)}/mês`;
+          const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : (x.modelo==="treino" ? `${fmtBRL(x.valor)}/treino` : `${fmtBRL(x.valor)}/mês`);
           const ini = fmtDate(x.data_inicio||x.criado_em);
           const fim = x.encerrado_em ? fmtDate(x.encerrado_em) : "—";
           return `<div class="fin-hist-row"><span><b>${per}</b> · ${acFormaLabel(x.forma_pgto)}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
         }).join("")
       : `<div class="meta-sm">Nenhum acordo anterior.</div>`;
-    const histPg = FIN_AL.pags.length
-      ? FIN_AL.pags.slice(0,8).map(p=>`<div class="fin-hist-row"><span>${compLabel(p.competencia)}</span><span class="fin-tag pg">Pago · ${fmtBRL(p.valor)}</span></div>`).join("")
-      : `<div class="meta-sm">Nenhum pagamento registrado ainda.</div>`;
+    let col2;
+    if(ehTreinoAtivo){
+      const pagosCob = FIN_AL.cobs.filter(c=>c.pago);
+      const histCob = pagosCob.length
+        ? pagosCob.slice(0,8).map(c=>`<div class="fin-hist-row"><span>${esc(c.descricao||"Treino")}</span><span class="fin-tag pg">Pago · ${fmtBRL(c.valor)}</span></div>`).join("")
+        : `<div class="meta-sm">Nenhuma cobrança paga ainda.</div>`;
+      col2 = `<div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">🧾 Cobranças pagas</div><div class="fin-al-hist" style="border:none;padding:0">${histCob}</div></div>`;
+    }else{
+      const histPg = FIN_AL.pags.length
+        ? FIN_AL.pags.slice(0,8).map(p=>`<div class="fin-hist-row"><span>${compLabel(p.competencia)}</span><span class="fin-tag pg">Pago · ${fmtBRL(p.valor)}</span></div>`).join("")
+        : `<div class="meta-sm">Nenhum pagamento registrado ainda.</div>`;
+      col2 = `<div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">🧾 Últimos pagamentos</div><div class="fin-al-hist" style="border:none;padding:0">${histPg}</div></div>`;
+    }
     const gridHTML = `<div class="ac-grid2">
       <div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">📜 Histórico de acordos</div><div class="fin-al-hist" style="border:none;padding:0">${histAc}</div></div>
-      <div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">🧾 Últimos pagamentos</div><div class="fin-al-hist" style="border:none;padding:0">${histPg}</div></div>
+      ${col2}
     </div>`;
 
-    el.innerHTML = `<div class="acordo-wrap">${curHTML}${mesHTML}${gridHTML}</div>`;
+    el.innerHTML = `<div class="acordo-wrap">${curHTML}${centralHTML}${gridHTML}</div>`;
   }
 
   function finAlunoMes(id, delta){
@@ -5296,6 +5342,101 @@
     renderFinAluno(id);
   }
 
+  /* ----- COBRANÇAS POR TREINO (esporádicas, aluno online) ----- */
+  function _cobStatus(c){
+    if(c.pago) return "pago";
+    if(c.vencimento){ const v=new Date(c.vencimento+"T23:59:59"); if(Date.now()>v.getTime()) return "atrasado"; }
+    return "pendente";
+  }
+  function renderCobsSection(id){
+    const cobs = FIN_AL.cobs || [];
+    const abertas = cobs.filter(c=>!c.pago);
+    const totalAberto = abertas.reduce((s,c)=>s+(Number(c.valor)||0),0);
+    const linhas = cobs.length
+      ? cobs.slice(0,12).map(c=>{
+          const stt=_cobStatus(c);
+          const chip = stt==="pago" ? `<span class="fin-tag pg">Pago</span>`
+                     : stt==="atrasado" ? `<span class="fin-tag at">Em atraso</span>`
+                     : `<span class="fin-tag pe">Pendente</span>`;
+          const quando = c.vencimento ? `vence ${fmtDate(c.vencimento)}` : fmtDate(c.criado_em);
+          const acaoBtn = c.pago
+            ? `<button class="btn ghost small" onclick="cobPagar('${id}','${c.id}',false)">Desfazer</button>`
+            : `<button class="btn small" onclick="cobPagar('${id}','${c.id}',true)">Registrar pagamento</button>`;
+          return `<div class="cob-row">
+            <div class="cob-info"><div class="cob-desc">${esc(c.descricao||"Treino")}</div>
+              <div class="meta-sm" style="margin:2px 0 0">${fmtBRL(c.valor)} · ${quando}</div></div>
+            <div class="cob-acoes">${chip}${acaoBtn}
+              <button class="cob-x" title="Excluir cobrança" onclick="cobExcluir('${id}','${c.id}')">✕</button></div>
+          </div>`;
+        }).join("")
+      : `<div class="meta-sm">Nenhuma cobrança lançada ainda. Lance uma a cada treino entregue.</div>`;
+    const resumo = abertas.length ? `<span class="cchip wait">${abertas.length} em aberto · ${fmtBRL(totalAberto)}</span>` : "";
+    return `<div class="ac-sec">
+      <div class="ac-h" style="margin-bottom:12px">
+        <div class="ac-t">💪 Cobranças por treino</div>
+        <div class="ac-hactions">${resumo}<button class="btn small" onclick="abrirNovaCobranca('${id}')">＋ Nova cobrança</button></div>
+      </div>
+      <div class="cob-lista">${linhas}</div>
+    </div>`;
+  }
+  function abrirNovaCobranca(id){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    const a = FIN_AL.ativo || {};
+    const valBase = a.valor!=null ? a.valor : "";
+    const o=document.createElement("div"); o.className="modal-ov"; o.id="cobOv";
+    o.innerHTML = `<div class="modal-cx" style="max-width:440px;text-align:left">
+      <h3 style="margin:0 0 4px">Nova cobrança</h3>
+      <p class="meta-sm" style="margin:0 0 16px">Uma cobrança avulsa — normalmente uma por treino entregue.</p>
+      <div class="ac-form">
+        <div class="ac-fld"><label>Descrição</label>
+          <input type="text" id="cobDesc" placeholder="ex.: Treino de hipertrofia — 4 semanas"></div>
+        <div class="ac-frow">
+          <div class="ac-fld"><label>Valor (R$)</label>
+            <input type="number" step="0.01" min="0" id="cobValor" value="${valBase}" placeholder="0,00"></div>
+          <div class="ac-fld"><label>Vencimento (opcional)</label>
+            <input type="date" id="cobVenc"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn" style="flex:1" onclick="salvarNovaCobranca('${id}')">Lançar cobrança</button>
+          <button class="btn ghost" style="flex:0 0 auto" onclick="document.getElementById('cobOv').remove()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(o);
+    o.addEventListener("click",e=>{ if(e.target===o) o.remove(); });
+  }
+  async function salvarNovaCobranca(id){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    const valor = Math.max(0, Number((document.getElementById("cobValor")||{}).value)||0);
+    if(!valor){ piikAlert("Informe o valor da cobrança."); return; }
+    const descricao = ((document.getElementById("cobDesc")||{}).value||"").trim() || "Treino";
+    const venc = (document.getElementById("cobVenc")||{}).value || null;
+    const { data:nova, error } = await sb.from("cobrancas_aluno").insert({
+      professional_id:ME.id, student_id:id, acordo_id:(FIN_AL.ativo?FIN_AL.ativo.id:null),
+      descricao, valor, vencimento:venc, pago:false
+    }).select().single();
+    if(error){ piikAlert("Não consegui lançar a cobrança: "+error.message); return; }
+    const ov=document.getElementById("cobOv"); if(ov) ov.remove();
+    FIN_AL.cobs.unshift(nova);
+    renderFinAluno(id);
+  }
+  async function cobPagar(id, cobId, pagar){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    const patch = pagar ? { pago:true, pago_em:new Date().toISOString() } : { pago:false, pago_em:null };
+    const { error } = await sb.from("cobrancas_aluno").update(patch).eq("id", cobId);
+    if(error){ piikAlert("Não consegui atualizar: "+error.message); return; }
+    const c = FIN_AL.cobs.find(x=>x.id===cobId); if(c){ c.pago=patch.pago; c.pago_em=patch.pago_em; }
+    renderFinAluno(id);
+  }
+  async function cobExcluir(id, cobId){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    if(!(await piikConfirm({ titulo:"Excluir cobrança?", msg:"Essa cobrança será removida definitivamente.", ok:"Excluir", cancel:"Voltar" }))) return;
+    const { error } = await sb.from("cobrancas_aluno").delete().eq("id", cobId);
+    if(error){ piikAlert("Não consegui excluir: "+error.message); return; }
+    FIN_AL.cobs = FIN_AL.cobs.filter(x=>x.id!==cobId);
+    renderFinAluno(id);
+  }
+
   /* ----- Modal: Novo acordo ----- */
   function abrirNovoAcordo(id){
     if(contaCongelada()){ avisoCongelada(); return; }
@@ -5311,19 +5452,25 @@
         <input type="time" value="${on?esc(h.h):"07:00"}" ${on?"":"disabled"} id="acHora_${d}">
       </div>`;
     }).join("");
-    const modeloAula = base.modelo==="aula";
+    const m0 = base.modelo || "mensal";
+    const valLbl = { mensal:"Mensalidade (R$)", aula:"Valor por aula (R$)", treino:"Valor por treino (R$)" };
     const o = document.createElement("div"); o.className="modal-ov"; o.id="acOv";
     o.innerHTML = `<div class="modal-cx" style="max-width:520px;text-align:left;max-height:88vh;overflow:auto">
       <h3 style="margin:0 0 4px">Novo acordo</h3>
       <p class="meta-sm" style="margin:0 0 16px">O acordo anterior vira histórico. O aluno recebe o novo acordo no app dele para dar ciência.</p>
       <div class="ac-form">
+        <div class="ac-fld"><label>Modelo de cobrança</label>
+          <span class="ac-seg">
+            <button type="button" class="${m0==="mensal"?"on":""}" id="acMod_mensal" onclick="acSetModelo('mensal')">Mensal</button>
+            <button type="button" class="${m0==="aula"?"on":""}" id="acMod_aula" onclick="acSetModelo('aula')">Por aula</button>
+            <button type="button" class="${m0==="treino"?"on":""}" id="acMod_treino" onclick="acSetModelo('treino')">Por treino</button>
+          </span>
+          <span class="meta-sm" id="acModHint" style="margin-top:6px">${m0==="treino"?"Aluno online — cobrança esporádica, uma por treino entregue.":(m0==="aula"?"Presencial — cada mês soma as aulas que caem no mês.":"Recorrente — valor fixo todo mês.")}</span>
+        </div>
         <div class="ac-frow">
-          <div class="ac-fld"><label>Modelo de cobrança</label>
-            <span class="ac-seg"><button type="button" class="${modeloAula?"":"on"}" id="acMod_mensal" onclick="acSetModelo('mensal')">Mensal</button><button type="button" class="${modeloAula?"on":""}" id="acMod_aula" onclick="acSetModelo('aula')">Por aula</button></span>
-          </div>
-          <div class="ac-fld"><label id="acValLbl">${modeloAula?"Valor por aula (R$)":"Mensalidade (R$)"}</label>
+          <div class="ac-fld"><label id="acValLbl">${valLbl[m0]}</label>
             <input type="number" step="0.01" min="0" id="acValor" value="${base.valor!=null?base.valor:""}" oninput="acRecalcEst()" placeholder="0,00"></div>
-          <div class="ac-fld"><label>Vencimento (dia)</label>
+          <div class="ac-fld" id="acVencWrap" style="display:${m0==="treino"?"none":"flex"}"><label>Vencimento (dia)</label>
             <input type="number" min="1" max="28" id="acDiaVenc" value="${base.dia_venc||5}"></div>
         </div>
         <div class="ac-frow">
@@ -5334,9 +5481,9 @@
           <div class="ac-fld"><label>Vigente desde</label>
             <input type="date" id="acInicio" value="${base.data_inicio? String(base.data_inicio).slice(0,10) : hoje}"></div>
         </div>
-        <div class="ac-fld"><label>Aulas na semana (presencial)</label>
+        <div class="ac-fld" id="acAulasWrap" style="display:${m0==="aula"?"flex":"none"}"><label>Aulas na semana (presencial)</label>
           <div class="ac-dias">${diasHTML}</div></div>
-        <div class="ac-est" id="acEst" style="display:${modeloAula?"block":"none"}"></div>
+        <div class="ac-est" id="acEst" style="display:${m0==="aula"?"block":"none"}"></div>
         <div class="ac-fld"><label>Observações (opcional)</label>
           <input type="text" id="acObs" value="${base.obs?esc(base.obs):""}" placeholder="ex.: inclui avaliação a cada 3 meses"></div>
         <div style="display:flex;gap:10px;margin-top:4px">
@@ -5349,12 +5496,18 @@
     o.addEventListener("click",e=>{ if(e.target===o) o.remove(); });
     acRecalcEst();
   }
+  function acModeloAtual(){
+    if(document.getElementById("acMod_aula") && document.getElementById("acMod_aula").classList.contains("on")) return "aula";
+    if(document.getElementById("acMod_treino") && document.getElementById("acMod_treino").classList.contains("on")) return "treino";
+    return "mensal";
+  }
   function acSetModelo(m){
-    const bm=document.getElementById("acMod_mensal"), ba=document.getElementById("acMod_aula");
-    if(!bm||!ba) return;
-    bm.classList.toggle("on", m==="mensal"); ba.classList.toggle("on", m==="aula");
-    const lbl=document.getElementById("acValLbl"); if(lbl) lbl.textContent = m==="aula"?"Valor por aula (R$)":"Mensalidade (R$)";
+    ["mensal","aula","treino"].forEach(k=>{ const b=document.getElementById("acMod_"+k); if(b) b.classList.toggle("on", k===m); });
+    const lbl=document.getElementById("acValLbl"); if(lbl) lbl.textContent = m==="aula"?"Valor por aula (R$)":(m==="treino"?"Valor por treino (R$)":"Mensalidade (R$)");
+    const venc=document.getElementById("acVencWrap"); if(venc) venc.style.display = m==="treino"?"none":"flex";
+    const aulasW=document.getElementById("acAulasWrap"); if(aulasW) aulasW.style.display = m==="aula"?"flex":"none";
     const est=document.getElementById("acEst"); if(est) est.style.display = m==="aula"?"block":"none";
+    const hint=document.getElementById("acModHint"); if(hint) hint.textContent = m==="treino"?"Aluno online — cobrança esporádica, uma por treino entregue.":(m==="aula"?"Presencial — cada mês soma as aulas que caem no mês.":"Recorrente — valor fixo todo mês.");
     acRecalcEst();
   }
   function acToggleDia(d, on){
@@ -5374,8 +5527,7 @@
   }
   function acRecalcEst(){
     const est=document.getElementById("acEst"); if(!est) return;
-    const aula = document.getElementById("acMod_aula") && document.getElementById("acMod_aula").classList.contains("on");
-    if(!aula){ est.style.display="none"; return; }
+    if(acModeloAtual()!=="aula"){ est.style.display="none"; return; }
     const v = Number((document.getElementById("acValor")||{}).value)||0;
     const hor = acColetaHorarios();
     const n = hor.length;
@@ -5387,13 +5539,13 @@
   }
   async function salvarNovoAcordo(id){
     if(contaCongelada()){ avisoCongelada(); return; }
-    const modelo = (document.getElementById("acMod_aula") && document.getElementById("acMod_aula").classList.contains("on")) ? "aula" : "mensal";
+    const modelo = acModeloAtual();
     const valor = Math.max(0, Number((document.getElementById("acValor")||{}).value)||0);
     if(!valor){ piikAlert("Informe o valor do acordo."); return; }
     let dia = Math.round(Number((document.getElementById("acDiaVenc")||{}).value)||5); dia=Math.min(28,Math.max(1,dia));
     const forma = (document.getElementById("acForma")||{}).value || "pix";
     const inicio = (document.getElementById("acInicio")||{}).value || new Date().toISOString().slice(0,10);
-    const horarios = acColetaHorarios();
+    const horarios = modelo==="aula" ? acColetaHorarios() : [];
     const obs = ((document.getElementById("acObs")||{}).value||"").trim();
     const aulas_semana = modelo==="aula" ? horarios.length : null;
 
@@ -5410,9 +5562,9 @@
       ativo:true, aceito:false
     }).select().single();
     if(e2){ piikAlert("Não consegui salvar o acordo: "+e2.message); return; }
-    // espelha valor mensal efetivo + vencimento em mensalidades (compat. com cobrança existente)
+    // espelha em mensalidades p/ compat. — por treino não tem valor recorrente (esporádico), zera
     await sb.from("mensalidades").upsert(
-      { student_id:id, professional_id:ME.id, valor:acValorMes(novo, compAtual()), dia_venc:dia },
+      { student_id:id, professional_id:ME.id, valor:(modelo==="treino"?0:acValorMes(novo, compAtual())), dia_venc:dia },
       { onConflict:"student_id" });
     if(btnOv) btnOv.remove();
     // recarrega estado
