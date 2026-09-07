@@ -553,6 +553,17 @@
   .modal-cx{background:var(--pk-surf,#15171c);border-radius:18px;padding:22px;max-width:340px;width:100%;
     box-shadow:0 20px 50px rgba(30,20,40,.3)}
   .modal-cx h3{font-size:17px;font-weight:800;color:var(--pink-deep)}
+  /* gerenciar alunos do grupo */
+  .gal-list{max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:7px;margin-top:4px}
+  .gal-row{display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:1px solid var(--line);background:var(--pk-elev,#0f1116);border-radius:11px;padding:9px 11px;cursor:pointer;color:var(--txt)}
+  .gal-row:hover{border-color:var(--pink-deep)}
+  .gal-row.on{border-color:var(--pink);background:var(--pk-surf2,#1d2027)}
+  .gal-av{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;background:linear-gradient(135deg,var(--pk-surf,#15171c),var(--line,#262a33));color:var(--pink-deep)}
+  .gal-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .gal-nome{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gal-sub{font-size:11px;color:var(--muted);text-transform:capitalize}
+  .gal-check{flex:0 0 auto;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;background:var(--pk-surf2,#1d2027);color:var(--muted);border:1px solid var(--line)}
+  .gal-row.on .gal-check{background:var(--pink,#7fff00);color:var(--on-accent,#0a0b0d);border-color:var(--pink,#7fff00)}
   /* modo treino: esconde menu lateral e saudação, foca só no treino */
   .modo-treino .sidebar,
   .modo-treino .hello,
@@ -4222,15 +4233,17 @@
         const membros = [...(GRUPO_MEMBROS[g.id]||new Set())];
         const n = membros.length;
         const nomes = membros.map(id=>GRP_NOMES[id]||"Aluno").sort((a,b)=>a.localeCompare(b,"pt-BR"));
-        const alunosHtml = n
+        const listaNomes = n
           ? `<div class="grupo-alunos-lista">` + nomes.map(nm=>`<div class="grupo-aluno-lin">\ud83d\udc64 ${esc(nm)}</div>`).join("") + `</div>`
           : `<div class="empty" style="margin:0">Nenhum aluno neste grupo ainda.</div>`;
+        const alunosHtml = listaNomes + `<div style="margin-top:10px"><button class="btn small" onclick="gerenciarAlunosGrupo('${g.id}')">\ud83d\udc65 Incluir / remover alunos</button></div>`;
         return `<div class="grupo-item">
           <div class="grupo-row">
             <button class="grupo-nome" onclick="toggleGrupoLista('${g.id}')" aria-expanded="false">
               <span class="gn-nome"><span class="gn-chev" id="gchev_${g.id}">\u25b8</span> ${esc(g.nome)}</span>
               <span class="gn-count">${n} aluno${n===1?'':'s'}</span>
             </button>
+            <button class="grupo-acao" title="Incluir / remover alunos" onclick="gerenciarAlunosGrupo('${g.id}')">\ud83d\udc65</button>
             <button class="grupo-acao" title="Renomear" onclick="renomearGrupo('${g.id}')">\u270e</button>
             <button class="grupo-acao" title="Excluir" onclick="excluirGrupo('${g.id}')">\ud83d\uddd1</button>
           </div>
@@ -4705,6 +4718,7 @@
     GRUPOS.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
     injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos();
     if(SELECTED_STUDENT) renderGruposDoAluno(SELECTED_STUDENT);
+    gerenciarAlunosGrupo(data.id);   // logo após nomear, já seleciona os alunos do grupo
   }
   async function renomearGrupo(id){
     const g = GRUPOS.find(x=>x.id===id); if(!g) return;
@@ -4749,6 +4763,70 @@
       return `<button class="grp-chip ${on?'on':''}" onclick="toggleGrupoAluno('${studentId}','${g.id}')">${on?'✓ ':''}${esc(g.nome)}</button>`;
     }).join("");
   }
+
+  /* ---- gerenciar quais alunos entram/saem de um grupo (modal) ---- */
+  let GRP_AL_CTX = null;
+  async function gerenciarAlunosGrupo(grupoId){
+    const g = GRUPOS.find(x=>x.id===grupoId); if(!g) return;
+    let alunos = [];
+    try{
+      const { data } = await sb.from("profiles")
+        .select("id,full_name,email,modalidade,is_demo,deletado_em")
+        .eq("professional_id", ME.id).is("deletado_em", null);
+      alunos = (data||[]).filter(a=>!a.is_demo);
+    }catch(e){}
+    alunos.sort((a,b)=> (nomeAluno(a)||"").localeCompare(nomeAluno(b)||"","pt-BR"));
+    alunos.forEach(a=>{ if(!GRP_NOMES[a.id]) GRP_NOMES[a.id] = nomeAluno(a); });
+    GRP_AL_CTX = { grupoId, alunos };
+    const o = document.createElement("div"); o.className="modal-ov"; o.id="grpAlOv";
+    o.innerHTML = `<div class="modal-cx" style="max-width:460px;text-align:left;max-height:90vh;overflow:auto;position:relative">
+      <span class="close-x" onclick="fecharGrpAlunos()">✕</span>
+      <h3 style="margin:0 0 4px">👥 Alunos de “${esc(g.nome)}”</h3>
+      <p class="meta-sm" style="margin:0 0 12px">Toque num aluno para <b>incluir</b> ou <b>remover</b> deste grupo. <span id="grpAlCount" style="font-weight:700"></span></p>
+      ${alunos.length>6?`<input class="aluno-search" id="grpAlSearch" placeholder="Buscar aluno…" oninput="filtrarGrpAlunos()" style="margin-bottom:8px;display:block">`:``}
+      <div class="gal-list" id="grpAlLista"></div>
+      <button class="btn" style="width:100%;margin-top:14px" onclick="fecharGrpAlunos()">Concluir</button>
+    </div>`;
+    document.body.appendChild(o);
+    o.addEventListener("click", e=>{ if(e.target===o) fecharGrpAlunos(); });
+    _renderGrpAlLista("");
+    _updGrpAlCount();
+  }
+  function _updGrpAlCount(){
+    if(!GRP_AL_CTX) return;
+    const cnt = document.getElementById("grpAlCount"); if(!cnt) return;
+    const n = (GRUPO_MEMBROS[GRP_AL_CTX.grupoId]||new Set()).size;
+    cnt.textContent = `${n} no grupo`;
+  }
+  function _renderGrpAlLista(filtro){
+    if(!GRP_AL_CTX) return;
+    const box = document.getElementById("grpAlLista"); if(!box) return;
+    const f = (filtro||"").toLowerCase().trim();
+    const set = GRUPO_MEMBROS[GRP_AL_CTX.grupoId] || new Set();
+    const lista = GRP_AL_CTX.alunos.filter(a=> !f || (nomeAluno(a)||"").toLowerCase().includes(f));
+    if(!lista.length){
+      box.innerHTML = `<div class="empty" style="margin:0">${GRP_AL_CTX.alunos.length?"Nenhum aluno encontrado.":"Você ainda não tem alunos cadastrados. Cadastre um aluno para incluí-lo em grupos."}</div>`;
+      return;
+    }
+    box.innerHTML = lista.map(a=>{
+      const on = set.has(a.id);
+      const modal = (a.modalidade||"online");
+      return `<button class="gal-row ${on?'on':''}" onclick="toggleGrpAl('${a.id}',this)">
+        <span class="gal-av">${esc(iniciaisAluno(a))}</span>
+        <span class="gal-main"><span class="gal-nome">${esc(nomeAluno(a))}</span><span class="gal-sub">${esc(modal)}</span></span>
+        <span class="gal-check">${on?'✓':'＋'}</span>
+      </button>`;
+    }).join("");
+  }
+  function filtrarGrpAlunos(){ const i=document.getElementById("grpAlSearch"); _renderGrpAlLista(i?i.value:""); }
+  async function toggleGrpAl(studentId, el){
+    if(!GRP_AL_CTX) return;
+    await toggleGrupoAluno(studentId, GRP_AL_CTX.grupoId);
+    const on = (GRUPO_MEMBROS[GRP_AL_CTX.grupoId]||new Set()).has(studentId);
+    if(el){ el.classList.toggle("on", on); const c=el.querySelector(".gal-check"); if(c) c.textContent = on?"✓":"＋"; }
+    _updGrpAlCount();
+  }
+  function fecharGrpAlunos(){ const o=document.getElementById("grpAlOv"); if(o) o.remove(); GRP_AL_CTX=null; }
 
   /* ---------- PROFISSIONAL: FINANCEIRO ---------- */
   let FIN_COMP = null;            // 'YYYY-MM' em foco
