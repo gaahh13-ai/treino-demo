@@ -1448,7 +1448,7 @@
       </div>`;
     mostrar();
 
-    const inicial = !first ? "perfil" : (role === "student" ? "dash" : "alunos");
+    const inicial = !first ? "perfil" : (role === "student" ? "dash" : "inicio");
     go(inicial);
     carregarVinculoPendente();
     checarInadimplencia();
@@ -2052,6 +2052,7 @@
     else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); PRAZOS_CARREGADOS=false; carregarDesempenho(); carregarQuemTreinou(); carregarPrazos(); }
     else if(id === "financeiro"){ p.innerHTML = viewFinanceiro(); carregarFinanceiro(); }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
+    else if(id === "inicio"){    p.innerHTML = viewAlunos(); }   // tela inicial: menu + card "escolha um aluno" (sem abrir a lista)
     atualizarPill();
     bannerCongelada();
     bannerVencimentoPix();
