@@ -1445,6 +1445,7 @@
     if(role === "student"){
       const menu = [
         {id:"dash",       label:"Dashboard"},
+        {id:"financeiro", label:"Financeiro"},
         {id:"avaliacoes", label:"Avaliações Físicas"}
       ];
       return menu;
@@ -2109,7 +2110,7 @@
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
     else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); PRAZOS_CARREGADOS=false; carregarDesempenho(); carregarQuemTreinou(); carregarPrazos(); }
-    else if(id === "financeiro"){ p.innerHTML = viewFinanceiro(); carregarFinanceiro(); }
+    else if(id === "financeiro"){ if(ME.role==="student"){ p.innerHTML = viewMeuFinanceiro(); carregarMeuFinanceiro(); } else { p.innerHTML = viewFinanceiro(); carregarFinanceiro(); } }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
     else if(id === "inicio"){    p.innerHTML = viewAlunos(); const _d=document.getElementById("alunoDetalhe"); if(_d) _d.innerHTML=""; }   // tela inicial: menu + card vazio (sem descrição)
     atualizarPill();
@@ -2177,8 +2178,8 @@
       </div>` : "";
     const acordoCard = (ME.role === "student") ? `<div class="card meu-acordo" id="meuAcordoCard" style="display:none"></div>` : "";
     return `<h2>Dashboard</h2>
-      ${heroTreino}
       ${acordoCard}
+      ${heroTreino}
       <div class="treino-hero">
         <div class="ico-big">📊</div>
         <div style="flex:1;min-width:180px">
@@ -2252,6 +2253,93 @@
     MEU_ACORDO.aceito = true; MEU_ACORDO.aceito_em = new Date().toISOString();
     renderMeuAcordo();
     piikAlert({ emoji:"🤝", titulo:"Ciência registrada!", msg:"Seu personal foi avisado de que você está ciente do acordo." });
+  }
+
+  /* ---------- ALUNO: FINANCEIRO (acompanhar pagamentos) ---------- */
+  let MEU_FIN = { acordo:null, pags:[], cobs:[] };
+  function viewMeuFinanceiro(){
+    return `<h2>Financeiro</h2>
+      <div id="meuFinBox"><div class="empty">Carregando…</div></div>`;
+  }
+  function _compsDesde(startComp, maxN){
+    const arr=[]; let c=compAtual();
+    for(let i=0;i<maxN;i++){
+      arr.push(c);
+      if(c===startComp) break;
+      let [y,m]=c.split("-").map(Number); m--; if(m<1){m=12;y--;} c=y+"-"+String(m).padStart(2,"0");
+      if(c<startComp) break;
+    }
+    return arr;
+  }
+  async function carregarMeuFinanceiro(){
+    const box = document.getElementById("meuFinBox"); if(!box) return;
+    let a=null;
+    try{
+      const { data } = await sb.from("acordos").select("*").eq("student_id", ME.id).eq("ativo",true).order("criado_em",{ascending:false}).limit(1);
+      a = data && data[0];
+    }catch(e){ box.innerHTML = `<div class="card"><div class="empty">Não consegui carregar seus dados agora.</div></div>`; return; }
+    MEU_FIN.acordo = a || null;
+    if(!a){ box.innerHTML = `<div class="card"><h3>💳 Financeiro</h3><div class="empty">Seu personal ainda não definiu um acordo de pagamento com você.</div></div>`; return; }
+    try{
+      const { data: pags } = await sb.from("pagamentos").select("*").eq("student_id", ME.id).order("competencia",{ascending:false});
+      MEU_FIN.pags = pags || [];
+    }catch(e){ MEU_FIN.pags = []; }
+    try{
+      const { data: cobs } = await sb.from("cobrancas_aluno").select("*").eq("student_id", ME.id).order("criado_em",{ascending:false});
+      MEU_FIN.cobs = cobs || [];
+    }catch(e){ MEU_FIN.cobs = []; }
+    renderMeuFinanceiro();
+  }
+  function renderMeuFinanceiro(){
+    const box = document.getElementById("meuFinBox"); if(!box) return;
+    const a = MEU_FIN.acordo; if(!a) return;
+    const valTxt = a.modelo==="aula" ? `${fmtBRL(a.valor)} por aula`
+                 : a.modelo==="treino" ? `${fmtBRL(a.valor)} por treino`
+                 : `${fmtBRL(a.valor)}/mês`;
+    const venc = a.modelo==="treino" ? "" : ` · vence dia ${a.dia_venc||5}`;
+    const resumo = `<div class="card">
+      <h3>🤝 Seu acordo</h3>
+      <div class="ma-line" style="margin-top:6px"><b>${acModeloLabel(a)}</b> · <b style="color:var(--pink-deep)">${valTxt}</b>${venc} · ${acFormaLabel(a.forma_pgto)}</div>
+      <div class="meta-sm">${a.aceito ? `✓ Você deu ciência em ${fmtDate(a.aceito_em)}` : "⏳ Você ainda não deu ciência deste acordo (veja no Dashboard)."}</div>
+    </div>`;
+
+    let lista;
+    if(a.modelo==="treino"){
+      const cobs = MEU_FIN.cobs;
+      const abertas = cobs.filter(c=>!c.pago);
+      const totalAberto = abertas.reduce((s,c)=>s+(Number(c.valor)||0),0);
+      const linhas = cobs.length
+        ? cobs.map(c=>{
+            const stt=_cobStatus(c);
+            const chip = stt==="pago"?`<span class="fin-tag pg">Pago</span>`:stt==="atrasado"?`<span class="fin-tag at">Em atraso</span>`:`<span class="fin-tag pe">Pendente</span>`;
+            const quando = c.pago && c.pago_em ? `pago em ${fmtDate(c.pago_em)}` : (c.vencimento?`vence ${fmtDate(c.vencimento)}`:fmtDate(c.criado_em));
+            return `<div class="fin-hist-row"><span><b>${esc(c.descricao||"Treino")}</b> · ${fmtBRL(c.valor)}<br><span class="meta-sm" style="margin:0">${quando}</span></span>${chip}</div>`;
+          }).join("")
+        : `<div class="empty">Nenhuma cobrança lançada ainda.</div>`;
+      lista = `<div class="card">
+        <h3>💪 Cobranças por treino</h3>
+        ${abertas.length?`<div class="ma-ciente" style="background:#2a2410;border-color:#5c4d15;color:#e0b83a;margin:8px 0 4px">${abertas.length} cobrança(s) em aberto · ${fmtBRL(totalAberto)}</div>`:`<div class="meta-sm">Tudo em dia. 🎉</div>`}
+        <div class="fin-al-hist" style="border:none;padding:0;margin-top:8px">${linhas}</div>
+      </div>`;
+    }else{
+      const dia = a.dia_venc||5;
+      const startComp = String(a.data_inicio||a.criado_em).slice(0,7);
+      const comps = _compsDesde(startComp, 12);
+      const linhas = comps.map(comp=>{
+        const pg = MEU_FIN.pags.find(p=>p.competencia===comp);
+        const st = statusFinComp(comp, dia, !!pg);
+        const chip = st==="pago"?`<span class="fin-tag pg">Pago</span>`:st==="atrasado"?`<span class="fin-tag at">Em atraso</span>`:`<span class="fin-tag pe">Pendente</span>`;
+        const val = pg ? pg.valor : acValorMes(a, comp);
+        const quando = pg && pg.pago_em ? ` · pago em ${fmtDate(pg.pago_em)}` : "";
+        return `<div class="fin-hist-row"><span>${compLabel(comp)} · ${fmtBRL(val)}<span class="meta-sm" style="margin:0">${quando}</span></span>${chip}</div>`;
+      }).join("");
+      lista = `<div class="card">
+        <h3>🧾 Pagamentos</h3>
+        <p class="meta-sm">Status de cada mês, conforme seu personal vai registrando os pagamentos.</p>
+        <div class="fin-al-hist" style="border:none;padding:0;margin-top:8px">${linhas}</div>
+      </div>`;
+    }
+    box.innerHTML = resumo + lista;
   }
 
   async function conectarPeloDash(){
