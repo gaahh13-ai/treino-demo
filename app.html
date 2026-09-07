@@ -5146,14 +5146,23 @@
   }
   function acModeloLabel(a){ return (a && a.modelo==="aula") ? "Por aula" : "Mensal"; }
   function acFormaLabel(f){ return ({pix:"Pix",dinheiro:"Dinheiro",cartao:"Cartão",transferencia:"Transferência",boleto:"Boleto"}[f]) || (f? esc(f) : "—"); }
-  // valor mensal efetivo do acordo (mensal = valor; por aula = valor × aulas/semana × 4,33)
-  function acValorMensal(a){
-    if(!a) return 0;
-    const v = Number(a.valor)||0;
-    if(a.modelo==="aula"){ const n = Number(a.aulas_semana)|| (Array.isArray(a.horarios)?a.horarios.length:0) || 0; return Math.round(v*n*4.33*100)/100; }
-    return v;
-  }
   function acHorariosArr(a){ return (a && Array.isArray(a.horarios)) ? a.horarios : []; }
+  const AC_WD = {Dom:0,Seg:1,Ter:2,Qua:3,Qui:4,Sex:5,"Sáb":6};
+  // quantas aulas caem num mês (conta cada dia-da-semana escolhido nas datas reais do mês)
+  function acAulasNoMes(a, comp){
+    const dias = acHorariosArr(a).map(h=>AC_WD[h.d]).filter(x=>x!=null);
+    if(!dias.length) return 0;
+    const [y,m] = comp.split("-").map(Number);
+    const last = new Date(y, m, 0).getDate();
+    let n=0; for(let d=1; d<=last; d++){ if(dias.includes(new Date(y, m-1, d).getDay())) n++; }
+    return n;
+  }
+  // valor a cobrar num mês específico (mensal = valor fixo; por aula = valor × aulas reais do mês)
+  function acValorMes(a, comp){
+    if(!a) return 0;
+    if(a.modelo==="aula") return Math.round((Number(a.valor)||0) * acAulasNoMes(a, comp) * 100)/100;
+    return Number(a.valor)||0;
+  }
 
   async function verFinanceiroAluno(id){
     const el = document.getElementById("finList_"+id);
@@ -5190,7 +5199,7 @@
         ? `<div class="ac-aulas"><span class="meta-sm" style="margin:0;font-weight:700">Aulas:</span>${acHorariosArr(a).map(h=>`<span class="achip">${esc(h.d)} <span class="d">${esc(h.h)}</span></span>`).join("")}</div>`
         : "";
       const estAula = a.modelo==="aula"
-        ? `<div class="ac-obs">≈ <b>${fmtBRL(acValorMensal(a))}</b>/mês (${a.aulas_semana||acHorariosArr(a).length||0} aulas/semana)</div>` : "";
+        ? `<div class="ac-obs">💡 Cobrança por aula: cada mês soma as aulas que caem no mês (veja em <b>Este mês</b>).</div>` : "";
       curHTML = `<div class="ac-sec ac-cur">
         <div class="ac-h">
           <div class="ac-t">🤝 Acordo atual</div>
@@ -5222,6 +5231,14 @@
     const acao = pagComp
       ? `<button class="btn ghost small" onclick="finAlunoPagar('${id}',false)">Desfazer</button>`
       : (a ? `<button class="btn small" onclick="finAlunoPagar('${id}',true)">Registrar pagamento</button>` : "");
+    // valor a cobrar neste mês (só aparece se ainda não foi pago; se pago o chip já mostra o valor)
+    let valLinha = "";
+    if(a && !pagComp){
+      const vMes = acValorMes(a, comp);
+      valLinha = a.modelo==="aula"
+        ? `<div class="ac-obs" style="margin-top:10px"><b style="color:var(--pink-deep)">${fmtBRL(vMes)}</b> neste mês · ${acAulasNoMes(a,comp)} aula(s) × ${fmtBRL(a.valor)}</div>`
+        : `<div class="ac-obs" style="margin-top:10px"><b style="color:var(--pink-deep)">${fmtBRL(vMes)}</b> neste mês</div>`;
+    }
     const mesHTML = `<div class="ac-sec">
       <div class="ac-t" style="margin-bottom:12px">💵 Este mês</div>
       <div class="fin-al-mes">
@@ -5230,6 +5247,7 @@
         <button class="chev" onclick="finAlunoMes('${id}',1)">›</button>
         ${chip}${acao}
       </div>
+      ${valLinha}
     </div>`;
 
     // ----- Histórico de acordos + Últimos pagamentos -----
@@ -5263,7 +5281,7 @@
   async function finAlunoPagar(id, pagar){
     if(contaCongelada()){ avisoCongelada(); return; }
     if(pagar){
-      const valor = acValorMensal(FIN_AL.ativo);
+      const valor = acValorMes(FIN_AL.ativo, FIN_AL.comp);
       const { data, error } = await sb.from("pagamentos")
         .upsert({ student_id:id, professional_id:ME.id, competencia:FIN_AL.comp, valor, pago_em:new Date().toISOString() },
                 { onConflict:"student_id,competencia" }).select().single();
@@ -5359,11 +5377,13 @@
     const aula = document.getElementById("acMod_aula") && document.getElementById("acMod_aula").classList.contains("on");
     if(!aula){ est.style.display="none"; return; }
     const v = Number((document.getElementById("acValor")||{}).value)||0;
-    const n = acColetaHorarios().length;
+    const hor = acColetaHorarios();
+    const n = hor.length;
     est.style.display="block";
-    est.innerHTML = n && v
-      ? `💡 ${fmtBRL(v)} × ${n} ${n===1?"aula":"aulas"}/semana ≈ <b>${fmtBRL(Math.round(v*n*4.33*100)/100)}/mês</b>`
-      : `💡 Marque os dias de aula e informe o valor por aula para ver a estimativa mensal.`;
+    if(!(n && v)){ est.innerHTML = `💡 Marque os dias de aula e informe o valor por aula para ver quanto dá no mês.`; return; }
+    const comp = compAtual();
+    const aulasMes = acAulasNoMes({modelo:"aula",horarios:hor}, comp);
+    est.innerHTML = `💡 ${fmtBRL(v)} por aula. Cada mês soma as aulas que caem no mês — em <b>${compLabel(comp)}</b> são <b>${aulasMes}</b> = <b>${fmtBRL(Math.round(v*aulasMes*100)/100)}</b>.`;
   }
   async function salvarNovoAcordo(id){
     if(contaCongelada()){ avisoCongelada(); return; }
@@ -5392,7 +5412,7 @@
     if(e2){ piikAlert("Não consegui salvar o acordo: "+e2.message); return; }
     // espelha valor mensal efetivo + vencimento em mensalidades (compat. com cobrança existente)
     await sb.from("mensalidades").upsert(
-      { student_id:id, professional_id:ME.id, valor:acValorMensal(novo), dia_venc:dia },
+      { student_id:id, professional_id:ME.id, valor:acValorMes(novo, compAtual()), dia_venc:dia },
       { onConflict:"student_id" });
     if(btnOv) btnOv.remove();
     // recarrega estado
