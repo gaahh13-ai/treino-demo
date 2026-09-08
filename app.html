@@ -2185,7 +2185,7 @@
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
     else if(id === "agenda"){    p.innerHTML = viewAgenda(); carregarAgenda(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
-    else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); despSel(DESP_SEL||"retencao"); }
+    else if(id === "desempenho"){ DESP_SEL=null; p.innerHTML = viewDesempenho(); }
     else if(id === "financeiro"){ if(ME.role==="student"){ p.innerHTML = viewMeuFinanceiro(); carregarMeuFinanceiro(); } else { p.innerHTML = viewFinanceiro(); carregarFinanceiro(); } }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
     else if(id === "inicio"){    p.innerHTML = viewAlunos(); const _d=document.getElementById("alunoDetalhe"); if(_d) _d.innerHTML=""; }   // tela inicial: menu + card vazio (sem descrição)
