@@ -751,6 +751,24 @@
   .grp-chip.on{background:var(--accent,var(--pink,#7fff00));border-color:var(--accent,var(--pink,#7fff00));color:#0a0b0d}
   .grp-chip.add{font-weight:800;padding:6px 12px}
   .grp-chip.ghost{background:transparent;color:var(--muted);font-weight:600}
+  .grp-chip.sm{padding:4px 11px;font-size:12px}
+  .modal-toggle{display:inline-flex;gap:6px;flex-wrap:wrap}
+  /* agenda semanal */
+  .agenda-resumo{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .ag-kpi{background:var(--pk-elev,#0f1116);border:1px solid var(--line,#262a33);border-radius:10px;padding:8px 13px;font-size:13px;font-weight:600}
+  .ag-kpi b{color:var(--pink-deep,#8fdb3a);font-size:15px}
+  .ag-grade{display:flex;gap:10px;overflow-x:auto;align-items:flex-start;padding-bottom:6px}
+  .ag-col{flex:0 0 150px;background:var(--pk-surf,#15171c);border:1px solid var(--line,#262a33);border-radius:12px;overflow:hidden}
+  .ag-col.hoje{border-color:var(--pink,#7fff00);box-shadow:0 0 0 1px var(--pink,#7fff00) inset}
+  .ag-colh{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line,#262a33);background:var(--pk-surf2,#1d2027);font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px}
+  .ag-hojetag{font-size:10px;font-weight:800;background:var(--pink,#7fff00);color:var(--on-accent,#0a0b0d);border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:middle}
+  .ag-cnt{font-size:12px;color:var(--muted,#9aa0ab);font-family:Inter,sans-serif}
+  .ag-lista{display:flex;flex-direction:column;gap:7px;padding:10px}
+  .ag-aula{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;text-align:left;background:var(--pk-elev,#0f1116);border:1px solid var(--line,#262a33);border-radius:9px;padding:8px 10px;cursor:pointer}
+  .ag-aula:hover{border-color:var(--pink-deep,#5fbf00)}
+  .ag-hora{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;color:var(--pink-deep,#8fdb3a)}
+  .ag-nome{font-size:12.5px;font-weight:600;color:var(--txt,#e8eaee);line-height:1.2}
+  .ag-vazio{font-size:12px;color:var(--muted,#9aa0ab);opacity:.5;padding:6px 2px;text-align:center}
   .grupos-lista{display:flex;flex-direction:column;gap:8px}
   .grupo-item{display:flex;flex-direction:column}
   .grupo-row{display:flex;align-items:center;gap:8px}
@@ -1461,6 +1479,7 @@
         {id:"inativos",  label:"Alunos inativos"}
       ]}
     ];
+    m.push({id:"agenda", label:"Agenda"});
     // Exercícios: todo profissional Piik vê a biblioteca desde a criação da conta.
     if(mostrarExercicios()) m.push({id:"exercicios", label:"Exercícios"});
     // Desempenho: só depois que o profissional adquire um plano pago.
@@ -2111,6 +2130,7 @@
     else if(id === "alunos"){    if(PENDING_GRUPO===undefined) GRUPO_FILTRO=null; p.innerHTML = viewAlunos(); abrirRailAlunos(); loadStudents(); }
     else if(id === "grupos"){    p.innerHTML = viewGrupos(); carregarGruposView(); }
     else if(id === "cadastrar"){ p.innerHTML = viewCadastrar(); loadStudents(); }
+    else if(id === "agenda"){    p.innerHTML = viewAgenda(); carregarAgenda(); }
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
     else if(id === "desempenho"){ p.innerHTML = viewDesempenho(); PRAZOS_CARREGADOS=false; carregarDesempenho(); carregarQuemTreinou(); carregarPrazos(); }
     else if(id === "financeiro"){ if(ME.role==="student"){ p.innerHTML = viewMeuFinanceiro(); carregarMeuFinanceiro(); } else { p.innerHTML = viewFinanceiro(); carregarFinanceiro(); } }
@@ -4931,7 +4951,7 @@
   }
 
   /* ---------- GRUPOS DE ALUNOS (vários grupos por aluno) ---------- */
-  let GRUPOS = [], GRUPO_MEMBROS = {}, GRUPO_FILTRO = null, PENDING_GRUPO = undefined;
+  let GRUPOS = [], GRUPO_MEMBROS = {}, GRUPO_FILTRO = null, PENDING_GRUPO = undefined, MODAL_FILTRO = null;
 
   async function carregarGrupos(){
     try{
@@ -4951,18 +4971,27 @@
   }
 
   function verGrupo(id){
-    PENDING_GRUPO = id;
+    PENDING_GRUPO = id; MODAL_FILTRO = null;
     const grp = document.getElementById('grp_alunosgrp'); if(grp) grp.classList.add('open');
     if(VIEW==='alunos'){ GRUPO_FILTRO = id; PENDING_GRUPO = undefined; renderStudents(); }
     else go('alunos');
   }
-  function verTodosAlunos(){ GRUPO_FILTRO = null; PENDING_GRUPO = undefined; renderStudents(); }
+  // filtro por modalidade (online/presencial/misto) — unificado com o "selo" do aluno
+  function verModalidade(m){ MODAL_FILTRO = m; GRUPO_FILTRO = null; PENDING_GRUPO = undefined; renderStudents(); }
+  function verTodosAlunos(){ GRUPO_FILTRO = null; MODAL_FILTRO = null; PENDING_GRUPO = undefined; renderStudents(); }
 
   function renderGruposBar(){
     const bar = document.getElementById("gruposBar");
     if(!bar) return;
-    if(!GRUPOS.length){ bar.innerHTML = ""; return; }
-    let html = `<button class="grp-chip ${!GRUPO_FILTRO?'on':''}" onclick="verTodosAlunos()">Todos</button>`;
+    // modalidade é a fonte da verdade de online/presencial: chips gerados a partir do selo do aluno
+    const ativos = STUDENTS.filter(s => (s.status||"active")==="active" && !s.desvinculado);
+    const cont = {}; ativos.forEach(s=>{ const m=(s.modalidade||"online").toLowerCase(); cont[m]=(cont[m]||0)+1; });
+    const LBL = { online:"Online", presencial:"Presencial", misto:"Misto" };
+    const ordemMod = ["online","presencial","misto"].filter(m=>cont[m]);
+    const nenhum = !GRUPO_FILTRO && !MODAL_FILTRO;
+    let html = `<button class="grp-chip ${nenhum?'on':''}" onclick="verTodosAlunos()">Todos</button>`;
+    html += ordemMod.map(m=>`<button class="grp-chip ${MODAL_FILTRO===m?'on':''}" onclick="verModalidade('${m}')">${LBL[m]} <span style="opacity:.55">${cont[m]}</span></button>`).join("");
+    // grupos customizados (Manhã, Iniciantes, etc.) continuam existindo
     html += GRUPOS.map(g=>{
       const n = (GRUPO_MEMBROS[g.id]||new Set()).size;
       return `<button class="grp-chip ${GRUPO_FILTRO===g.id?'on':''}" onclick="verGrupo('${g.id}')">${esc(g.nome)} <span style="opacity:.55">${n}</span></button>`;
@@ -5037,6 +5066,23 @@
     }
     injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos(); renderGruposDoAluno(studentId);
     if(GRUPO_FILTRO && !((GRUPO_MEMBROS[GRUPO_FILTRO]||new Set()).has(studentId))) renderStudents();
+  }
+  async function setModalidadeAluno(studentId, m){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    const s = STUDENTS.find(x=>x.id===studentId); if(!s) return;
+    if((s.modalidade||"online").toLowerCase()===m){ return; }
+    const antiga = s.modalidade;
+    s.modalidade = m;
+    // atualiza os chips do seletor na hora
+    const tog = document.getElementById("modalToggle_"+studentId);
+    if(tog) tog.querySelectorAll("button").forEach(b=>{
+      const bm = /'([a-z]+)'\)$/.exec(b.getAttribute("onclick")||"");
+      b.classList.toggle("on", bm && bm[1]===m);
+    });
+    const { error } = await sb.from("profiles").update({ modalidade:m }).eq("id", studentId);
+    if(error){ s.modalidade = antiga; piikAlert("Não consegui alterar a modalidade: "+error.message); if(tog) renderStudents(); return; }
+    renderGruposBar();      // atualiza contagem dos chips Online/Presencial
+    renderStudents();       // atualiza o selo na lista
   }
   function renderGruposDoAluno(studentId){
     const box = document.getElementById("gruposAluno_"+studentId);
@@ -5817,6 +5863,67 @@
     piikAlert({ emoji:"🤝", titulo:"Acordo salvo!", msg:"O aluno vai ver o novo acordo no app dele e poderá dar <b>ciência</b>." });
   }
 
+  /* ---------- PROFISSIONAL: AGENDA (semana típica dos presenciais) ---------- */
+  let AGENDA_DADOS = null;
+  function viewAgenda(){
+    return `<h2>Agenda</h2>
+      <div class="card">
+        <p class="meta-sm" style="margin:0 0 12px">Sua semana com os alunos presenciais. Os horários vêm dos acordos — sempre que você adiciona dias e horários no acordo de um aluno presencial, ele aparece aqui.</p>
+        <div id="agendaResumo" class="agenda-resumo"></div>
+        <div id="agendaGrade"><div class="empty">Carregando…</div></div>
+      </div>`;
+  }
+  async function carregarAgenda(){
+    if(!STUDENTS.length){
+      const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
+      STUDENTS = studs || [];
+    }
+    try{
+      const { data: acs } = await sb.from("acordos").select("student_id,horarios,modelo").eq("professional_id", ME.id).eq("ativo", true);
+      AGENDA_DADOS = acs || [];
+    }catch(e){ AGENDA_DADOS = []; }
+    renderAgenda();
+  }
+  function renderAgenda(){
+    const grade = document.getElementById("agendaGrade"); if(!grade) return;
+    const porDia = {}; AC_DIAS.forEach(d=>porDia[d]=[]);
+    let totalAulas=0; const alunosSet=new Set();
+    (AGENDA_DADOS||[]).forEach(a=>{
+      const s = STUDENTS.find(x=>x.id===a.student_id); if(!s) return;
+      const modal = (s.modalidade||"online").toLowerCase();
+      if(!["presencial","misto"].includes(modal)) return;   // só presenciais/mistos
+      (Array.isArray(a.horarios)?a.horarios:[]).forEach(h=>{
+        if(!porDia[h.d]) porDia[h.d]=[];
+        porDia[h.d].push({ h:h.h||"—", sid:s.id, nome:nomeAluno(s) });
+        totalAulas++; alunosSet.add(s.id);
+      });
+    });
+    AC_DIAS.forEach(d=>porDia[d].sort((x,y)=>(x.h||"").localeCompare(y.h||"")));
+
+    const resumo = document.getElementById("agendaResumo");
+    if(resumo) resumo.innerHTML = totalAulas
+      ? `<span class="ag-kpi">📅 <b>${totalAulas}</b> aula(s) na semana</span><span class="ag-kpi">🧍 <b>${alunosSet.size}</b> aluno(s) presencial(is)</span>`
+      : "";
+
+    if(!totalAulas){
+      grade.innerHTML = `<div class="ac-empty">Nenhuma aula presencial marcada ainda.<br><br>Abra um aluno <b>presencial</b>, defina o acordo e marque os <b>dias e horários</b> — eles aparecem aqui automaticamente.</div>`;
+      return;
+    }
+    const wd = {Dom:0,Seg:1,Ter:2,Qua:3,Qui:4,Sex:5,"Sáb":6};
+    const hoje = new Date().getDay();
+    grade.innerHTML = `<div class="ag-grade">${AC_DIAS.map(d=>{
+      const isHoje = wd[d]===hoje;
+      const itens = porDia[d].length
+        ? porDia[d].map(x=>`<button class="ag-aula" onclick="agendaAbrirAluno('${x.sid}')"><span class="ag-hora">${esc(x.h)}</span><span class="ag-nome">${esc(x.nome)}</span></button>`).join("")
+        : `<div class="ag-vazio">livre</div>`;
+      return `<div class="ag-col${isHoje?' hoje':''}">
+        <div class="ag-colh"><span>${d}${isHoje?' <span class="ag-hojetag">hoje</span>':''}</span><span class="ag-cnt">${porDia[d].length||""}</span></div>
+        <div class="ag-lista">${itens}</div>
+      </div>`;
+    }).join("")}</div>`;
+  }
+  function agendaAbrirAluno(id){ PENDING_SELECT = id; go('alunos'); }
+
   /* ---------- PROFISSIONAL: DESEMPENHO / RETENÇÃO ---------- */
   let RET_DADOS = [], RET_FILTRO = "todos";
   const RET_CLASSES = {
@@ -6124,7 +6231,9 @@
     if(PENDING_GRUPO !== undefined){ GRUPO_FILTRO = PENDING_GRUPO; PENDING_GRUPO = undefined; }
     let ativos = STUDENTS.filter(s => (s.status||"active") === "active" && !s.desvinculado)
                          .sort((a,b)=> nomeAluno(a).localeCompare(nomeAluno(b),"pt-BR"));
-    if(GRUPO_FILTRO){
+    if(MODAL_FILTRO){
+      ativos = ativos.filter(s => (s.modalidade||"online").toLowerCase() === MODAL_FILTRO);
+    } else if(GRUPO_FILTRO){
       const set = GRUPO_MEMBROS[GRUPO_FILTRO] || new Set();
       ativos = ativos.filter(s => set.has(s.id));
     }
@@ -6334,6 +6443,12 @@
         <button class="btn small ghost" id="btnRetorno" onclick="verRetornoTreinos('${id}')">Retorno dos treinos</button>
         ${demo?"":`<button class="btn small ghost" id="btnFin" onclick="verFinanceiroAluno('${id}')">Financeiro</button>`}
       </div>
+      ${demo?"":`<div class="grupos-aluno-box"><span class="meta-sm" style="font-weight:700">Modalidade:</span>
+        <span class="modal-toggle" id="modalToggle_${id}">${["online","presencial","misto"].map(m=>{
+          const on = (s.modalidade||"online").toLowerCase()===m;
+          const lbl = m==="online"?"Online":(m==="presencial"?"Presencial":"Misto");
+          return `<button class="grp-chip sm ${on?'on':''}" onclick="setModalidadeAluno('${id}','${m}')">${lbl}</button>`;
+        }).join("")}</span></div>`}
       ${demo?"":`<div class="grupos-aluno-box"><span class="meta-sm" style="font-weight:700">Grupos:</span> <span id="gruposAluno_${id}" class="grupos-aluno"></span></div>`}
       <div id="assessList_${id}" style="margin-top:6px"></div>
       <div id="notasList_${id}" style="margin-top:6px"></div>
