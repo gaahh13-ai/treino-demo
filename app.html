@@ -163,11 +163,13 @@
   .fin-kpi b{font-size:18px}
   .fin-kpi.ok b{color:#15803d}
   .fin-kpi.warn b{color:#be123c}
-  .fin-row{display:grid;grid-template-columns:1.4fr .9fr 1fr .8fr auto;align-items:center;gap:10px;
+  .fin-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) 108px 196px;align-items:center;gap:10px;
            padding:11px 4px;border-bottom:1px solid var(--line)}
-  .fin-nome{font-weight:700;font-size:14px}
+  .fin-nome{font-weight:700;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .fin-valor{font-weight:800;color:var(--txt,#e8eaee)}
-  .fin-campo{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .fin-campo{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;min-width:0}
+  .fin-st{min-width:0}
+  .fin-ac{display:flex;justify-content:flex-end}
   .fin-in{width:90px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
   .fin-in.fin-dia{width:56px}
   .fin-tag{display:inline-block;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800}
