@@ -123,6 +123,17 @@
   #railAlunos .grupos-bar{margin-bottom:10px}
   #railAlunos #alunoSearch{display:block;margin-bottom:10px}
   #railAlunos #alunosLista{flex:1;min-height:0;overflow-y:auto;max-height:none}
+  /* transição menu <-> alunos (deslize + fade) */
+  #navMenu,#railAlunos{transition:transform .3s cubic-bezier(.22,.61,.36,1),opacity .24s ease;will-change:transform,opacity}
+  .slide-from-right{transform:translateX(26px);opacity:0}
+  .slide-from-left{transform:translateX(-26px);opacity:0}
+  /* entrada escalonada dos alunos na lista */
+  @keyframes alunoIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  #alunosLista .aluno-item{animation:alunoIn .32s cubic-bezier(.22,.61,.36,1) both}
+  @media (prefers-reduced-motion: reduce){
+    #navMenu,#railAlunos{transition:none}
+    #alunosLista .aluno-item{animation:none}
+  }
   .navitem{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
            padding:11px 12px;border-radius:12px;font-size:14px;font-weight:600;color:var(--txt);cursor:pointer;text-align:left}
   .navitem:hover{background:var(--pk-surf2,#1d2027)}
@@ -2155,7 +2166,7 @@
        <input id="alunoSearch" class="aluno-search" placeholder="🔍 Buscar aluno…" oninput="filtrarAlunos()">
        <div id="alunosLista"><div class="empty">Carregando…</div></div>`;
     if(nav) nav.style.display = "none";
-    rail.style.display = "flex";
+    _animarPainel(rail, "slide-from-right");
     if(sb) sb.classList.add("railmode");
   }
   function voltarMenu(){
@@ -2163,8 +2174,16 @@
     const rail = document.getElementById("railAlunos");
     const sb = document.getElementById("sidebar");
     if(rail){ rail.style.display = "none"; }
-    if(nav){ nav.style.display = "flex"; }
+    if(nav){ _animarPainel(nav, "slide-from-left"); }
     if(sb){ sb.classList.remove("railmode"); }
+  }
+  // mostra o painel já na posição de entrada e desliza pra posição final
+  function _animarPainel(el, fromClass){
+    if(!el) return;
+    el.classList.add(fromClass);
+    el.style.display = "flex";
+    void el.offsetWidth;              // força reflow p/ a transição valer
+    requestAnimationFrame(()=>{ el.classList.remove(fromClass); });
   }
 
   // pílula flutuante "treino em andamento" (aparece fora da tela de execução)
@@ -6279,13 +6298,14 @@
     const box = document.getElementById("alunosLista");
     if(!box) return;
     if(!lista.length){ box.innerHTML = `<div class="empty">Nenhum aluno encontrado.</div>`; return; }
-    box.innerHTML = lista.map(s=>{
+    box.innerHTML = lista.map((s,i)=>{
       const sel = SELECTED_STUDENT===s.id ? " sel" : "";
       const demo = !!(s.demo || s.is_demo);
       const naval = ASSESS.filter(a=>a.student_id===s.id).length;
       const modal = (s.modalidade||"online").toLowerCase();
       const modLbl = modal==="presencial" ? "Presencial" : (modal==="misto" ? "Misto" : "Online");
-      return `<button class="aluno-item${sel}" onclick="selecionarAluno('${s.id}')">
+      const delay = Math.min(i,12)*28;   // escalonado, com teto p/ listas grandes
+      return `<button class="aluno-item${sel}" style="animation-delay:${delay}ms" onclick="selecionarAluno('${s.id}')">
         <span class="ai-av">${esc(iniciaisAluno(s))}</span>
         <span class="ai-main">
           <span class="ai-nome">${esc(nomeAluno(s))}${demo?` <span class="demo-tag">demo</span>`:""}</span>
