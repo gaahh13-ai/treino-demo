@@ -768,6 +768,12 @@
   .agenda-resumo{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .ag-kpi{background:var(--pk-elev,#0f1116);border:1px solid var(--line,#262a33);border-radius:10px;padding:8px 13px;font-size:13px;font-weight:600}
   .ag-kpi b{color:var(--pink-deep,#8fdb3a);font-size:15px}
+  .ag-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .ag-nav-mid{flex:1;text-align:center;min-width:0}
+  .ag-nav-tit{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px}
+  .ag-nav-sub{font-family:Inter,sans-serif;font-weight:600;font-size:12.5px;color:var(--pink-deep,#8fdb3a)}
+  .ag-data{font-family:Inter,sans-serif;font-weight:600;font-size:11.5px;color:var(--muted,#9aa0ab);margin-left:2px}
+  .ag-col.hoje .ag-data{color:var(--pink-deep,#8fdb3a)}
   .ag-grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:start}
   .ag-col{min-width:0;background:var(--pk-surf,#15171c);border:1px solid var(--line,#262a33);border-radius:12px;overflow:hidden}
   .ag-col.hoje{border-color:var(--pink,#7fff00);box-shadow:0 0 0 1px var(--pink,#7fff00) inset}
@@ -5847,6 +5853,30 @@
     const aulasMes = acAulasNoMes({modelo:"aula",horarios:hor}, comp);
     est.innerHTML = `💡 ${fmtBRL(v)} por aula. Cada mês soma as aulas que caem no mês — em <b>${compLabel(comp)}</b> são <b>${aulasMes}</b> = <b>${fmtBRL(Math.round(v*aulasMes*100)/100)}</b>.`;
   }
+  // procura choque de horário com OUTROS alunos ativos (mesmo dia + mesma hora)
+  async function _conflitosHorario(studentId, horarios){
+    if(!horarios || !horarios.length) return [];
+    let acs = [];
+    try{
+      const r = await sb.from("acordos").select("student_id,horarios")
+        .eq("professional_id", ME.id).eq("ativo", true).neq("student_id", studentId);
+      acs = r.data || [];
+    }catch(e){ return []; }
+    const nomeDe = uid => { const s=(STUDENTS||[]).find(x=>x.id===uid); return s?nomeAluno(s):"outro aluno"; };
+    const vistos = new Set(); const confs = [];
+    acs.forEach(a=>{
+      (Array.isArray(a.horarios)?a.horarios:[]).forEach(h=>{
+        if(horarios.some(n=>n.d===h.d && n.h===h.h)){
+          const chave = h.d+" "+h.h+" "+a.student_id;
+          if(!vistos.has(chave)){ vistos.add(chave); confs.push({ d:h.d, h:h.h, nome:nomeDe(a.student_id) }); }
+        }
+      });
+    });
+    // ordena por dia da semana e hora
+    const ord = {Seg:1,Ter:2,Qua:3,Qui:4,Sex:5,"Sáb":6,Dom:7};
+    confs.sort((a,b)=> (ord[a.d]-ord[b.d]) || a.h.localeCompare(b.h));
+    return confs;
+  }
   async function salvarNovoAcordo(id){
     if(contaCongelada()){ avisoCongelada(); return; }
     const modelo = acModeloAtual();
@@ -5855,9 +5885,23 @@
     let dia = Math.round(Number((document.getElementById("acDiaVenc")||{}).value)||5); dia=Math.min(28,Math.max(1,dia));
     const forma = (document.getElementById("acForma")||{}).value || "pix";
     const inicio = (document.getElementById("acInicio")||{}).value || new Date().toISOString().slice(0,10);
-    const horarios = modelo==="aula" ? acColetaHorarios() : [];
+    const horarios = modelo==="treino" ? [] : acColetaHorarios();   // dias/horários valem p/ mensal e por aula
     const obs = ((document.getElementById("acObs")||{}).value||"").trim();
     const aulas_semana = modelo==="aula" ? horarios.length : null;
+
+    // aviso de conflito: horário já ocupado por outro aluno
+    if(horarios.length){
+      const confs = await _conflitosHorario(id, horarios);
+      if(confs.length){
+        const lista = confs.map(c=>`<b>${esc(c.d)} ${esc(c.h)}</b> — ${esc(c.nome)}`).join("<br>");
+        const ok = await piikConfirm({
+          titulo:"⚠️ Horário já ocupado",
+          msg:`Você já tem aula marcada com outro aluno em:<br><br>${lista}<br><br>Quer marcar mesmo assim?`,
+          ok:"Marcar assim mesmo", cancel:"Voltar e ajustar"
+        });
+        if(!ok) return;
+      }
+    }
 
     const btnOv = document.getElementById("acOv");
     // encerra o acordo ativo atual
@@ -5885,61 +5929,91 @@
     piikAlert({ emoji:"🤝", titulo:"Acordo salvo!", msg:"O aluno vai ver o novo acordo no app dele e poderá dar <b>ciência</b>." });
   }
 
-  /* ---------- PROFISSIONAL: AGENDA (semana típica dos presenciais) ---------- */
-  let AGENDA_DADOS = null;
+  /* ---------- PROFISSIONAL: AGENDA (semana com datas reais) ---------- */
+  let AGENDA_DADOS = null, AG_OFFSET = 0;   // AG_OFFSET: semanas a partir da atual (0 = esta semana)
   function viewAgenda(){
     return `<h2>Agenda</h2>
       <div class="card">
-        <p class="meta-sm" style="margin:0 0 12px">Sua semana com os alunos presenciais. Os horários vêm dos acordos — sempre que você adiciona dias e horários no acordo de um aluno presencial, ele aparece aqui.</p>
+        <p class="meta-sm" style="margin:0 0 12px">Sua semana com os alunos presenciais. Os horários vêm dos acordos — sempre que você adiciona dias e horários no acordo de um aluno presencial, ele aparece na data certa.</p>
+        <div class="ag-nav">
+          <button class="chev" onclick="agendaSemana(-1)">‹</button>
+          <div class="ag-nav-mid"><div class="ag-nav-tit" id="agSemana">—</div></div>
+          <button class="chev" onclick="agendaSemana(1)">›</button>
+          <button class="btn ghost small" id="agHojeBtn" onclick="agendaHoje()">Hoje</button>
+        </div>
         <div id="agendaResumo" class="agenda-resumo"></div>
         <div id="agendaGrade"><div class="empty">Carregando…</div></div>
       </div>`;
   }
   async function carregarAgenda(){
+    AG_OFFSET = 0;
     if(!STUDENTS.length){
       const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
       STUDENTS = studs || [];
     }
     try{
-      const { data: acs } = await sb.from("acordos").select("student_id,horarios,modelo").eq("professional_id", ME.id).eq("ativo", true);
+      const { data: acs } = await sb.from("acordos").select("student_id,horarios,modelo,data_inicio").eq("professional_id", ME.id).eq("ativo", true);
       AGENDA_DADOS = acs || [];
     }catch(e){ AGENDA_DADOS = []; }
     renderAgenda();
   }
+  // segunda-feira (00:00) da semana de referência
+  function _segundaDaSemana(base){
+    const d = new Date(base); d.setHours(0,0,0,0);
+    const wd = (d.getDay()+6)%7;   // Seg=0 ... Dom=6
+    d.setDate(d.getDate()-wd);
+    return d;
+  }
+  function _addDias(d, n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+  function _ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function _ddmm(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
+  function agendaSemana(delta){ AG_OFFSET += delta; renderAgenda(); }
+  function agendaHoje(){ AG_OFFSET = 0; renderAgenda(); }
   function renderAgenda(){
     const grade = document.getElementById("agendaGrade"); if(!grade) return;
-    const porDia = {}; AC_DIAS.forEach(d=>porDia[d]=[]);
+    const hojeISO = _ymd(new Date());
+    const inicio = _addDias(_segundaDaSemana(new Date()), AG_OFFSET*7);   // segunda da semana exibida
+    const dias = AC_DIAS.map((lbl,i)=>{ const dt=_addDias(inicio,i); return { lbl, dt, iso:_ymd(dt) }; });
+
+    // cabeçalho da semana
+    const tit = document.getElementById("agSemana");
+    if(tit){
+      const fim = dias[6].dt;
+      const rot = AG_OFFSET===0 ? "Esta semana" : (AG_OFFSET===1 ? "Próxima semana" : (AG_OFFSET===-1 ? "Semana passada" : ""));
+      tit.innerHTML = `${_ddmm(inicio)} – ${_ddmm(fim)}${rot?` <span class="ag-nav-sub">· ${rot}</span>`:""}`;
+    }
+    const hojeBtn = document.getElementById("agHojeBtn"); if(hojeBtn) hojeBtn.style.visibility = AG_OFFSET===0 ? "hidden" : "visible";
+
+    // monta aulas por data (projeta o horário recorrente na data, respeitando data_inicio do acordo)
+    const porIso = {}; dias.forEach(d=>porIso[d.iso]=[]);
     let totalAulas=0; const alunosSet=new Set();
     (AGENDA_DADOS||[]).forEach(a=>{
       const s = STUDENTS.find(x=>x.id===a.student_id); if(!s) return;
       const modal = (s.modalidade||"online").toLowerCase();
-      if(!["presencial","misto"].includes(modal)) return;   // só presenciais/mistos
+      if(!["presencial","misto"].includes(modal)) return;
+      const ini = a.data_inicio ? String(a.data_inicio).slice(0,10) : null;
       (Array.isArray(a.horarios)?a.horarios:[]).forEach(h=>{
-        if(!porDia[h.d]) porDia[h.d]=[];
-        porDia[h.d].push({ h:h.h||"—", sid:s.id, nome:nomeAluno(s) });
+        const idx = AC_DIAS.indexOf(h.d); if(idx<0) return;
+        const dref = dias[idx];
+        if(ini && dref.iso < ini) return;   // antes do início do acordo: não conta
+        porIso[dref.iso].push({ h:h.h||"—", sid:s.id, nome:nomeAluno(s) });
         totalAulas++; alunosSet.add(s.id);
       });
     });
-    AC_DIAS.forEach(d=>porDia[d].sort((x,y)=>(x.h||"").localeCompare(y.h||"")));
+    dias.forEach(d=>porIso[d.iso].sort((x,y)=>(x.h||"").localeCompare(y.h||"")));
 
     const resumo = document.getElementById("agendaResumo");
     if(resumo) resumo.innerHTML = totalAulas
-      ? `<span class="ag-kpi">📅 <b>${totalAulas}</b> aula(s) na semana</span><span class="ag-kpi">🧍 <b>${alunosSet.size}</b> aluno(s) presencial(is)</span>`
-      : "";
+      ? `<span class="ag-kpi">📅 <b>${totalAulas}</b> aula(s) na semana</span><span class="ag-kpi">🧍 <b>${alunosSet.size}</b> aluno(s)</span>`
+      : `<span class="ag-kpi">Nenhuma aula nesta semana</span>`;
 
-    if(!totalAulas){
-      grade.innerHTML = `<div class="ac-empty">Nenhuma aula presencial marcada ainda.<br><br>Abra um aluno <b>presencial</b>, defina o acordo e marque os <b>dias e horários</b> — eles aparecem aqui automaticamente.</div>`;
-      return;
-    }
-    const wd = {Dom:0,Seg:1,Ter:2,Qua:3,Qui:4,Sex:5,"Sáb":6};
-    const hoje = new Date().getDay();
-    grade.innerHTML = `<div class="ag-grade">${AC_DIAS.map(d=>{
-      const isHoje = wd[d]===hoje;
-      const itens = porDia[d].length
-        ? porDia[d].map(x=>`<button class="ag-aula" onclick="agendaAbrirAluno('${x.sid}')"><span class="ag-hora">${esc(x.h)}</span><span class="ag-nome">${esc(x.nome)}</span></button>`).join("")
+    grade.innerHTML = `<div class="ag-grade">${dias.map(d=>{
+      const isHoje = d.iso===hojeISO;
+      const itens = porIso[d.iso].length
+        ? porIso[d.iso].map(x=>`<button class="ag-aula" onclick="agendaAbrirAluno('${x.sid}')"><span class="ag-hora">${esc(x.h)}</span><span class="ag-nome">${esc(x.nome)}</span></button>`).join("")
         : `<div class="ag-vazio">livre</div>`;
       return `<div class="ag-col${isHoje?' hoje':''}">
-        <div class="ag-colh"><span>${d}${isHoje?' <span class="ag-hojetag">hoje</span>':''}</span><span class="ag-cnt">${porDia[d].length||""}</span></div>
+        <div class="ag-colh"><span>${d.lbl} <span class="ag-data">${_ddmm(d.dt)}</span>${isHoje?' <span class="ag-hojetag">hoje</span>':''}</span><span class="ag-cnt">${porIso[d.iso].length||""}</span></div>
         <div class="ag-lista">${itens}</div>
       </div>`;
     }).join("")}</div>`;
