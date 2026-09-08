@@ -166,6 +166,7 @@
   .fin-row{display:grid;grid-template-columns:1.4fr .9fr 1fr .8fr auto;align-items:center;gap:10px;
            padding:11px 4px;border-bottom:1px solid var(--line)}
   .fin-nome{font-weight:700;font-size:14px}
+  .fin-valor{font-weight:800;color:var(--txt,#e8eaee)}
   .fin-campo{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
   .fin-in{width:90px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
   .fin-in.fin-dia{width:56px}
@@ -5255,11 +5256,17 @@
   function finStatus(sid){
     const pago = FIN_PAGS[sid];
     if(pago) return "pago";
-    const m = FIN_MENS[sid] || {};
-    const dia = m.dia_venc || 5;
+    const ac = FIN_ACORDO[sid];
+    const dia = (ac ? ac.dia_venc : (FIN_MENS[sid]||{}).dia_venc) || 5;
     const [y,mo] = FIN_COMP.split("-").map(Number);
     const venc = new Date(y, mo-1, dia, 23,59,59);
     return (Date.now() > venc.getTime()) ? "atrasado" : "pendente";
+  }
+  // valor mensal do aluno no mês (acordo manda; senão mensalidade legada)
+  function finValorAluno(sid){
+    const ac = FIN_ACORDO[sid];
+    if(ac) return acValorMes(ac, FIN_COMP);
+    return Number((FIN_MENS[sid]||{}).valor)||0;
   }
 
   function renderFinanceiro(){
@@ -5278,7 +5285,7 @@
         });
         return;
       }
-      const m = FIN_MENS[s.id] || {}; const v = Number(m.valor)||0;
+      const v = finValorAluno(s.id);
       const st = finStatus(s.id);
       if(st==="pago")      recebido += Number((FIN_PAGS[s.id]||{}).valor ?? v);
       else if(st==="atrasado") atraso += v;
@@ -5322,10 +5329,20 @@
           <div class="cob-lista" style="margin-top:10px">${corpo}</div>
         </div>`;
       }
-      // ----- Aluno mensal / por aula: mensalidade recorrente -----
-      const m = FIN_MENS[s.id] || {};
-      const valor = ac ? acValorMes(ac, FIN_COMP) : (Number(m.valor)||0);
-      const dia = (ac ? ac.dia_venc : m.dia_venc) || 5;
+      // ----- Aluno mensal / por aula: mensalidade recorrente (valor sempre do acordo, somente leitura) -----
+      const valor = finValorAluno(s.id);
+      const temCobranca = !!ac || Number((FIN_MENS[s.id]||{}).valor)>0;
+      if(!temCobranca){
+        // sem acordo definido: nada a cobrar ainda
+        return `<div class="fin-row">
+          <div class="fin-nome">${esc(s.full_name||"Aluno")}</div>
+          <div class="fin-campo" style="opacity:.55">—</div>
+          <div class="fin-campo" style="opacity:.55">sem acordo</div>
+          <div class="fin-st"></div>
+          <div class="fin-ac"><button class="btn ghost fin-btn" onclick="agendaAbrirAluno('${s.id}')">Definir acordo</button></div>
+        </div>`;
+      }
+      const dia = (ac ? ac.dia_venc : (FIN_MENS[s.id]||{}).dia_venc) || 5;
       const st = finStatus(s.id);
       const chip = st==="pago"     ? `<span class="fin-tag pg">Pago</span>`
                  : st==="atrasado" ? `<span class="fin-tag at">Atrasado</span>`
@@ -5333,15 +5350,10 @@
       const acao = st==="pago"
         ? `<button class="btn ghost fin-btn" onclick="desfazerPagamento('${s.id}')">Desfazer</button>`
         : `<button class="btn fin-btn" onclick="registrarPagamento('${s.id}')">Registrar pagamento</button>`;
-      // com acordo: valor vem do acordo (somente leitura); sem acordo (legado): editável
-      const campos = ac
-        ? `<div class="fin-campo" style="font-weight:700;color:var(--txt)">${fmtBRL(valor)}${ac.modelo==="aula"?`<span class="meta-sm" style="margin:0"> · ${acAulasNoMes(ac,FIN_COMP)} aulas</span>`:""}</div>
-           <div class="fin-campo">venc. dia ${dia}</div>`
-        : `<label class="fin-campo">R$ <input id="finVal_${s.id}" class="fin-in" type="number" step="0.01" min="0" value="${valor}" onchange="salvarMens('${s.id}')"></label>
-           <label class="fin-campo">venc. dia <input id="finDia_${s.id}" class="fin-in fin-dia" type="number" min="1" max="28" value="${dia}" onchange="salvarMens('${s.id}')"></label>`;
       return `<div class="fin-row">
         <div class="fin-nome">${esc(s.full_name||"Aluno")}</div>
-        ${campos}
+        <div class="fin-campo fin-valor">${fmtBRL(valor)}${ac && ac.modelo==="aula"?`<span class="meta-sm" style="margin:0"> · ${acAulasNoMes(ac,FIN_COMP)} aulas</span>`:""}</div>
+        <div class="fin-campo">venc. dia ${dia}</div>
         <div class="fin-st">${chip}</div>
         <div class="fin-ac">${acao}</div>
       </div>`;
@@ -5431,8 +5443,7 @@
 
   async function registrarPagamento(sid){
     if(contaCongelada()){ avisoCongelada(); return; }
-    const m = FIN_MENS[sid] || {};
-    const valor = Number(m.valor)||0;
+    const valor = finValorAluno(sid);
     const { data, error } = await sb.from("pagamentos")
       .upsert({ student_id:sid, professional_id:ME.id, competencia:FIN_COMP, valor, pago_em:new Date().toISOString() },
               { onConflict:"student_id,competencia" })
