@@ -161,8 +161,28 @@
   .fin-kpi{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
   .fin-kpi .fk-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
   .fin-kpi b{font-size:18px}
+  .fin-kpi .fk-sub{font-size:11px;color:var(--muted)}
   .fin-kpi.ok b{color:#15803d}
   .fin-kpi.warn b{color:#be123c}
+  /* abas + filtros do financeiro */
+  .fin-abas{display:flex;gap:8px;margin-bottom:14px}
+  .fin-filtros{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .fin-statuschips{display:flex;gap:6px;flex-wrap:wrap}
+  /* gráfico ganho por mês */
+  .fchart{display:flex;align-items:flex-end;gap:8px;overflow-x:auto;padding:6px 2px 0}
+  .fbar-col{flex:1 0 44px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:44px}
+  .fbar-val{font-size:10.5px;font-weight:700;color:var(--muted);min-height:14px;white-space:nowrap}
+  .fbar-stack{display:flex;flex-direction:column-reverse;justify-content:flex-start;width:30px;background:var(--pk-elev,#0f1116);border-radius:6px;overflow:hidden}
+  .fbar-seg{width:100%}
+  .fbar-seg.mens{background:var(--pink,#7fff00)}
+  .fbar-seg.treino{background:#6aa9ff}
+  .fbar-lbl{font-size:11px;font-weight:700;color:var(--muted)}
+  .fbar-lbl.cur{color:var(--pink-deep,#8fdb3a)}
+  .fbar-ano{font-size:9px;opacity:.7}
+  .fleg{display:inline-flex;align-items:center;gap:5px;margin-right:10px;font-weight:600}
+  .fleg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .fleg .fseg-mens{background:var(--pink,#7fff00)}
+  .fleg .fseg-treino{background:#6aa9ff}
   .fin-row{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) 108px 196px;align-items:center;gap:10px;
            padding:11px 4px;border-bottom:1px solid var(--line)}
   .fin-nome{font-weight:700;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -5191,6 +5211,9 @@
 
   /* ---------- PROFISSIONAL: FINANCEIRO ---------- */
   let FIN_COMP = null;            // 'YYYY-MM' em foco
+  let FIN_ABA = "mes";            // 'mes' | 'analise'
+  let FIN_BUSCA = "", FIN_STATUS = "todos";
+  let FIN_ANALISE = null;
   let FIN_MENS = {};              // student_id -> {valor, dia_venc}
   let FIN_PAGS = {};             // student_id -> {id, valor, pago_em}
   let FIN_ACORDO = {};           // student_id -> acordo ativo
@@ -5208,21 +5231,52 @@
 
   function viewFinanceiro(){
     if(!FIN_COMP) FIN_COMP = compAtual();
+    const stChip = (k,l)=>`<button class="grp-chip sm ${FIN_STATUS===k?'on':''}" data-stf="${k}" onclick="finSetStatus('${k}')">${l}</button>`;
     return `<h2>Financeiro</h2>
-      <div class="card">
+      <div class="fin-abas">
+        <button class="grp-chip ${FIN_ABA==='mes'?'on':''}" id="finAba_mes" onclick="finAba('mes')">Este mês</button>
+        <button class="grp-chip ${FIN_ABA==='analise'?'on':''}" id="finAba_analise" onclick="finAba('analise')">📊 Análise</button>
+      </div>
+
+      <div class="card" id="finMesWrap" ${FIN_ABA==='analise'?'style="display:none"':''}>
         <div class="fin-topo">
           <button class="chev" onclick="finMudarMes(-1)">‹</button>
           <div class="fin-mes" id="finMes">${compLabel(FIN_COMP)}</div>
           <button class="chev" onclick="finMudarMes(1)">›</button>
         </div>
-        <p class="meta-sm" style="margin-top:2px">Consolidado de todos os alunos no mês: mensalidades (mensal / por aula) e cobranças avulsas (por treino). O valor e o vencimento vêm do acordo de cada aluno; aqui você registra os pagamentos.</p>
+        <p class="meta-sm" style="margin-top:2px">Todas as cobranças do mês — mensalidades (mensal / por aula) e avulsas (por treino). Use a busca e os filtros pra achar qualquer aluno; registre os pagamentos aqui.</p>
+        <div class="fin-filtros">
+          <input id="finBusca" class="aluno-search" style="max-width:240px;margin:0" placeholder="🔍 Buscar aluno…" value="${esc(FIN_BUSCA)}" oninput="finSetBusca(this.value)">
+          <div class="fin-statuschips">${stChip('todos','Todos')}${stChip('pago','Pagos')}${stChip('pendente','Pendentes')}${stChip('atrasado','Atrasados')}</div>
+        </div>
         <div id="finCards" class="fin-cards" style="margin:14px 0"></div>
         <div id="finLista"><div class="empty">Carregando…</div></div>
+      </div>
+
+      <div class="card" id="finAnaliseWrap" ${FIN_ABA!=='analise'?'style="display:none"':''}>
+        <div id="finAnaliseBox"><div class="empty">Carregando…</div></div>
       </div>`;
+  }
+  function finAba(aba){
+    FIN_ABA = aba;
+    const mw=document.getElementById("finMesWrap"), aw=document.getElementById("finAnaliseWrap");
+    const bm=document.getElementById("finAba_mes"), ba=document.getElementById("finAba_analise");
+    if(mw) mw.style.display = aba==="mes" ? "" : "none";
+    if(aw) aw.style.display = aba==="analise" ? "" : "none";
+    if(bm) bm.classList.toggle("on", aba==="mes");
+    if(ba) ba.classList.toggle("on", aba==="analise");
+    if(aba==="analise") carregarFinAnalise();
+  }
+  function finSetBusca(v){ FIN_BUSCA = v||""; renderFinLista(); }
+  function finSetStatus(k){
+    FIN_STATUS = k;
+    document.querySelectorAll('.fin-statuschips [data-stf]').forEach(b=>b.classList.toggle("on", b.getAttribute("data-stf")===k));
+    renderFinLista();
   }
 
   async function carregarFinanceiro(){
     if(!FIN_COMP) FIN_COMP = compAtual();
+    FIN_ABA = "mes"; FIN_BUSCA = ""; FIN_STATUS = "todos"; FIN_ANALISE = null;
     if(!STUDENTS.length){
       const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
       STUDENTS = studs || [];
@@ -5271,13 +5325,9 @@
     return Number((FIN_MENS[sid]||{}).valor)||0;
   }
 
-  function renderFinanceiro(){
-    const mesEl = document.getElementById("finMes"); if(mesEl) mesEl.textContent = compLabel(FIN_COMP);
+  // totais do mês em foco (recebido / a receber / atraso)
+  function _finTotaisMes(){
     const ativos = STUDENTS.filter(s => (s.status||"active") === "active");
-    const lista = document.getElementById("finLista");
-    const cards = document.getElementById("finCards");
-    if(!lista) return;
-
     let recebido=0, aReceber=0, atraso=0;
     ativos.forEach(s=>{
       if((FIN_ACORDO[s.id]||{}).modelo==="treino"){
@@ -5293,22 +5343,39 @@
       else if(st==="atrasado") atraso += v;
       else                 aReceber += v;
     });
-
-    if(cards){
-      cards.innerHTML = `
-        <div class="fin-kpi ok"><span class="fk-lbl">Recebido</span><b>${fmtBRL(recebido)}</b></div>
-        <div class="fin-kpi"><span class="fk-lbl">A receber</span><b>${fmtBRL(aReceber)}</b></div>
-        <div class="fin-kpi warn"><span class="fk-lbl">Em atraso</span><b>${fmtBRL(atraso)}</b></div>
-        <div class="fin-kpi"><span class="fk-lbl">Alunos ativos</span><b>${ativos.length}</b></div>`;
-    }
-
+    return { recebido, aReceber, atraso, ativos:ativos.length };
+  }
+  function renderFinanceiro(){
+    const mesEl = document.getElementById("finMes"); if(mesEl) mesEl.textContent = compLabel(FIN_COMP);
+    renderFinCards();
+    renderFinLista();
+  }
+  function renderFinCards(){
+    FIN_ANALISE = null;   // dados mudaram no mês: força recarregar a análise ao abrir
+    const cards = document.getElementById("finCards"); if(!cards) return;
+    const t = _finTotaisMes();
+    cards.innerHTML = `
+      <div class="fin-kpi ok"><span class="fk-lbl">Recebido</span><b>${fmtBRL(t.recebido)}</b></div>
+      <div class="fin-kpi"><span class="fk-lbl">A receber</span><b>${fmtBRL(t.aReceber)}</b></div>
+      <div class="fin-kpi warn"><span class="fk-lbl">Em atraso</span><b>${fmtBRL(t.atraso)}</b></div>
+      <div class="fin-kpi"><span class="fk-lbl">Alunos ativos</span><b>${t.ativos}</b></div>`;
+  }
+  function renderFinLista(){
+    const lista = document.getElementById("finLista"); if(!lista) return;
+    const ativos = STUDENTS.filter(s => (s.status||"active") === "active");
     if(!ativos.length){ lista.innerHTML = `<div class="empty">Nenhum aluno ativo.</div>`; return; }
+    const q = (FIN_BUSCA||"").toLowerCase().trim();
+    const stf = FIN_STATUS||"todos";
+    const bateNome = s => !q || (nomeAluno(s).toLowerCase().includes(q) || (s.email||"").toLowerCase().includes(q));
 
     const rows = ativos.map(s=>{
+      if(!bateNome(s)) return "";
       const ac = FIN_ACORDO[s.id];
       // ----- Aluno por treino: bloco de cobranças (esporádicas) do mês -----
       if(ac && ac.modelo==="treino"){
-        const cobs = _finCobsDoMes(s.id);
+        let cobs = _finCobsDoMes(s.id);
+        if(stf!=="todos") cobs = cobs.filter(c=>_cobStatus(c)===stf);
+        if(stf!=="todos" && !cobs.length) return "";   // filtro ativo e nada bate: esconde
         const corpo = cobs.length
           ? cobs.map(c=>{
               const stt=_cobStatus(c);
@@ -5335,6 +5402,7 @@
       const valor = finValorAluno(s.id);
       const temCobranca = !!ac || Number((FIN_MENS[s.id]||{}).valor)>0;
       if(!temCobranca){
+        if(stf!=="todos") return "";   // sem cobrança não tem status: some sob filtro
         // sem acordo definido: nada a cobrar ainda
         return `<div class="fin-row">
           <div class="fin-nome">${esc(s.full_name||"Aluno")}</div>
@@ -5346,6 +5414,7 @@
       }
       const dia = (ac ? ac.dia_venc : (FIN_MENS[s.id]||{}).dia_venc) || 5;
       const st = finStatus(s.id);
+      if(stf!=="todos" && st!==stf) return "";   // filtro de status
       const chip = st==="pago"     ? `<span class="fin-tag pg">Pago</span>`
                  : st==="atrasado" ? `<span class="fin-tag at">Atrasado</span>`
                  :                    `<span class="fin-tag pe">Pendente</span>`;
@@ -5360,7 +5429,7 @@
         <div class="fin-ac">${acao}</div>
       </div>`;
     }).join("");
-    lista.innerHTML = rows;
+    lista.innerHTML = rows.trim() ? rows : `<div class="empty">Nenhuma cobrança ${stf!=="todos"?"nesse status":""}${q?` para "${esc(q)}"`:""}.</div>`;
   }
 
   /* cobranças por treino no consolidado do personal */
@@ -5421,6 +5490,87 @@
     const ov=document.getElementById("cobOv2"); if(ov) ov.remove();
     (FIN_COBS[sid]=FIN_COBS[sid]||[]).unshift(nova);
     renderFinanceiro();
+  }
+
+  /* ---------- FINANCEIRO: ABA ANÁLISE (macro) ---------- */
+  function _brlShort(v){ return "R$ " + Math.round(Number(v)||0).toLocaleString("pt-BR"); }
+  const _MESABR = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  function _ultimasComps(n){
+    const arr=[]; let [y,m]=compAtual().split("-").map(Number);
+    for(let i=0;i<n;i++){ arr.unshift(y+"-"+String(m).padStart(2,"0")); m--; if(m<1){m=12;y--;} }
+    return arr;
+  }
+  async function carregarFinAnalise(){
+    const box = document.getElementById("finAnaliseBox"); if(!box) return;
+    if(FIN_ANALISE){ renderFinAnalise(); return; }   // já carregado nesta sessão da tela
+    box.innerHTML = `<div class="empty">Carregando…</div>`;
+    try{
+      const [rp, rc] = await Promise.all([
+        sb.from("pagamentos").select("competencia,valor,pago_em").eq("professional_id", ME.id),
+        sb.from("cobrancas_aluno").select("valor,pago,pago_em,criado_em").eq("professional_id", ME.id)
+      ]);
+      FIN_ANALISE = { pags: rp.data||[], cobs: rc.data||[] };
+    }catch(e){ FIN_ANALISE = { pags:[], cobs:[] }; }
+    renderFinAnalise();
+  }
+  function renderFinAnalise(){
+    const box = document.getElementById("finAnaliseBox"); if(!box || !FIN_ANALISE) return;
+
+    // ---- KPIs do mês atual ----
+    const t = _finTotaisMes();
+    const faturado = t.recebido + t.aReceber + t.atraso;
+    const inad = faturado>0 ? Math.round(t.atraso/faturado*100) : 0;
+    // recorrente prevista (MRR): acordos mensal/aula ativos
+    let mrr=0, alunosCobr=0, prevPres=0, aulasPres=0;
+    STUDENTS.filter(s=>(s.status||"active")==="active").forEach(s=>{
+      const ac = FIN_ACORDO[s.id]; if(!ac) return;
+      alunosCobr++;
+      if(ac.modelo!=="treino") mrr += acValorMes(ac, compAtual());
+      const modal=(s.modalidade||"online").toLowerCase();
+      if(["presencial","misto"].includes(modal) && ac.modelo!=="treino"){
+        prevPres += acValorMes(ac, compAtual());
+        aulasPres += acAulasNoMes(ac, compAtual());
+      }
+    });
+    const ticket = alunosCobr ? faturado/alunosCobr : 0;
+    const ganhoAula = aulasPres ? prevPres/aulasPres : 0;
+    const kpis = `<div class="fin-cards" style="margin-bottom:18px">
+      <div class="fin-kpi ok"><span class="fk-lbl">Recebido no mês</span><b>${fmtBRL(t.recebido)}</b></div>
+      <div class="fin-kpi warn"><span class="fk-lbl">Em atraso</span><b>${fmtBRL(t.atraso)}</b><span class="fk-sub">${inad}% de inadimplência</span></div>
+      <div class="fin-kpi"><span class="fk-lbl">Recorrente prevista</span><b>${fmtBRL(mrr)}</b><span class="fk-sub">seu piso mensal</span></div>
+      <div class="fin-kpi"><span class="fk-lbl">Ticket médio</span><b>${fmtBRL(ticket)}</b><span class="fk-sub">${alunosCobr} aluno(s) com acordo</span></div>
+      <div class="fin-kpi"><span class="fk-lbl">Ganho por aula presencial</span><b>${fmtBRL(ganhoAula)}</b><span class="fk-sub">${aulasPres} aula(s) no mês</span></div>
+    </div>`;
+
+    // ---- Gráfico: ganho por mês (12 meses), empilhado mensalidades + por treino ----
+    const comps = _ultimasComps(12);
+    const mens={}, trei={}; comps.forEach(c=>{ mens[c]=0; trei[c]=0; });
+    (FIN_ANALISE.pags||[]).forEach(p=>{ if(mens[p.competencia]!==undefined) mens[p.competencia]+=Number(p.valor)||0; });
+    (FIN_ANALISE.cobs||[]).forEach(c=>{ if(!c.pago) return; const mth=String(c.pago_em||c.criado_em||"").slice(0,7); if(trei[mth]!==undefined) trei[mth]+=Number(c.valor)||0; });
+    const totais = comps.map(c=>mens[c]+trei[c]);
+    const max = Math.max(1, ...totais);
+    const H = 168;
+    const compAt = compAtual();
+    const barras = comps.map(c=>{
+      const m=mens[c], tr=trei[c], tot=m+tr;
+      const hm = Math.round(m/max*H), ht = Math.round(tr/max*H);
+      const [yy,mm]=c.split("-").map(Number);
+      const cur = c===compAt;
+      return `<div class="fbar-col">
+        <div class="fbar-val">${tot?_brlShort(tot):""}</div>
+        <div class="fbar-stack" style="height:${H}px">
+          <div class="fbar-seg mens" style="height:${hm}px" title="Mensalidades: ${fmtBRL(m)}"></div>
+          <div class="fbar-seg treino" style="height:${ht}px" title="Por treino: ${fmtBRL(tr)}"></div>
+        </div>
+        <div class="fbar-lbl${cur?' cur':''}">${_MESABR[mm-1]}<span class="fbar-ano">/${String(yy).slice(2)}</span></div>
+      </div>`;
+    }).join("");
+    const temTreino = comps.some(c=>trei[c]>0);
+    const chart = `<div class="ac-t" style="margin-bottom:4px">📊 Ganho por mês</div>
+      <p class="meta-sm" style="margin:0 0 12px">Dinheiro que entrou em cada mês (últimos 12). ${temTreino?`<span class="fleg"><i class="fseg-mens"></i>Mensalidades</span> <span class="fleg"><i class="fseg-treino"></i>Por treino</span>`:""}</p>
+      <div class="fchart">${barras}</div>`;
+
+    box.innerHTML = kpis + `<div style="border-top:1px solid var(--line,#262a33);margin:4px 0 16px"></div>` + chart;
   }
 
   function finMudarMes(delta){
