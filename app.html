@@ -1538,6 +1538,7 @@
     // Desempenho: só depois que o profissional adquire um plano pago.
     if(temPlanoTreino())    m.push({id:"desempenho", label:"Desempenho"});
     m.push({id:"financeiro", label:"Financeiro"});
+    m.push({id:"notificacoes", label:"Notificações"});
     if(role === "creator") m.push({id:"admin", label:"Painel do criador"});
     return m;
   }
@@ -2187,6 +2188,7 @@
     else if(id === "exercicios"){ p.innerHTML = viewExercicios(); loadExercicios(); }
     else if(id === "desempenho"){ DESP_SEL=null; p.innerHTML = viewDesempenho(); }
     else if(id === "financeiro"){ if(ME.role==="student"){ p.innerHTML = viewMeuFinanceiro(); carregarMeuFinanceiro(); } else { p.innerHTML = viewFinanceiro(); carregarFinanceiro(); } }
+    else if(id === "notificacoes"){ p.innerHTML = viewNotificacoes(); carregarNotificacoes(); }
     else if(id === "inativos"){  p.innerHTML = viewInativos();  loadStudents(); }
     else if(id === "inicio"){    p.innerHTML = viewAlunos(); const _d=document.getElementById("alunoDetalhe"); if(_d) _d.innerHTML=""; }   // tela inicial: menu + card vazio (sem descrição)
     atualizarPill();
@@ -6104,6 +6106,169 @@
 
   /* ---------- PROFISSIONAL: AGENDA (semana com datas reais) ---------- */
   let AGENDA_DADOS = null, AG_OFFSET = 0;   // AG_OFFSET: semanas a partir da atual (0 = esta semana)
+  /* ============ NOTIFICAÇÕES (preferências de push do personal) ============ */
+  const NTF_DEF = {
+    pag_venc_prox_on:true, pag_venc_prox_dias:3,
+    pag_atraso_on:true,    pag_atraso_dias:2,
+    treino_vencer_on:true, treino_vencer_dias:5,
+    aval_personal_on:true, aval_personal_dias:7,
+    aval_aluno_on:true,    aval_aluno_dias:7,
+    treino_concluido_on:true
+  };
+  let NTF = Object.assign({}, NTF_DEF);
+
+  function _ntfRow(kOn, who, titulo, desc, diasField, sufixo){
+    const cfg = diasField ? `
+      <div class="ntf-cfg" data-for="${kOn}">
+        <span class="ntf-lbl">Avisar</span>
+        <div class="ntf-step">
+          <button type="button" onclick="ntfStep('${diasField}',-1)">−</button>
+          <span class="ntf-n" id="ntf_${diasField}">${NTF_DEF[diasField]}</span>
+          <button type="button" onclick="ntfStep('${diasField}',1)">+</button>
+        </div>
+        <span class="ntf-lbl">${sufixo}</span>
+      </div>` : "";
+    return `
+      <div class="ntf-row" id="ntfrow_${kOn}">
+        <div class="ntf-main">
+          <div class="ntf-tt">${titulo} <span class="ntf-who ${who==='Você'?'v':'a'}">${who}</span></div>
+          <div class="ntf-desc">${desc}</div>
+          ${cfg}
+        </div>
+        <div class="ntf-tg" id="ntftg_${kOn}" data-k="${kOn}" onclick="ntfToggle(this)"></div>
+      </div>`;
+  }
+
+  function viewNotificacoes(){
+    return `
+    <style>
+      .ntf-wrap{max-width:640px}
+      .ntf-head p{color:var(--muted);font-size:13.5px;margin-top:4px;line-height:1.5}
+      .ntf-legend{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0 6px}
+      .ntf-lg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+      .ntf-dot{width:9px;height:9px;border-radius:3px}
+      .ntf-dot.v{background:var(--pink)} .ntf-dot.a{background:#5aa9ff}
+      .ntf-sect{margin-top:18px}
+      .ntf-sect-tt{font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);padding:0 4px 8px}
+      .ntf-card{background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+      .ntf-row{display:flex;align-items:flex-start;gap:12px;padding:15px 16px;border-top:1px solid var(--line)}
+      .ntf-row:first-child{border-top:none}
+      .ntf-row.off{opacity:.55}
+      .ntf-main{flex:1;min-width:0}
+      .ntf-tt{font-size:15px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .ntf-desc{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+      .ntf-who{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;white-space:nowrap}
+      .ntf-who.v{background:rgba(127,255,0,.15);color:var(--pink-deep)}
+      .ntf-who.a{background:rgba(90,169,255,.16);color:#5aa9ff}
+      .ntf-tg{flex:0 0 auto;width:48px;height:28px;border-radius:999px;background:var(--pk-surf2,#1d2027);border:1px solid var(--line);position:relative;cursor:pointer;transition:.18s;margin-top:2px}
+      .ntf-tg::after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#c7ccd4;transition:.18s}
+      .ntf-tg.on{background:var(--pink);border-color:var(--pink)}
+      .ntf-tg.on::after{left:22px;background:#0a0b0d}
+      .ntf-cfg{display:flex;align-items:center;gap:10px;margin-top:12px;background:var(--pk-bg,#0f1116);border:1px solid var(--line);border-radius:12px;padding:8px 11px;width:max-content}
+      .ntf-cfg.disabled{opacity:.4;pointer-events:none}
+      .ntf-lbl{font-size:12.5px;color:var(--muted)}
+      .ntf-step{display:flex;align-items:center;background:var(--pk-surf2,#1d2027);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+      .ntf-step button{width:32px;height:30px;background:none;border:none;color:var(--pink-deep);font-size:18px;font-weight:800;cursor:pointer}
+      .ntf-step button:active{background:rgba(127,255,0,.14)}
+      .ntf-n{min-width:32px;text-align:center;font-size:15px;font-weight:800;color:var(--txt)}
+      .ntf-save{position:sticky;bottom:0;padding:16px 0 4px;background:linear-gradient(180deg,transparent,var(--pk-surf,#15171c) 40%)}
+      .ntf-note{font-size:12px;color:var(--muted);opacity:.8;margin-top:10px;line-height:1.5}
+    </style>
+    <div class="ntf-wrap">
+      <div class="ntf-head">
+        <h2 style="font-size:22px;font-weight:800">Notificações</h2>
+        <p>Escolha o que você e seus alunos recebem. Os prazos valem para todos os seus alunos. O aluno só recebe se tiver o app instalado e com notificações permitidas.</p>
+      </div>
+      <div class="ntf-legend">
+        <span class="ntf-lg"><span class="ntf-dot v"></span> Vai para você</span>
+        <span class="ntf-lg"><span class="ntf-dot a"></span> Vai para o aluno</span>
+      </div>
+
+      <div class="ntf-sect">
+        <div class="ntf-sect-tt">Pagamento do aluno</div>
+        <div class="ntf-card">
+          ${_ntfRow("pag_venc_prox_on","Aluno","Vencimento próximo","Lembra o aluno antes de vencer a mensalidade dele com você.","pag_venc_prox_dias","dias antes")}
+          ${_ntfRow("pag_atraso_on","Aluno","Pagamento atrasado","Cobra o aluno quando passa do prazo sem pagar.","pag_atraso_dias","dias depois")}
+        </div>
+      </div>
+
+      <div class="ntf-sect">
+        <div class="ntf-sect-tt">Treinos</div>
+        <div class="ntf-card">
+          ${_ntfRow("treino_vencer_on","Você","Treino perto de vencer","Te avisa quando o treino de um aluno está chegando ao fim.","treino_vencer_dias","dias antes")}
+        </div>
+      </div>
+
+      <div class="ntf-sect">
+        <div class="ntf-sect-tt">Avaliações</div>
+        <div class="ntf-card">
+          ${_ntfRow("aval_personal_on","Você","Avaliação se aproximando","Te lembra da próxima avaliação marcada de cada aluno.","aval_personal_dias","dias antes")}
+          ${_ntfRow("aval_aluno_on","Aluno","Avaliação se aproximando","Lembra o aluno da avaliação pra ele manter a constância até lá.","aval_aluno_dias","dias antes")}
+        </div>
+      </div>
+
+      <div class="ntf-sect">
+        <div class="ntf-sect-tt">Durante e pós-treino</div>
+        <div class="ntf-card">
+          ${_ntfRow("treino_concluido_on","Você","Aluno concluiu o treino","Te avisa toda vez que um aluno termina o treino do dia.","","")}
+        </div>
+      </div>
+
+      <div class="ntf-save">
+        <button class="btn" style="width:100%" onclick="salvarNotificacoes(this)">Salvar preferências</button>
+        <div class="ntf-note">Outros avisos essenciais (pagamento confirmado, treino novo, nova avaliação, fim de descanso e a sua mensalidade Piik) são sempre enviados e não aparecem aqui.</div>
+      </div>
+    </div>`;
+  }
+
+  function _ntfAplicar(){
+    Object.keys(NTF_DEF).forEach(k=>{
+      if(k.endsWith("_on")){
+        const tg = document.getElementById("ntftg_"+k);
+        const row = document.getElementById("ntfrow_"+k);
+        if(tg) tg.classList.toggle("on", !!NTF[k]);
+        if(row) row.classList.toggle("off", !NTF[k]);
+        const cfg = document.querySelector('.ntf-cfg[data-for="'+k+'"]');
+        if(cfg) cfg.classList.toggle("disabled", !NTF[k]);
+      } else {
+        const n = document.getElementById("ntf_"+k);
+        if(n) n.textContent = NTF[k];
+      }
+    });
+  }
+
+  async function carregarNotificacoes(){
+    NTF = Object.assign({}, NTF_DEF);
+    try{
+      const { data } = await sb.from("push_prefs").select("*").eq("professional_id", ME.id).maybeSingle();
+      if(data){ Object.keys(NTF_DEF).forEach(k=>{ if(data[k]!=null) NTF[k]=data[k]; }); }
+    }catch(e){}
+    _ntfAplicar();
+  }
+
+  function ntfToggle(el){
+    const k = el.dataset.k;
+    NTF[k] = !NTF[k];
+    _ntfAplicar();
+  }
+
+  function ntfStep(field, delta){
+    let v = (Number(NTF[field])||NTF_DEF[field]) + delta;
+    if(v<1) v=1; if(v>60) v=60;
+    NTF[field] = v;
+    const n = document.getElementById("ntf_"+field);
+    if(n) n.textContent = v;
+  }
+
+  async function salvarNotificacoes(btn){
+    if(btn){ btn.disabled=true; btn.textContent="Salvando…"; }
+    const payload = Object.assign({ professional_id: ME.id, updated_at: new Date().toISOString() }, NTF);
+    const { error } = await sb.from("push_prefs").upsert(payload, { onConflict:"professional_id" });
+    if(btn){ btn.disabled=false; btn.textContent="Salvar preferências"; }
+    if(error){ piikAlert("Não consegui salvar: "+error.message); return; }
+    if(typeof piikToast==="function") piikToast("Preferências salvas ✅"); else if(btn){ btn.textContent="Salvo ✅"; setTimeout(()=>btn.textContent="Salvar preferências",1600); }
+  }
+
   function viewAgenda(){
     return `<h2>Agenda</h2>
       <div class="card">
@@ -6579,7 +6744,7 @@
         <span class="ai-av">${esc(iniciaisAluno(s))}</span>
         <span class="ai-main">
           <span class="ai-nome">${esc(nomeAluno(s))}${demo?` <span class="demo-tag">demo</span>`:""}</span>
-          <span class="ai-sub"><span class="ai-tag">${modLbl}</span> ${naval} aval.</span>
+          <span class="ai-sub"><span class="ai-tag">${modLbl}</span></span>
         </span>
       </button>`;
     }).join("");
