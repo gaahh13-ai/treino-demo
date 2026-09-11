@@ -1,71 +1,200 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Política de Privacidade — Piik</title>
+<meta name="description" content="Como o Piik coleta, usa, compartilha e protege os dados de personais e alunos.">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-  body{background:#0a0b0d;color:#e8eaee;line-height:1.6;padding:40px 20px}
-  .wrap{max-width:760px;margin:0 auto}
-  h1{font-size:28px;color:#fff;margin-bottom:6px}
-  h2{font-size:18px;color:#7fff00;margin:28px 0 10px}
-  p,li{color:#c7ccd6;font-size:15px;margin-bottom:10px}
-  ul{padding-left:22px}
-  a{color:#7fff00}
-  .meta{color:#6b7079;font-size:13px;margin-bottom:24px}
-  .brand{font-weight:800;font-style:italic;color:#fff}
-  .brand span{color:#7fff00}
+  :root{
+    --ink:#15181c; --muted:#5a6270; --faint:#8b93a1;
+    --bg:#ffffff; --band:#0a0b0d; --soft:#f4f6f4; --line:#e2e6e2;
+    --accent:#5aa800; --accent-band:#7fff00;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.7;font-size:16px}
+  .band{background:var(--band);color:#fff;padding:22px 20px}
+  .band .in{max-width:760px;margin:0 auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .logo{font-weight:800;font-size:22px;letter-spacing:-.02em;font-style:italic}
+  .logo span{color:var(--accent-band)}
+  .band .sub{color:#9aa2a8;font-size:13px}
+  .wrap{max-width:760px;margin:0 auto;padding:34px 20px 80px}
+  h1{font-size:29px;line-height:1.2;letter-spacing:-.02em;margin:0 0 6px}
+  .atual{color:var(--faint);font-size:13.5px;margin:0 0 26px}
+  h2{font-size:19px;margin:38px 0 8px;padding-top:18px;border-top:1px solid var(--line);letter-spacing:-.01em}
+  h3{font-size:15.5px;margin:22px 0 4px}
+  p{margin:10px 0}
+  ul{margin:10px 0;padding-left:22px}
+  li{margin:5px 0}
+  a{color:var(--accent)}
+  .resumo{background:var(--soft);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;padding:16px 20px;margin:22px 0}
+  .resumo p{margin:6px 0;font-size:15px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--soft);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .tabela-wrap{overflow-x:auto}
+  .rodape{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);color:var(--faint);font-size:13.5px}
+  .rodape a{color:var(--accent)}
 </style>
 </head>
 <body>
+
+<div class="band"><div class="in">
+  <span class="logo">P<span>ii</span>k</span>
+  <span class="sub">Política de Privacidade</span>
+</div></div>
+
 <div class="wrap">
-  <div class="brand">P<span>ii</span>k</div>
-  <h1>Política de Privacidade</h1>
-  <p class="meta">Última atualização: 13 de agosto de 2026. Vigência a partir desta data.</p>
 
-  <p>Esta Política explica como o <b>Piik</b> ("nós") coleta, usa, armazena e protege os dados pessoais de quem usa o aplicativo e o site (piik.com.br), em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD).</p>
+<h1>Política de Privacidade</h1>
+<p class="atual">Última atualização: 11 de setembro de 2026 · Vigente a partir desta data.</p>
 
-  <h2>1. Quem é o controlador</h2>
-  <p>O controlador dos dados é <b>Gabriel Venezian Barbosa</b> (pessoa física), e-mail de contato <b>contato@piik.com.br</b>. Para assuntos de privacidade, fale com nosso Encarregado (DPO) por esse mesmo e-mail.</p>
+<div class="resumo">
+  <p><b>O essencial, em quatro linhas.</b></p>
+  <p>O Piik guarda seus dados de cadastro, seus treinos e, se você for aluno, suas avaliações físicas. Usamos isso para fazer o app funcionar — nada mais.</p>
+  <p><b>Não vendemos seus dados e não usamos eles para publicidade.</b></p>
+  <p>Você pode pedir uma cópia, corrigir ou apagar tudo a qualquer momento, direto no app ou pelo <a href="mailto:contato@piik.com.br">contato@piik.com.br</a>.</p>
+</div>
 
-  <h2>2. Quais dados coletamos</h2>
-  <ul>
-    <li><b>Cadastro:</b> nome, CPF e e-mail (para criar e acessar sua conta e identificar você com segurança, inclusive em caso de reabertura de conta).</li>
-    <li><b>Foto de perfil:</b> a imagem que você opcionalmente escolhe.</li>
-    <li><b>Dados de treino:</b> treinos realizados, cargas registradas, anotações de exercícios e histórico de sessões.</li>
-    <li><b>Avaliações físicas:</b> medidas registradas pelo seu personal (peso, altura, composição corporal, dobras, circunferências) e metas.</li>
-    <li><b>Profissionais (personais):</b> quando autorizado por você, dados de contato (e-mail, WhatsApp, CREF, Instagram) para exibição aos seus alunos.</li>
-    <li><b>Dados técnicos:</b> informações necessárias ao funcionamento e à segurança (por exemplo, registros de consentimento com data, IP e navegador).</li>
-  </ul>
+<h2>1. Quem somos</h2>
+<p>O Piik é uma plataforma para personal trainers montarem e acompanharem os treinos dos seus alunos, disponível pelo site <b>piik.com.br</b> e pelos aplicativos para iPhone e Android.</p>
+<p>O <b>controlador</b> dos dados tratados nesta plataforma, nos termos da Lei nº 13.709/2018 (Lei Geral de Proteção de Dados — LGPD), é <b>Gabriel Venezian Barbosa</b>, pessoa física, com contato em <a href="mailto:contato@piik.com.br">contato@piik.com.br</a>.</p>
+<p>Também atuamos como <b>encarregado</b> (DPO) pelo mesmo canal de contato. Qualquer pedido relativo a dados pessoais pode ser feito por ali.</p>
 
-  <h2>3. Para que usamos</h2>
-  <p>Usamos os dados para: permitir seu login e uso do app; exibir seus treinos e seu progresso; registrar cargas e sessões; mostrar avaliações e metas; exibir o contato do seu personal quando ele autoriza; e garantir segurança e prevenção a fraudes.</p>
+<h2>2. Quem é quem no Piik</h2>
+<p>Esta política fala de dois papéis diferentes, e vale a pena separar:</p>
+<ul>
+  <li><b>Personal trainer</b> — quem contrata o Piik, cadastra alunos e monta treinos.</li>
+  <li><b>Aluno</b> — quem é convidado pelo personal e usa o app para treinar. O aluno não paga nada.</li>
+</ul>
+<p>Sobre os dados dos alunos, o personal trainer decide o que registrar e para quê; o Piik oferece a ferramenta que armazena e organiza essas informações. O personal responde pela relação profissional que mantém com seus alunos, inclusive pela adequação do treino prescrito.</p>
 
-  <h2>4. Base legal</h2>
-  <p>Tratamos os dados principalmente para a <b>execução do contrato</b> (prestação do serviço que você contratou) e, em casos específicos como a exibição de contatos do profissional, com base no <b>consentimento</b>, que pode ser revogado a qualquer momento.</p>
+<h2>3. Quais dados coletamos</h2>
 
-  <h2>5. Compartilhamento</h2>
-  <p>Não vendemos seus dados. Utilizamos o <b>Supabase</b> como provedor de infraestrutura (banco de dados, autenticação e armazenamento), que atua como operador seguindo nossas instruções. Dados de contato de profissionais só são exibidos a alunos mediante autorização expressa do profissional.</p>
+<h3>3.1 Dados que você fornece</h3>
+<div class="tabela-wrap">
+<table>
+  <tr><th>Dado</th><th>De quem</th><th>Para quê</th></tr>
+  <tr><td>Nome completo, e-mail</td><td>Personal e aluno</td><td>Criar e identificar a conta, login, comunicação</td></tr>
+  <tr><td>CPF</td><td>Personal e aluno</td><td>Identificar a pessoa de forma única, evitar contas duplicadas e fraudes, e cumprir obrigações fiscais nas cobranças</td></tr>
+  <tr><td>Data de nascimento e sexo</td><td>Aluno</td><td>Cálculos e referências das avaliações físicas</td></tr>
+  <tr><td>Foto de perfil</td><td>Personal e aluno</td><td>Identificação visual dentro do app (opcional)</td></tr>
+  <tr><td>WhatsApp e Instagram</td><td>Personal</td><td>Exibir os contatos do personal para os alunos dele (opcional)</td></tr>
+  <tr><td>Logo e cores da marca</td><td>Personal (plano You Piik)</td><td>Personalizar o app com a marca do personal</td></tr>
+</table>
+</div>
 
-  <h2>6. Retenção e exclusão da conta</h2>
-  <p>Mantemos os dados enquanto sua conta estiver ativa e pelo período necessário para cumprir obrigações legais. Você pode solicitar a exclusão da sua conta a qualquer momento, pelo site, em <b>Perfil › Excluir minha conta</b>.</p>
-  <p>Ao solicitar a exclusão, sua conta entra em um período de <b>30 dias</b> de carência: se você acessar novamente nesse prazo, a exclusão é automaticamente cancelada e sua conta volta ao normal. Passados os 30 dias sem acesso, a conta é <b>excluída</b> e você perde o acesso aos seus dados.</p>
-  <p>Após a exclusão, seu histórico permanece <b>arquivado apenas para o seu profissional</b> (personal), por até <b>6 meses</b>, para fins de registro do acompanhamento. Decorrido esse prazo, os dados são <b>apagados definitivamente</b>. A reabertura da conta, se desejada, é feita com um novo cadastro utilizando o mesmo CPF.</p>
+<h3>3.2 Dados de treino</h3>
+<p>Fichas, dias de treino, exercícios, séries, repetições, cargas registradas, tempo de descanso, duração da sessão, nível de esforço percebido, anotações e comentários. Esses dados são gerados pelo uso normal do app e ficam visíveis para você e para o personal com quem você está vinculado.</p>
 
-  <h2>7. Seus direitos (LGPD)</h2>
-  <p>Você pode, a qualquer momento: confirmar a existência de tratamento; acessar seus dados; corrigi-los; solicitar anonimização ou exclusão; solicitar portabilidade; e revogar consentimentos. Basta escrever para <b>contato@piik.com.br</b>.</p>
+<h3>3.3 Dados de saúde (dados pessoais sensíveis)</h3>
+<p>As <b>avaliações físicas</b> registram peso, altura, percentual de gordura, massa magra e observações do personal. Sob a LGPD esses são <b>dados pessoais sensíveis</b> relativos à saúde, e recebem tratamento mais restrito:</p>
+<ul>
+  <li>Só existem se o personal ou o aluno decidir registrá-los. Não são obrigatórios para usar o Piik.</li>
+  <li>São tratados com base no <b>consentimento específico e destacado</b> do titular, para a finalidade de acompanhamento físico.</li>
+  <li>Ficam acessíveis apenas ao próprio aluno e ao personal vinculado a ele.</li>
+  <li>Nunca são usados para publicidade, perfilamento comercial ou compartilhados com terceiros além dos provedores de infraestrutura listados no item 5.</li>
+</ul>
+<p>Você pode retirar esse consentimento a qualquer momento, apagando as avaliações no app ou pedindo pelo contato. Isso não afeta o restante do uso da plataforma.</p>
 
-  <h2>8. Segurança</h2>
-  <p>Adotamos medidas técnicas e organizacionais para proteger seus dados, incluindo controle de acesso por regras de autorização (RLS) e criptografia em trânsito.</p>
+<h3>3.4 Dados técnicos</h3>
+<ul>
+  <li><b>Token de notificação</b> do aparelho, para conseguir enviar avisos de treino e de cobrança.</li>
+  <li><b>Dados do dispositivo</b> necessários ao funcionamento: sistema operacional, versão do app, identificadores técnicos gerados pelas lojas.</li>
+  <li><b>Registros de acesso</b> (data, hora e endereço IP), mantidos por seis meses conforme o art. 15 do Marco Civil da Internet (Lei nº 12.965/2014).</li>
+</ul>
 
-  <h2>9. Menores</h2>
-  <p>O Piik é destinado a maiores de 18 anos. O uso por menores deve contar com consentimento e supervisão dos responsáveis.</p>
+<h3>3.5 Dados de pagamento</h3>
+<p>Os pagamentos são processados pelo <b>Mercado Pago</b>. <b>O Piik não recebe, não vê e não armazena números de cartão de crédito.</b> Guardamos apenas o resultado da transação: plano contratado, valor, forma de pagamento, data e situação da assinatura.</p>
 
-  <h2>10. Alterações</h2>
-  <p>Podemos atualizar esta Política. A versão vigente estará sempre disponível nesta página, com a data de atualização no topo.</p>
+<h3>3.6 O que não coletamos</h3>
+<p>O Piik não acessa sua localização, seus contatos, seu microfone, sua câmera em segundo plano, nem sua galeria de fotos além da imagem que você escolhe como foto de perfil. Não usamos rastreadores de publicidade nem vendemos dados a corretores de informação.</p>
 
-  <p style="margin-top:24px;color:#6b7079;font-size:13px">Piik — Seu método, com a sua marca.</p>
+<h2>4. Por que tratamos cada dado (bases legais)</h2>
+<div class="tabela-wrap">
+<table>
+  <tr><th>Finalidade</th><th>Base legal (LGPD)</th></tr>
+  <tr><td>Criar a conta, autenticar o login, fazer o app funcionar</td><td>Execução de contrato (art. 7º, V)</td></tr>
+  <tr><td>Cobrar a mensalidade, emitir recibos, controlar vencimentos</td><td>Execução de contrato e obrigação legal (art. 7º, V e II)</td></tr>
+  <tr><td>Registrar e exibir avaliações físicas</td><td>Consentimento específico para dado sensível (art. 11, I)</td></tr>
+  <tr><td>Enviar avisos operacionais (vencimento, treino novo, fim do descanso)</td><td>Execução de contrato (art. 7º, V)</td></tr>
+  <tr><td>Guardar registros de acesso</td><td>Obrigação legal (art. 7º, II c/c Marco Civil, art. 15)</td></tr>
+  <tr><td>Prevenir fraude e uso indevido da plataforma</td><td>Legítimo interesse (art. 7º, IX)</td></tr>
+</table>
+</div>
+
+<h2>5. Com quem compartilhamos</h2>
+<p>Compartilhamos o mínimo necessário, e apenas com quem opera partes da plataforma:</p>
+<div class="tabela-wrap">
+<table>
+  <tr><th>Quem</th><th>Para quê</th><th>O que recebe</th></tr>
+  <tr><td><b>Seu personal trainer</b></td><td>Montar e acompanhar seu treino</td><td>Seu cadastro, treinos e avaliações — apenas dos alunos vinculados a ele</td></tr>
+  <tr><td><b>Supabase</b></td><td>Banco de dados e autenticação</td><td>Todos os dados da plataforma, criptografados em trânsito e em repouso</td></tr>
+  <tr><td><b>Mercado Pago</b></td><td>Processar pagamentos</td><td>Nome, e-mail, CPF e valor da cobrança</td></tr>
+  <tr><td><b>Expo, Apple e Google</b></td><td>Entregar notificações ao aparelho</td><td>Token do dispositivo e o texto do aviso</td></tr>
+  <tr><td><b>Resend</b></td><td>Enviar e-mails da plataforma</td><td>Nome e e-mail</td></tr>
+</table>
+</div>
+<p>Alguns desses provedores mantêm servidores fora do Brasil. Nesses casos a transferência internacional ocorre nos termos do art. 33 da LGPD, sob cláusulas contratuais que exigem nível de proteção compatível com a lei brasileira.</p>
+<p>Também podemos compartilhar dados mediante <b>ordem judicial</b> ou requisição de autoridade competente. Fora isso, não há compartilhamento.</p>
+<p><b>Não vendemos dados pessoais</b> e não os cedemos para publicidade de terceiros.</p>
+
+<h2>6. Por quanto tempo guardamos</h2>
+<ul>
+  <li><b>Enquanto a conta existir</b>, mantemos seus dados para que a plataforma funcione.</li>
+  <li><b>Ao pedir exclusão</b>, a conta entra em período de <b>30 dias</b> antes da eliminação definitiva — prazo em que você pode desistir. Passados os 30 dias, os dados são apagados.</li>
+  <li><b>Registros de acesso</b>: seis meses, por obrigação legal.</li>
+  <li><b>Registros fiscais e de cobrança</b>: pelo prazo exigido pela legislação tributária, mesmo após a exclusão da conta, de forma segregada e sem uso para qualquer outra finalidade.</li>
+</ul>
+
+<h2>7. Seus direitos</h2>
+<p>O art. 18 da LGPD garante a você, a qualquer momento e sem custo:</p>
+<ul>
+  <li>Confirmar que tratamos seus dados e <b>acessar</b> uma cópia deles</li>
+  <li><b>Corrigir</b> dados incompletos, inexatos ou desatualizados</li>
+  <li>Pedir <b>anonimização, bloqueio ou eliminação</b> de dados desnecessários ou tratados fora da lei</li>
+  <li>Solicitar a <b>portabilidade</b> a outro fornecedor</li>
+  <li><b>Eliminar</b> dados tratados com base em consentimento</li>
+  <li>Saber com quem <b>compartilhamos</b> seus dados</li>
+  <li><b>Revogar o consentimento</b>, em especial o das avaliações físicas</li>
+  <li>Opor-se a tratamento que considere irregular</li>
+</ul>
+<p>Para exercer qualquer um deles, escreva para <a href="mailto:contato@piik.com.br">contato@piik.com.br</a>. Respondemos em até <b>15 dias</b>. Podemos pedir uma confirmação de identidade antes de atender — é uma proteção contra alguém se passar por você.</p>
+<p>A exclusão da conta também pode ser feita sozinho, sem falar com ninguém: veja a página <a href="/excluir-conta.html">Excluir minha conta</a>.</p>
+
+<h2>8. Segurança</h2>
+<p>Adotamos medidas técnicas e administrativas para proteger seus dados:</p>
+<ul>
+  <li>Comunicação criptografada (HTTPS/TLS) entre o app e os servidores</li>
+  <li>Banco de dados com criptografia em repouso</li>
+  <li>Regras de acesso por linha (<i>Row Level Security</i>): cada pessoa só alcança os próprios dados e, no caso do personal, os dos alunos vinculados a ele</li>
+  <li>Senhas armazenadas com algoritmo de resumo criptográfico — ninguém do Piik consegue ler sua senha</li>
+  <li>Autenticação em dois fatores disponível na conta</li>
+</ul>
+<p>Nenhum sistema é infalível. Se houver incidente de segurança com risco relevante aos seus direitos, comunicaremos você e a Autoridade Nacional de Proteção de Dados (ANPD), como manda o art. 48 da LGPD.</p>
+
+<h2>9. Crianças e adolescentes</h2>
+<p>O Piik é destinado a <b>maiores de 18 anos</b>. Um personal pode cadastrar aluno menor de idade, e nesse caso o tratamento dos dados depende de <b>consentimento específico dado por ao menos um dos pais ou pelo responsável legal</b>, conforme o art. 14 da LGPD — consentimento que cabe ao personal obter e comprovar. Se soubermos que há dados de menor tratados sem essa autorização, eliminaremos o cadastro.</p>
+
+<h2>10. Cookies</h2>
+<p>O site <b>piik.com.br</b> usa apenas cookies necessários ao funcionamento — manter você conectado e lembrar preferências básicas. Não há cookies de publicidade nem de rastreamento entre sites. Os aplicativos para iPhone e Android não usam cookies.</p>
+
+<h2>11. Mudanças nesta política</h2>
+<p>Se esta política mudar, atualizamos a data no topo da página. Quando a mudança for relevante — nova finalidade, novo compartilhamento, mudança na base legal — avisamos por e-mail ou dentro do app antes de a alteração passar a valer.</p>
+
+<h2>12. Contato</h2>
+<p>Dúvidas, pedidos sobre seus dados ou reclamações:</p>
+<ul>
+  <li>E-mail: <a href="mailto:contato@piik.com.br">contato@piik.com.br</a></li>
+  <li>WhatsApp: <a href="https://wa.me/5519998194608">(19) 99819-4608</a></li>
+</ul>
+<p>Você também pode apresentar reclamação diretamente à <b>Autoridade Nacional de Proteção de Dados (ANPD)</b>, em <a href="https://www.gov.br/anpd" target="_blank" rel="noopener">gov.br/anpd</a>.</p>
+
+<div class="rodape">
+  Piik · <a href="/">piik.com.br</a> · <a href="/termos.html">Termos de Uso</a> · <a href="/excluir-conta.html">Excluir minha conta</a>
+</div>
+
 </div>
 </body>
 </html>
