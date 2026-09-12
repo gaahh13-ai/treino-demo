@@ -5331,25 +5331,48 @@
       const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
       STUDENTS = studs || [];
     }
-    // planos (mensalidades)
+    // planos (mensalidades legadas — usadas só como fallback)
     const { data: mens } = await sb.from("mensalidades").select("*").eq("professional_id", ME.id);
     FIN_MENS = {}; (mens||[]).forEach(m=>{ FIN_MENS[m.student_id] = m; });
-    // pagamentos da competência em foco
-    const { data: pags } = await sb.from("pagamentos").select("*").eq("professional_id", ME.id).eq("competencia", FIN_COMP);
-    FIN_PAGS = {}; (pags||[]).forEach(p=>{ FIN_PAGS[p.student_id] = p; });
-    // acordos ativos (para saber o modelo de cada aluno)
+    // pagamentos legados (todos) — usados para migrar para cobranças
+    let pagsAll = [];
+    try{ const { data } = await sb.from("pagamentos").select("*").eq("professional_id", ME.id); pagsAll = data||[]; }catch(e){}
+    FIN_PAGS = {}; pagsAll.forEach(p=>{ if(p.competencia===FIN_COMP) FIN_PAGS[p.student_id] = p; });
+    // acordos ativos (modelo de cada aluno)
     FIN_ACORDO = {};
     try{
       const { data: acs } = await sb.from("acordos").select("*").eq("professional_id", ME.id).eq("ativo", true);
       (acs||[]).forEach(a=>{ FIN_ACORDO[a.student_id] = a; });
     }catch(e){}
-    // cobranças por treino (esporádicas) — todas, filtramos o mês na hora de exibir
+    // todas as cobranças do personal
     FIN_COBS = {};
     try{
       const { data: cobs } = await sb.from("cobrancas_aluno").select("*").eq("professional_id", ME.id).order("criado_em",{ascending:false});
       (cobs||[]).forEach(c=>{ (FIN_COBS[c.student_id]=FIN_COBS[c.student_id]||[]).push(c); });
     }catch(e){}
+    // gera automaticamente as cobranças recorrentes que faltam (todos os alunos)
+    try{ await _gerarCobrancasMesTodos(pagsAll); }catch(e){}
     renderFinanceiro();
+  }
+  // gera em lote as cobranças recorrentes faltantes de todos os acordos ativos
+  async function _gerarCobrancasMesTodos(pagsAll){
+    const pagsByStudent = {}; (pagsAll||[]).forEach(p=>{ (pagsByStudent[p.student_id]=pagsByStudent[p.student_id]||[]).push(p); });
+    const inserts = [];
+    Object.values(FIN_ACORDO).forEach(a=>{
+      if(!a || a.modelo==="treino") return;
+      const novas = _cobrancasFaltantes(a.student_id, a, FIN_COBS[a.student_id]||[], pagsByStudent[a.student_id]||[]);
+      novas.forEach(n=>inserts.push(n));
+    });
+    if(!inserts.length) return;
+    const { error } = await sb.from("cobrancas_aluno").insert(inserts);
+    if(error) return;
+    const { data: cobs } = await sb.from("cobrancas_aluno").select("*").eq("professional_id", ME.id).order("criado_em",{ascending:false});
+    FIN_COBS = {}; (cobs||[]).forEach(c=>{ (FIN_COBS[c.student_id]=FIN_COBS[c.student_id]||[]).push(c); });
+  }
+  // cobrança recorrente (mensalidade) de um aluno num mês
+  function _cobDoMes(sid, comp){
+    const arr = (FIN_COBS[sid]||[]).filter(c=> String(c.vencimento||"").slice(0,7)===comp);
+    return arr.find(c=>/^Mensalidade/.test(c.descricao||"")) || arr[0] || null;
   }
   // cobranças de um aluno que pertencem ao mês em foco (por vencimento, senão por criação)
   function _finCobsDoMes(sid){
@@ -5360,16 +5383,18 @@
   }
 
   function finStatus(sid){
-    const pago = FIN_PAGS[sid];
-    if(pago) return "pago";
+    const c = _cobDoMes(sid, FIN_COMP);
+    if(c) return _cobStatus(c);
     const ac = FIN_ACORDO[sid];
     const dia = (ac ? ac.dia_venc : (FIN_MENS[sid]||{}).dia_venc) || 5;
     const [y,mo] = FIN_COMP.split("-").map(Number);
     const venc = new Date(y, mo-1, dia, 23,59,59);
     return (Date.now() > venc.getTime()) ? "atrasado" : "pendente";
   }
-  // valor mensal do aluno no mês (acordo manda; senão mensalidade legada)
+  // valor mensal do aluno no mês (cobrança do mês manda; senão acordo; senão mensalidade legada)
   function finValorAluno(sid){
+    const c = _cobDoMes(sid, FIN_COMP);
+    if(c) return Number(c.valor)||0;
     const ac = FIN_ACORDO[sid];
     if(ac) return acValorMes(ac, FIN_COMP);
     return Number((FIN_MENS[sid]||{}).valor)||0;
@@ -5389,7 +5414,8 @@
       }
       const v = finValorAluno(s.id);
       const st = finStatus(s.id);
-      if(st==="pago")      recebido += Number((FIN_PAGS[s.id]||{}).valor ?? v);
+      const cMes = _cobDoMes(s.id, FIN_COMP);
+      if(st==="pago")      recebido += Number((cMes&&cMes.valor) ?? v);
       else if(st==="atrasado") atraso += v;
       else                 aReceber += v;
     });
@@ -5595,8 +5621,13 @@
     // ---- Gráfico: ganho por mês (12 meses), empilhado mensalidades + por treino ----
     const comps = _ultimasComps(12);
     const mens={}, trei={}; comps.forEach(c=>{ mens[c]=0; trei[c]=0; });
-    (FIN_ANALISE.pags||[]).forEach(p=>{ if(mens[p.competencia]!==undefined) mens[p.competencia]+=Number(p.valor)||0; });
-    (FIN_ANALISE.cobs||[]).forEach(c=>{ if(!c.pago) return; const mth=String(c.pago_em||c.criado_em||"").slice(0,7); if(trei[mth]!==undefined) trei[mth]+=Number(c.valor)||0; });
+    (FIN_ANALISE.cobs||[]).forEach(c=>{
+      if(!c.pago) return;
+      const mth=String(c.pago_em||c.vencimento||c.criado_em||"").slice(0,7);
+      const rec = /^Mensalidade/.test(c.descricao||"");
+      if(rec){ if(mens[mth]!==undefined) mens[mth]+=Number(c.valor)||0; }
+      else   { if(trei[mth]!==undefined) trei[mth]+=Number(c.valor)||0; }
+    });
     const totais = comps.map(c=>mens[c]+trei[c]);
     const max = Math.max(1, ...totais);
     const H = 168;
@@ -5645,20 +5676,34 @@
 
   async function registrarPagamento(sid){
     if(contaCongelada()){ avisoCongelada(); return; }
-    const valor = finValorAluno(sid);
-    const { data, error } = await sb.from("pagamentos")
-      .upsert({ student_id:sid, professional_id:ME.id, competencia:FIN_COMP, valor, pago_em:new Date().toISOString() },
-              { onConflict:"student_id,competencia" })
-      .select().single();
+    let c = _cobDoMes(sid, FIN_COMP);
+    if(!c){
+      // sem cobrança do mês ainda: cria já paga
+      const ac = FIN_ACORDO[sid];
+      const dia = Math.min(28, (ac?ac.dia_venc:(FIN_MENS[sid]||{}).dia_venc)||5);
+      const venc = FIN_COMP+"-"+String(dia).padStart(2,"0");
+      const { data:nova, error:e0 } = await sb.from("cobrancas_aluno").insert({
+        professional_id:ME.id, student_id:sid, acordo_id:(ac?ac.id:null),
+        descricao:"Mensalidade · "+compLabel(FIN_COMP),
+        valor: ac?acValorMes(ac,FIN_COMP):finValorAluno(sid),
+        vencimento:venc, pago:true, pago_em:new Date().toISOString()
+      }).select().single();
+      if(e0){ piikAlert("Não consegui registrar: "+e0.message); return; }
+      (FIN_COBS[sid]=FIN_COBS[sid]||[]).unshift(nova);
+      renderFinanceiro(); return;
+    }
+    const { error } = await sb.from("cobrancas_aluno").update({ pago:true, pago_em:new Date().toISOString() }).eq("id", c.id);
     if(error){ piikAlert("Não consegui registrar: "+error.message); return; }
-    FIN_PAGS[sid] = data;
+    c.pago=true; c.pago_em=new Date().toISOString();
     renderFinanceiro();
   }
 
   async function desfazerPagamento(sid){
-    const { error } = await sb.from("pagamentos").delete().eq("student_id", sid).eq("competencia", FIN_COMP);
+    const c = _cobDoMes(sid, FIN_COMP);
+    if(!c){ renderFinanceiro(); return; }
+    const { error } = await sb.from("cobrancas_aluno").update({ pago:false, pago_em:null }).eq("id", c.id);
     if(error){ piikAlert("Não consegui desfazer: "+error.message); return; }
-    delete FIN_PAGS[sid];
+    c.pago=false; c.pago_em=null;
     renderFinanceiro();
   }
 
@@ -5696,6 +5741,99 @@
     return Number(a.valor)||0;
   }
 
+  // ---------- COBRANÇAS RECORRENTES (geradas automaticamente) ----------
+  function _compAdd(comp, delta){
+    let [y,m] = comp.split("-").map(Number);
+    m += delta; while(m<1){ m+=12; y--; } while(m>12){ m-=12; y++; }
+    return y+"-"+String(m).padStart(2,"0");
+  }
+  // meses do acordo recorrente na janela: do início (limitado a 8 meses atrás) até +3 meses
+  function _compsRecorrentes(a){
+    if(!a || a.modelo==="treino") return [];
+    const atual = compAtual();
+    let ini = a.data_inicio ? String(a.data_inicio).slice(0,7) : atual;
+    const minIni = _compAdd(atual, -8);
+    if(ini < minIni) ini = minIni;
+    const fim = _compAdd(atual, 3);
+    const arr=[]; let c=ini, guard=0;
+    while(c <= fim && guard < 60){ arr.push(c); c=_compAdd(c,1); guard++; }
+    return arr;
+  }
+  // linhas de cobrança que faltam para um acordo recorrente.
+  // passado só entra se houver pagamento legado (migração); mês atual e futuros entram em aberto.
+  function _cobrancasFaltantes(sid, a, cobsExist, pagsLegado){
+    const atual = compAtual();
+    const jaTem = new Set((cobsExist||[]).filter(c=>c.acordo_id===a.id && c.vencimento).map(c=>String(c.vencimento).slice(0,7)));
+    const pagMap = {}; (pagsLegado||[]).forEach(p=>{ pagMap[p.competencia]=p; });
+    const novas = [];
+    _compsRecorrentes(a).forEach(comp=>{
+      if(jaTem.has(comp)) return;
+      const leg = pagMap[comp];
+      const futuroOuAtual = comp >= atual;
+      if(!futuroOuAtual && !leg) return;   // não fabrica dívida passada sem pagamento
+      const dia = Math.min(28, a.dia_venc||5);
+      const venc = comp+"-"+String(dia).padStart(2,"0");
+      novas.push({
+        professional_id: ME.id, student_id: sid, acordo_id: a.id,
+        descricao: "Mensalidade · "+compLabel(comp),
+        valor: leg ? (Number(leg.valor)||acValorMes(a,comp)) : acValorMes(a,comp),
+        vencimento: venc,
+        pago: !!leg,
+        pago_em: leg ? (leg.pago_em || (venc+"T12:00:00Z")) : null
+      });
+    });
+    return novas;
+  }
+  // garante as cobranças recorrentes do aluno aberto (usa FIN_AL) e recarrega a lista
+  async function garantirCobrancasRecorrentes(sid, a){
+    if(!a || a.modelo==="treino") return;
+    const novas = _cobrancasFaltantes(sid, a, FIN_AL.cobs, FIN_AL.pags);
+    if(!novas.length) return;
+    const { error } = await sb.from("cobrancas_aluno").insert(novas);
+    if(error) return;
+    const { data: cobs } = await sb.from("cobrancas_aluno").select("*").eq("student_id", sid)
+      .order("vencimento",{ascending:true,nullsFirst:false}).order("criado_em",{ascending:true});
+    if(cobs) FIN_AL.cobs = cobs;
+  }
+  // lista de cobranças do aluno (recorrentes + avulsas) — rolável, ~5 visíveis
+  function _finCobsListaHTML(id){
+    const a = FIN_AL.ativo;
+    const ehTreino = a && a.modelo==="treino";
+    const cobs = (FIN_AL.cobs||[]).slice().sort((x,y)=>{
+      const vx = String(x.vencimento||x.criado_em||""), vy = String(y.vencimento||y.criado_em||"");
+      return vx.localeCompare(vy);   // passado → futuro
+    });
+    const linhas = cobs.length ? cobs.map(c=>{
+      const stt=_cobStatus(c);
+      const chip = stt==="pago" ? `<span class="fin-tag pg">Pago</span>`
+                 : stt==="atrasado" ? `<span class="fin-tag at">Em atraso</span>`
+                 : `<span class="fin-tag pe">Em aberto</span>`;
+      const rec = /^Mensalidade/.test(c.descricao||"");
+      const quando = c.vencimento ? `vence ${fmtDate(c.vencimento)}` : fmtDate(c.criado_em);
+      const acao = c.pago
+        ? `<button class="btn ghost small" onclick="cobPagar('${id}','${c.id}',false)">Desfazer</button>`
+        : `<button class="btn small" onclick="cobPagar('${id}','${c.id}',true)">Registrar pagamento</button>`;
+      const del = rec ? "" : `<button class="cob-x" title="Excluir cobrança" onclick="cobExcluir('${id}','${c.id}')">✕</button>`;
+      return `<div class="cob-row" data-comp="${c.vencimento?String(c.vencimento).slice(0,7):''}">
+        <div class="cob-info"><div class="cob-desc">${esc(c.descricao||"Cobrança")}</div>
+          <div class="meta-sm" style="margin:2px 0 0">${fmtBRL(c.valor)} · ${quando}</div></div>
+        <div class="cob-acoes">${chip}${acao}${del}</div>
+      </div>`;
+    }).join("") : `<div class="meta-sm">${ehTreino?"Nenhuma cobrança lançada ainda. Lance uma a cada treino entregue.":"Nenhuma cobrança ainda."}</div>`;
+    const abertas = cobs.filter(c=>!c.pago);
+    const totalAberto = abertas.reduce((s,c)=>s+(Number(c.valor)||0),0);
+    const resumo = abertas.length ? `<span class="cchip wait">${abertas.length} em aberto · ${fmtBRL(totalAberto)}</span>` : "";
+    const dica = ehTreino ? "" : `<p class="meta-sm" style="margin:-4px 0 10px">As mensalidades entram sozinhas todo mês. É só marcar <b>Registrar pagamento</b> quando o aluno pagar.</p>`;
+    return `<div class="ac-sec">
+      <div class="ac-h" style="margin-bottom:12px">
+        <div class="ac-t">${ehTreino?"💪 Cobranças por treino":"💵 Cobranças"}</div>
+        <div class="ac-hactions">${resumo}<button class="btn small" onclick="abrirNovaCobranca('${id}')">＋ Adicionar cobrança</button></div>
+      </div>
+      ${dica}
+      <div class="cob-lista fin-cobs-scroll" id="finCobsScroll_${id}" style="max-height:272px;overflow-y:auto">${linhas}</div>
+    </div>`;
+  }
+
   async function verFinanceiroAluno(id){
     const el = document.getElementById("finList_"+id);
     if(!el) return;
@@ -5715,6 +5853,8 @@
       const { data: cobs } = await sb.from("cobrancas_aluno").select("*").eq("student_id", id).order("criado_em",{ascending:false});
       FIN_AL.cobs = cobs || [];
     }catch(e){ FIN_AL.cobs = []; }
+    // gera automaticamente as cobranças recorrentes (mensal/aula) que faltam
+    if(FIN_AL.ativo){ try{ await garantirCobrancasRecorrentes(id, FIN_AL.ativo); }catch(e){} }
     renderFinAluno(id);
   }
 
@@ -5744,7 +5884,7 @@
       curHTML = `<div class="ac-sec ac-cur">
         <div class="ac-h">
           <div class="ac-t">🤝 Acordo atual</div>
-          <div class="ac-hactions">${ciente}<button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Novo acordo</button></div>
+          <div class="ac-hactions">${ciente}<button class="btn small ghost" onclick="abrirNovoAcordo('${id}',true)">✏️ Editar</button><button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Novo acordo</button></div>
         </div>
         <div class="ac-kv">
           <div class="ac-item"><span class="k">Modelo</span><span class="v">${acModeloLabel(a)}</span></div>
@@ -5761,71 +5901,29 @@
         <button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Definir acordo</button></div>`;
     }
 
-    const ehTreinoAtivo = a && a.modelo==="treino";
-
-    // ----- Bloco central: "Este mês" (mensal/aula) OU "Cobranças" (por treino) -----
-    let centralHTML;
-    if(ehTreinoAtivo){
-      centralHTML = renderCobsSection(id);
-    }else{
-      const dia = a ? (a.dia_venc||5) : 5;
-      const comp = FIN_AL.comp;
-      const pagComp = FIN_AL.pags.find(p=>p.competencia===comp);
-      const st = statusFinComp(comp, dia, !!pagComp);
-      const chip = st==="pago" ? `<span class="fin-tag pg">Pago${pagComp?` · ${fmtBRL(pagComp.valor)}`:""}</span>`
-                 : st==="atrasado" ? `<span class="fin-tag at">Em atraso · vence ${String(dia).padStart(2,"0")}/${comp.split("-")[1]}</span>`
-                 : `<span class="fin-tag pe">Pendente · vence ${String(dia).padStart(2,"0")}/${comp.split("-")[1]}</span>`;
-      const acao = pagComp
-        ? `<button class="btn ghost small" onclick="finAlunoPagar('${id}',false)">Desfazer</button>`
-        : (a ? `<button class="btn small" onclick="finAlunoPagar('${id}',true)">Registrar pagamento</button>` : "");
-      let valLinha = "";
-      if(a && !pagComp){
-        const vMes = acValorMes(a, comp);
-        valLinha = a.modelo==="aula"
-          ? `<div class="ac-obs" style="margin-top:10px"><b style="color:var(--pink-deep)">${fmtBRL(vMes)}</b> neste mês · ${acAulasNoMes(a,comp)} aula(s) × ${fmtBRL(a.valor)}</div>`
-          : `<div class="ac-obs" style="margin-top:10px"><b style="color:var(--pink-deep)">${fmtBRL(vMes)}</b> neste mês</div>`;
-      }
-      centralHTML = `<div class="ac-sec">
-        <div class="ac-t" style="margin-bottom:12px">💵 Este mês</div>
-        <div class="fin-al-mes">
-          <button class="chev" onclick="finAlunoMes('${id}',-1)">‹</button>
-          <span class="fin-al-mesnome">${compLabel(comp)}</span>
-          <button class="chev" onclick="finAlunoMes('${id}',1)">›</button>
-          ${chip}${acao}
-        </div>
-        ${valLinha}
-      </div>`;
-    }
-
-    // ----- Histórico de acordos + (Últimos pagamentos OU Últimas cobranças) -----
+    // ----- Histórico de acordos (logo abaixo do acordo atual) -----
     const antigos = FIN_AL.acordos.filter(x=>!x.ativo);
-    const histAc = antigos.length
-      ? antigos.map(x=>{
-          const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : (x.modelo==="treino" ? `${fmtBRL(x.valor)}/treino` : `${fmtBRL(x.valor)}/mês`);
-          const ini = fmtDate(x.data_inicio||x.criado_em);
-          const fim = x.encerrado_em ? fmtDate(x.encerrado_em) : "—";
-          return `<div class="fin-hist-row"><span><b>${per}</b> · ${acFormaLabel(x.forma_pgto)}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
-        }).join("")
-      : `<div class="meta-sm">Nenhum acordo anterior.</div>`;
-    let col2;
-    if(ehTreinoAtivo){
-      const pagosCob = FIN_AL.cobs.filter(c=>c.pago);
-      const histCob = pagosCob.length
-        ? pagosCob.slice(0,8).map(c=>`<div class="fin-hist-row"><span>${esc(c.descricao||"Treino")}</span><span class="fin-tag pg">Pago · ${fmtBRL(c.valor)}</span></div>`).join("")
-        : `<div class="meta-sm">Nenhuma cobrança paga ainda.</div>`;
-      col2 = `<div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">🧾 Cobranças pagas</div><div class="fin-al-hist" style="border:none;padding:0">${histCob}</div></div>`;
-    }else{
-      const histPg = FIN_AL.pags.length
-        ? FIN_AL.pags.slice(0,8).map(p=>`<div class="fin-hist-row"><span>${compLabel(p.competencia)}</span><span class="fin-tag pg">Pago · ${fmtBRL(p.valor)}</span></div>`).join("")
-        : `<div class="meta-sm">Nenhum pagamento registrado ainda.</div>`;
-      col2 = `<div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">🧾 Últimos pagamentos</div><div class="fin-al-hist" style="border:none;padding:0">${histPg}</div></div>`;
-    }
-    const gridHTML = `<div class="ac-grid2">
-      <div class="ac-sec"><div class="ac-t" style="margin-bottom:12px">📜 Histórico de acordos</div><div class="fin-al-hist" style="border:none;padding:0">${histAc}</div></div>
-      ${col2}
-    </div>`;
+    const histHTML = antigos.length
+      ? `<div class="ac-sec"><div class="ac-t" style="margin-bottom:10px">📜 Histórico de acordos</div><div class="fin-al-hist" style="border:none;padding:0">${
+          antigos.map(x=>{
+            const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : (x.modelo==="treino" ? `${fmtBRL(x.valor)}/treino` : `${fmtBRL(x.valor)}/mês`);
+            const ini = fmtDate(x.data_inicio||x.criado_em);
+            const fim = x.encerrado_em ? fmtDate(x.encerrado_em) : "—";
+            return `<div class="fin-hist-row"><span><b>${per}</b> · ${acFormaLabel(x.forma_pgto)}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
+          }).join("")
+        }</div></div>`
+      : "";
 
-    el.innerHTML = `<div class="acordo-wrap">${curHTML}${centralHTML}${gridHTML}</div>`;
+    // ----- Cobranças (recorrentes geradas sozinhas + avulsas) -----
+    const cobrHTML = _finCobsListaHTML(id);
+
+    el.innerHTML = `<div class="acordo-wrap">${curHTML}${histHTML}${cobrHTML}</div>`;
+    // posiciona a rolagem para mostrar os últimos meses + os próximos em aberto
+    setTimeout(()=>{
+      const box=document.getElementById("finCobsScroll_"+id); if(!box) return;
+      const alvo = box.querySelector('.cob-row[data-comp="'+compAtual()+'"]') || box.querySelector('.cob-row');
+      if(alvo) box.scrollTop = Math.max(0, alvo.offsetTop - 104);
+    }, 0);
   }
 
   function finAlunoMes(id, delta){
@@ -5949,8 +6047,9 @@
   }
 
   /* ----- Modal: Novo acordo ----- */
-  function abrirNovoAcordo(id){
+  function abrirNovoAcordo(id, editar){
     if(contaCongelada()){ avisoCongelada(); return; }
+    if(editar && !FIN_AL.ativo) editar = false;   // sem acordo ativo, cai no fluxo de criar
     const base = FIN_AL.ativo || {};
     const hoje = new Date().toISOString().slice(0,10);
     const grpBase = {}; acHorariosArr(base).forEach(h=>{ (grpBase[h.d]=grpBase[h.d]||[]).push(h.h); });
@@ -5968,8 +6067,8 @@
     const valLbl = { mensal:"Mensalidade (R$)", aula:"Valor por aula (R$)", treino:"Valor por treino (R$)" };
     const o = document.createElement("div"); o.className="modal-ov"; o.id="acOv";
     o.innerHTML = `<div class="modal-cx" style="max-width:520px;text-align:left;max-height:88vh;overflow:auto">
-      <h3 style="margin:0 0 4px">Novo acordo</h3>
-      <p class="meta-sm" style="margin:0 0 16px">O acordo anterior vira histórico. O aluno recebe o novo acordo no app dele para dar ciência.</p>
+      <h3 style="margin:0 0 4px">${editar?"Editar acordo":"Novo acordo"}</h3>
+      <p class="meta-sm" style="margin:0 0 16px">${editar?"As alterações passam a valer agora e o aluno precisa dar uma nova ciência no app dele.":"O acordo anterior vira histórico. O aluno recebe o novo acordo no app dele para dar ciência."}</p>
       <div class="ac-form">
         <div class="ac-fld"><label>Modelo de cobrança</label>
           <span class="ac-seg">
@@ -5999,7 +6098,7 @@
         <div class="ac-fld"><label>Observações (opcional)</label>
           <input type="text" id="acObs" value="${base.obs?esc(base.obs):""}" placeholder="ex.: inclui avaliação a cada 3 meses"></div>
         <div style="display:flex;gap:10px;margin-top:4px">
-          <button class="btn" style="flex:1" onclick="salvarNovoAcordo('${id}')">Salvar acordo</button>
+          <button class="btn" style="flex:1" onclick="salvarNovoAcordo('${id}', ${editar?"true":"false"})">${editar?"Salvar alterações":"Salvar acordo"}</button>
           <button class="btn ghost" style="flex:0 0 auto" onclick="document.getElementById('acOv').remove()">Cancelar</button>
         </div>
       </div>
@@ -6090,8 +6189,9 @@
     confs.sort((a,b)=> (ord[a.d]-ord[b.d]) || a.h.localeCompare(b.h));
     return confs;
   }
-  async function salvarNovoAcordo(id){
+  async function salvarNovoAcordo(id, editar){
     if(contaCongelada()){ avisoCongelada(); return; }
+    if(editar && !FIN_AL.ativo) editar = false;
     const modelo = acModeloAtual();
     const valor = Math.max(0, Number((document.getElementById("acValor")||{}).value)||0);
     if(!valor){ piikAlert("Informe o valor do acordo."); return; }
@@ -6117,6 +6217,26 @@
     }
 
     const btnOv = document.getElementById("acOv");
+
+    // EDITAR: altera a mesma linha e zera o aceite — o aluno dá ciência de novo
+    if(editar && FIN_AL.ativo){
+      const { data:atu, error:eE } = await sb.from("acordos").update({
+        modelo, valor, aulas_semana, dia_venc:dia, forma_pgto:forma,
+        data_inicio:inicio, horarios, obs:obs||null, aceito:false, aceito_em:null
+      }).eq("id", FIN_AL.ativo.id).select().single();
+      if(eE){ piikAlert("Não consegui salvar as alterações: "+eE.message); return; }
+      await sb.from("mensalidades").upsert(
+        { student_id:id, professional_id:ME.id, valor:(modelo==="treino"?0:acValorMes(atu, compAtual())), dia_venc:dia },
+        { onConflict:"student_id" });
+      if(btnOv) btnOv.remove();
+      const i = FIN_AL.acordos.findIndex(a=>a.id===atu.id); if(i>=0) FIN_AL.acordos[i]=atu;
+      FIN_AL.ativo = atu;
+      if(typeof garantirCobrancasRecorrentes==="function"){ try{ await garantirCobrancasRecorrentes(id, atu); }catch(e){} }
+      renderFinAluno(id);
+      piikAlert({ emoji:"✏️", titulo:"Acordo atualizado!", msg:"O aluno vai receber o acordo alterado no app e precisa dar <b>ciência</b> de novo." });
+      return;
+    }
+
     // encerra o acordo ativo atual
     if(FIN_AL.ativo){
       const { error:e1 } = await sb.from("acordos").update({ ativo:false, encerrado_em:new Date().toISOString() }).eq("id", FIN_AL.ativo.id);
