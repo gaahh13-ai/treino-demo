@@ -1204,7 +1204,7 @@
   let SELECTED_STUDENT = null, ATIVOS_CACHE = [];
   let EXERCICIOS = [], EX_FILTRO = "", FAVORITOS = new Set();
   let COMENTARIOS = {};   // comentários do aluno por exercício (ficha_exercicio_id -> texto)
-  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false, MONTAGEM_LIBERADA = false, MODO_EDICAO = false, KANBAN = true, VENDO_PASSADOS = false;
+  let FICHA = null, FICHA_DIAS = [], FICHA_DIA = null, FICHAS_TODAS = [], FICHA_READONLY = false, MONTAGEM_LIBERADA = false, MODO_EDICAO = false, KANBAN = true, VENDO_PASSADOS = false, FICHA_EDIT = false, FICHA_SNAP = null;
   // primeiro treino do aluno: sem dias e sem treinos passados
   function ehPrimeiroTreino(){ return FICHA && FICHA_DIAS.length === 0 && FICHAS_TODAS.filter(f=>!f.ativa).length === 0; }
   let ALUNO_DIAS = [], ALUNO_DIA = null, ALUNO_EXS = [], ULTIMO_POR_DIA = {};
@@ -4428,6 +4428,13 @@
   function viewAdmin(){
     return `<h2>Painel do criador</h2>
       <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <h3 style="margin:0">🔔 Saúde dos pushes</h3>
+          <button onclick="renderPushSaude()" style="background:var(--pk-surf2,#1d2027);border:1px solid var(--line);color:var(--pink-deep);border-radius:10px;padding:6px 12px;font-weight:700;font-size:12px;cursor:pointer">Atualizar</button>
+        </div>
+        <div id="admPushSaude" style="margin-top:10px"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="card">
         <h3 style="margin:0 0 2px">🚀 Piik Beta Testers</h3>
         <p class="meta-sm" style="margin:0">Como cada Beta Tester está no beta.</p>
         <div id="admEmbList" style="margin-top:6px"><div class="empty">Carregando…</div></div>
@@ -4448,12 +4455,43 @@
         <div id="admUsersList"><div class="empty">Carregando…</div></div>
       </div>`;
   }
+  async function renderPushSaude(){
+    const el = document.getElementById("admPushSaude"); if(!el) return;
+    el.innerHTML = `<div class="empty">Carregando…</div>`;
+    const { data, error } = await sb.rpc("push_saude");
+    if(error){ el.innerHTML = `<div class="empty">Não consegui carregar: ${esc(error.message)}</div>`; return; }
+    const s = data || {};
+    const fmtDT = (v)=> v ? new Date(v).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    const ativo = s.motor_ok && s.motor_ultima_exec && (Date.now() - new Date(s.motor_ultima_exec).getTime() < 15*60*1000);
+    const erros24 = Number(s.erros_24h||0);
+    const tipos = s.por_tipo_24h || {};
+    const tiposTxt = Object.keys(tipos).length ? Object.keys(tipos).map(k=>`${esc(k)}: <b>${tipos[k]}</b>`).join(' · ') : 'nenhum';
+    const errosList = (s.erros_recentes||[]).map(e=>
+      `<div class="meta-sm" style="padding:5px 0;border-top:1px dashed var(--line)">⚠️ ${fmtDT(e.quando)} — ${esc(String(e.detalhe||'').slice(0,140))}</div>`).join('');
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;font-weight:800;
+        background:${ativo?'rgba(127,255,0,.12)':'rgba(230,90,90,.16)'};color:${ativo?'var(--pink-deep)':'#e06b6b'}">
+        ${ativo?'🟢 Motor ativo':'🔴 Motor parado?'}
+        <span style="font-weight:500;color:var(--muted);font-size:12.5px">· última execução ${fmtDT(s.motor_ultima_exec)}</span>
+      </div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:12px">
+        <div><div class="meta-sm">Enviados 24h</div><div style="font-size:22px;font-weight:800">${s.enviados_24h??0}</div></div>
+        <div><div class="meta-sm">Enviados 7 dias</div><div style="font-size:22px;font-weight:800">${s.enviados_7d??0}</div></div>
+        <div><div class="meta-sm">Erros 24h</div><div style="font-size:22px;font-weight:800;color:${erros24>0?'#e06b6b':'inherit'}">${erros24}</div></div>
+      </div>
+      <div class="meta-sm" style="margin-top:10px">Por tipo (24h): ${tiposTxt}</div>
+      <div class="meta-sm" style="margin-top:2px">Último envio: ${fmtDT(s.ultimo_envio)}</div>
+      ${errosList ? `<div style="margin-top:12px"><div class="meta-sm" style="font-weight:800;margin-bottom:2px">Erros recentes</div>${errosList}</div>`
+                  : `<div class="meta-sm" style="margin-top:12px;color:var(--pink-deep)">✓ Nenhum erro recente</div>`}`;
+  }
+
   let ADM_USERS = [];
   let ADM_NOME = {};   // id -> {nome,email}
   const FB_TIPO = { ideia:"💡 Ideia", sugestao:"✍️ Sugestão", erro:"🐞 Erro" };
   function tipoConta(u){ return u.role==="professional" ? "Profissional" : (u.role==="creator" ? "Criador" : "Aluno"); }
 
   async function carregarAdmin(){
+    renderPushSaude();
     const { data: perfis, error } = await sb.from("profiles")
       .select("id, full_name, email, role, plano, deletado_em, is_demo, professional_id, embaixador")
       .order("role", { ascending:true }).order("full_name", { ascending:true, nullsFirst:false });
@@ -6111,6 +6149,7 @@
     pag_venc_prox_on:true, pag_venc_prox_dias:3,
     pag_atraso_on:true,    pag_atraso_dias:2,
     treino_vencer_on:true, treino_vencer_dias:5,
+    treino_alterado_on:true,
     aval_personal_on:true, aval_personal_dias:7,
     aval_aluno_on:true,    aval_aluno_dias:7,
     treino_concluido_on:true
@@ -6196,6 +6235,7 @@
         <div class="ntf-sect-tt">Treinos</div>
         <div class="ntf-card">
           ${_ntfRow("treino_vencer_on","Você","Treino perto de vencer","Te avisa quando o treino de um aluno está chegando ao fim.","treino_vencer_dias","dias antes")}
+          ${_ntfRow("treino_alterado_on","Aluno","Treino alterado","Avisa o aluno quando você edita e salva o treino dele.","","")}
         </div>
       </div>
 
@@ -7914,7 +7954,7 @@
       document.getElementById("fichaConteudo").innerHTML = `<div class="empty">Este aluno demo ainda não tem treino montado.</div>`;
       return;
     }
-    FICHA = ativa; FICHA_READONLY = demo; MONTAGEM_LIBERADA = false; MODO_EDICAO = false; VENDO_PASSADOS = false;
+    FICHA = ativa; FICHA_READONLY = demo; MONTAGEM_LIBERADA = false; MODO_EDICAO = false; VENDO_PASSADOS = false; FICHA_EDIT = false;
     await abrirFichaDias();
   }
 
@@ -8061,14 +8101,14 @@
     }
     FICHAS_TODAS.forEach(f=>f.ativa=false);
     FICHAS_TODAS.unshift(nova);
-    FICHA = nova; FICHA_READONLY = false;
+    FICHA = nova; FICHA_READONLY = false; FICHA_EDIT = true;
     await abrirFichaDias();
   }
 
   async function abrirPassada(fichaId){
     const f = FICHAS_TODAS.find(x=>x.id===fichaId);
     if(!f) return;
-    FICHA = f; FICHA_READONLY = true; VENDO_PASSADOS = false;
+    FICHA = f; FICHA_READONLY = true; VENDO_PASSADOS = false; FICHA_EDIT = false;
     await abrirFichaDias();
   }
 
@@ -8076,7 +8116,7 @@
     VENDO_PASSADOS = false;
     const ativa = FICHAS_TODAS.find(f=>f.ativa);
     if(!ativa){ await carregarFicha(FICHA.student_id); return; }
-    FICHA = ativa; FICHA_READONLY = false;
+    FICHA = ativa; FICHA_READONLY = false; FICHA_EDIT = false;
     await abrirFichaDias();
   }
 
@@ -8101,7 +8141,9 @@
           <button class="fm ${KANBAN?"on":""}" onclick="setKanban(true)">▦ Kanban</button>
           <button class="fm ${KANBAN?"":"on"}" onclick="setKanban(false)">☰ Um dia por vez</button>
         </div>
-        ${FICHA_READONLY?``:`<span class="tr-hint">👆 toque num exercício para editar</span>`}
+        ${FICHA_READONLY ? `` : (FICHA_EDIT
+          ? `<span style="display:flex;align-items:center;gap:10px"><span class="tr-hint">✏️ editando · ✕ remove, ＋ adiciona</span><button class="btn small" onclick="salvarEdicaoTreino()">✔ Salvar treino</button></span>`
+          : `<button class="btn small" onclick="entrarEdicaoTreino()">✏️ Editar treino</button>`)}
       </div>`;
     if(KANBAN){
       box.innerHTML = head + toggle;
@@ -8216,8 +8258,9 @@
   async function renderKanban(){
     const box = document.getElementById("fichaConteudo");
     if(!box) return;
+    const podeEditar = !FICHA_READONLY && FICHA_EDIT;
     if(!FICHA_DIAS.length){
-      box.innerHTML = FICHA_READONLY
+      box.innerHTML = !podeEditar
         ? `<div class="empty">Nenhum dia de treino.</div>`
         : `<div class="kb-board"><button class="kb-addcol" onclick="addDia()">＋ Criar primeiro dia</button></div>`;
       return;
@@ -8227,7 +8270,7 @@
       .order("ordem", { ascending: true, nullsFirst: false }).order("id", { ascending: true });
     const porDia = {};
     (exs||[]).forEach(x=>{ (porDia[x.dia_id] = porDia[x.dia_id] || []).push(x); });
-    const clic = FICHA_READONLY ? "" : " clickable";
+    const clic = podeEditar ? " clickable" : "";
     const cols = FICHA_DIAS.map(d=>{
       const lista = porDia[d.id] || [];
       let n = 0;
@@ -8237,8 +8280,8 @@
           const ultimo = idx === g.length-1;
           const info = [ esquemaPresc(x), (x.carga_alvo!=null?`${x.carga_alvo} kg`:""), (ultimo && x.descanso_seg!=null?`⏱ ${x.descanso_seg}s`:"") ].filter(Boolean);
           const chips = info.map((t,i)=>`<span class="kb-pc${i===0?" a":""}">${esc(t)}</span>`).join("");
-          const clk = FICHA_READONLY ? "" : ` onclick="editarDiaKanban('${d.id}')"`;
-          const del = FICHA_READONLY ? "" : `<button class="kb-del" title="Remover exercício" onclick="event.stopPropagation();excluirExKanban('${x.id}',this)">✕</button>`;
+          const clk = podeEditar ? ` onclick="editarDiaKanban('${d.id}')"` : "";
+          const del = podeEditar ? `<button class="kb-del" title="Remover exercício" onclick="event.stopPropagation();excluirExKanban('${x.id}',this)">✕</button>` : "";
           return `<div class="kb-exc${clic}"${clk}>
               <div class="kb-top"><span class="kb-num">${n}</span><span class="kb-nome">${esc(x.nome_cache||"Exercício")}</span>${del}</div>
               ${chips?`<div class="kb-pcs">${chips}</div>`:""}
@@ -8247,13 +8290,13 @@
         return g.length>1 ? `<div class="kb-biset"><div class="kb-btag">🔗 Bi-set</div>${inner}</div>` : inner;
       }).join("");
       const vazio = lista.length ? "" : `<div class="kb-empty">Sem exercícios ainda.</div>`;
-      const add = FICHA_READONLY ? "" : `<button class="kb-add" onclick="editarDiaKanban('${d.id}')">＋ exercício</button>`;
+      const add = podeEditar ? `<button class="kb-add" onclick="editarDiaKanban('${d.id}')">＋ exercício</button>` : "";
       return `<div class="kb-col">
           <div class="kb-head"><div class="kb-cl">${esc(d.label)}</div><div class="kb-cnt-sub">${lista.length} exercício${lista.length===1?"":"s"}</div></div>
           <div class="kb-body">${cards}${vazio}${add}</div>
         </div>`;
     }).join("");
-    const addCol = FICHA_READONLY ? "" : `<button class="kb-addcol" onclick="addDia()">＋ Novo dia</button>`;
+    const addCol = podeEditar ? `<button class="kb-addcol" onclick="addDia()">＋ Novo dia</button>` : "";
     box.innerHTML = `<div class="kb-board">${cols}${addCol}</div>`;
   }
 
@@ -8327,10 +8370,10 @@
       box.innerHTML = `
         ${cabecalho}
         ${lista.length ? rowsView : `<div class="empty">Nenhum exercício em ${esc(nomeDia)} ainda.</div>`}
-        <div class="fx-acoes">
+        ${FICHA_EDIT ? `<div class="fx-acoes">
           <button class="btn small" onclick="editarDia()">✏️ ${lista.length?"Editar treino":"Montar treino"}</button>
           <button class="btn small ghost" onclick="removerDia()">Remover dia</button>
-        </div>`;
+        </div>` : ``}`;
       return;
     }
 
@@ -8400,6 +8443,38 @@
 
   async function editarDia(){ MODO_EDICAO = true; const y=window.scrollY; await renderConteudoDia(); window.scrollTo(0,y); }
   function concluirDia(){ MODO_EDICAO = false; renderConteudoDia(); }
+
+  // assinatura do treino (dias + exercícios) para detectar se houve alteração
+  async function _fichaAssinatura(){
+    if(!FICHA) return null;
+    try{
+      const [exsR, diasR] = await Promise.all([
+        sb.from("ficha_exercicios").select("id,reps,carga_alvo,descanso_seg,obs,ordem,biset,dia_id").eq("ficha_id", FICHA.id).order("id"),
+        sb.from("ficha_dias").select("id,label,ordem").eq("ficha_id", FICHA.id).order("id")
+      ]);
+      return JSON.stringify({ e: exsR.data||[], d: diasR.data||[] });
+    }catch(e){ return null; }
+  }
+  async function entrarEdicaoTreino(){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    FICHA_EDIT = true; MODO_EDICAO = false;
+    FICHA_SNAP = await _fichaAssinatura();
+    renderDias();
+  }
+  async function salvarEdicaoTreino(){
+    const antes = FICHA_SNAP;
+    FICHA_EDIT = false; MODO_EDICAO = false;
+    renderDias();
+    // se algo mudou, marca o treino como atualizado (dispara o push para o aluno via trigger)
+    if(FICHA && !FICHA_READONLY){
+      const agora = await _fichaAssinatura();
+      if(antes!=null && agora!=null && agora!==antes){
+        try{ await sb.from("fichas").update({ atualizado_em: new Date().toISOString() }).eq("id", FICHA.id); }catch(e){}
+      }
+    }
+    FICHA_SNAP = null;
+    if(typeof piikToast==="function") piikToast("Treino salvo ✅");
+  }
 
   // reordenar exercícios: reindexa a lista inteira (robusto a ordem duplicada/nula)
   async function moverEx(id, dir){
