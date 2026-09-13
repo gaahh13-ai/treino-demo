@@ -6218,8 +6218,24 @@
 
     const btnOv = document.getElementById("acOv");
 
-    // EDITAR: altera a mesma linha e zera o aceite — o aluno dá ciência de novo
+    // EDITAR: altera a mesma linha. Só zera o aceite se ALGUM campo mudou.
     if(editar && FIN_AL.ativo){
+      const cur = FIN_AL.ativo;
+      const nz = s => (s==null?"":String(s));
+      const mudou =
+        (cur.modelo||"mensal") !== modelo ||
+        (Number(cur.valor)||0) !== (Number(valor)||0) ||
+        nz(cur.aulas_semana) !== nz(aulas_semana) ||
+        (Number(cur.dia_venc)||5) !== dia ||
+        nz(cur.forma_pgto) !== nz(forma) ||
+        nz(String(cur.data_inicio||"").slice(0,10)) !== nz(inicio) ||
+        JSON.stringify(cur.horarios||[]) !== JSON.stringify(horarios||[]) ||
+        nz(cur.obs) !== nz(obs||null);
+      if(!mudou){
+        if(btnOv) btnOv.remove();
+        if(typeof piikToast==="function") piikToast("Nada alterado no acordo.");
+        return;
+      }
       const { data:atu, error:eE } = await sb.from("acordos").update({
         modelo, valor, aulas_semana, dia_venc:dia, forma_pgto:forma,
         data_inicio:inicio, horarios, obs:obs||null, aceito:false, aceito_em:null
@@ -8120,9 +8136,11 @@
         </div>
       </div>
       <div class="ib-r">
-        <span class="tr-prazo">🗓 Termina em
-          <input type="date" value="${fimISO(FICHA)}" onchange="salvarDataFim(this.value)">
-        </span>
+        ${(!FICHA_READONLY && FICHA_EDIT)
+          ? `<span class="tr-prazo">🗓 Termina em
+              <input type="date" value="${fimISO(FICHA)}" onchange="salvarDataFim(this.value)">
+            </span>`
+          : `<span class="tr-prazo">🗓 ${fimISO(FICHA) ? ("Termina em "+fmtDate(fimISO(FICHA))) : "Sem prazo"}</span>`}
       </div>
     </div>`;
   }
