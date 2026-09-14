@@ -5867,7 +5867,7 @@
       </div>`;
     };
     const secHdr = t => `<div style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted,#9aa0ab);margin:12px 2px 6px">${t}</div>`;
-    let corpo;
+    let corpo, btnPassadas = "";
     if(!cobs.length){
       corpo = `<div class="meta-sm">${ehTreino?"Nenhuma cobrança lançada ainda. Lance uma a cada treino entregue.":"Nenhuma cobrança ainda."}</div>`;
     } else if(ehTreino){
@@ -5876,10 +5876,12 @@
       const passadas = cobs.filter(c=>compDe(c) && compDe(c)<atualComp);
       const atuais   = cobs.filter(c=>compDe(c)===atualComp).concat(cobs.filter(c=>!compDe(c)));
       const futuras  = cobs.filter(c=>compDe(c) && compDe(c)>atualComp);
-      // cobranças anteriores ficam recolhidas atrás de um botão (tela mais limpa)
+      // botão das anteriores fica FORA da área de rolagem (sempre visível); as linhas ficam recolhidas no topo da lista
+      if(passadas.length){
+        btnPassadas = `<button id="finPassadasBtn_${id}" class="btn ghost small" style="width:100%;margin-bottom:10px" onclick="_finTogglePassadas('${id}')">▾ Ver cobranças anteriores (${passadas.length})</button>`;
+      }
       const blocoPassadas = passadas.length
-        ? `<button id="finPassadasBtn_${id}" class="btn ghost small" style="width:100%;margin-bottom:8px" onclick="_finTogglePassadas('${id}')">▾ Ver cobranças anteriores (${passadas.length})</button>
-           <div id="finPassadas_${id}" data-n="${passadas.length}" style="display:none">${passadas.map(linha).join("")}</div>`
+        ? `<div id="finPassadas_${id}" data-n="${passadas.length}" style="display:none">${secHdr("Anteriores")}${passadas.map(linha).join("")}</div>`
         : "";
       corpo = blocoPassadas
             + (atuais.length?secHdr("Mês atual")+atuais.map(linha).join(""):"")
@@ -5895,6 +5897,7 @@
         <div class="ac-hactions">${resumo}<button class="btn small" onclick="abrirNovaCobranca('${id}')">＋ Adicionar cobrança</button></div>
       </div>
       ${dica}
+      ${btnPassadas}
       <div class="fin-cobs-scroll" id="finCobsScroll_${id}" style="max-height:344px;overflow-y:auto;padding-right:4px">${corpo}</div>
     </div>`;
   }
