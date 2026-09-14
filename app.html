@@ -6692,6 +6692,7 @@
     {k:"retencao", ic:"📈", t:"Retenção",          d:"Frequência de cada aluno"},
     {k:"adesao",   ic:"✅", t:"Adesão da semana",  d:"Feitos × previsto"},
     {k:"quem",     ic:"🗓️", t:"Quem treinou",      d:"Por dia ou semana"},
+    {k:"retorno",  ic:"🌡️", t:"Retorno dos treinos", d:"Esforço e comentário pós-treino"},
     {k:"prazo",    ic:"⏳", t:"Prazo dos treinos", d:"Vencimentos das fichas"}
   ];
   function viewDesempenho(){
@@ -6738,6 +6739,11 @@
         </div>
         <div id="qtBox"><div class="empty">Carregando…</div></div>`;
       carregarQuemTreinou();
+    } else if(key==="retorno"){
+      p.innerHTML = `<h3>🌡️ Retorno dos treinos</h3>
+        <p class="meta-sm" style="margin-top:2px">O que os alunos responderam ao concluir o treino: nível de esforço (0–10) e o comentário opcional. Os mais recentes primeiro.</p>
+        <div id="retornoGeralBox" style="margin-top:12px"><div class="empty">Carregando…</div></div>`;
+      carregarRetornoGeral();
     } else if(key==="prazo"){
       p.innerHTML = `<h3>⏳ Prazo dos treinos <span id="prazoCount"></span></h3>
         <p class="meta-sm" style="margin-top:2px">Fichas ativas ordenadas por vencimento — os que vencem antes aparecem primeiro.</p>
@@ -6851,6 +6857,37 @@
           <span class="rr-nome">${esc(r.nome)}</span>
           <span class="qt-num">${r.n} treino${r.n>1?"s":""}</span>
         </div>`).join("");
+  }
+
+  // ---- Retorno dos treinos (visão geral, todos os alunos) ----
+  async function carregarRetornoGeral(){
+    const box = document.getElementById("retornoGeralBox"); if(!box) return;
+    if(!STUDENTS.length){
+      const { data: studs } = await sb.from("profiles").select("*").eq("professional_id", ME.id);
+      STUDENTS = studs || [];
+    }
+    const { data, error } = await sb.from("sessoes")
+      .select("student_id,data,fim,nota,comentario,finalizada,ficha_dias(label)")
+      .eq("professional_id", ME.id).eq("finalizada", true)
+      .order("data",{ascending:false}).limit(60);
+    if(error){ box.innerHTML = `<div class="empty">Erro: ${esc(error.message)}</div>`; return; }
+    const feats = (data||[]).filter(s => s.nota || (s.comentario && s.comentario.trim()));
+    if(!feats.length){ box.innerHTML = `<div class="empty">Nenhum retorno de treino ainda. Ele aparece aqui quando um aluno conclui um treino e responde o nível de esforço.</div>`; return; }
+    const nomeDe = id => { const s = STUDENTS.find(x=>x.id===id); return s ? nomeAluno(s) : "Aluno"; };
+    box.innerHTML = `<div class="retorno-lista">` + feats.map(s=>{
+      const e = esforcoInfo(s.nota);
+      let quando = "";
+      try{ quando = new Date(s.fim || s.data).toLocaleDateString("pt-BR",{day:"2-digit",month:"short"}); }catch(_){}
+      const com = (s.comentario && s.comentario.trim()) ? s.comentario.trim() : "";
+      const treino = (s.ficha_dias && s.ficha_dias.label) ? s.ficha_dias.label : "Treino";
+      return `<div class="retorno-item">
+        <div class="retorno-top">
+          <span class="retorno-data"><b>${esc(nomeDe(s.student_id))}</b> · ${esc(quando)} · ${esc(treino)}</span>
+          ${e ? `<span class="retorno-esf" style="color:${e.cor}">${e.emoji} ${e.nome} · ${s.nota}/10</span>` : ""}
+        </div>
+        ${com ? `<div class="retorno-com">“${esc(com)}”</div>` : ""}
+      </div>`;
+    }).join("") + `</div>`;
   }
 
   async function carregarDesempenho(){
