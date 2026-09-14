@@ -5857,7 +5857,7 @@
     const compDe = c => String(c.vencimento||"").slice(0,7);
     const linha = (c)=>{
       const stt=_cobStatus(c);
-      const destaque = compDe(c)===atualComp;
+      const destaque = !c.pago && compDe(c)===atualComp;
       const chip = stt==="pago" ? `<span class="fin-tag pg">Pago</span>`
                  : stt==="atrasado" ? `<span class="fin-tag at">Atrasada</span>`
                  : `<span class="fin-tag pe">Em aberto</span>`;
@@ -5886,17 +5886,24 @@
     } else if(ehTreino){
       corpo = cobs.map(linha).join("");
     } else {
-      const passadas = cobs.filter(c=>compDe(c) && compDe(c)<atualComp);
-      const atuais   = cobs.filter(c=>compDe(c)===atualComp).concat(cobs.filter(c=>!compDe(c)));
-      const futuras  = cobs.filter(c=>compDe(c) && compDe(c)>atualComp);
-      // botão das anteriores fica FORA da área de rolagem e SEMPRE aparece; vazio mostra aviso ao abrir
-      btnPassadas = `<button id="finPassadasBtn_${id}" class="btn ghost small" style="width:100%;margin-bottom:10px" onclick="_finTogglePassadas('${id}')">▾ Ver cobranças anteriores${passadas.length?` (${passadas.length})`:""}</button>`;
-      const blocoPassadas = `<div id="finPassadas_${id}" data-n="${passadas.length}" style="display:none">${
-        passadas.length ? secHdr("Anteriores")+passadas.map(linha).join("")
-                        : `<div class="meta-sm" style="padding:6px 2px 12px">Nenhuma cobrança anterior por enquanto.</div>`
+      // HISTÓRICO = tudo que já foi pago (inclui o mês atual, se já pago). Fica atrás do botão.
+      const pagas = cobs.filter(c=>c.pago).slice().sort((x,y)=>
+        String(y.vencimento||y.criado_em||"").localeCompare(String(x.vencimento||x.criado_em||"")));  // mais recentes primeiro
+      // EM ABERTO = não pagas do mês atual para trás (a do mês + atrasadas)
+      const emAbertoLista = cobs.filter(c=>!c.pago && (!compDe(c) || compDe(c) <= atualComp));
+      // PRÓXIMAS = não pagas dos meses futuros
+      const futuras = cobs.filter(c=>!c.pago && compDe(c) && compDe(c) > atualComp);
+
+      // botão do histórico fica FORA da área de rolagem e SEMPRE aparece; vazio mostra aviso ao abrir
+      btnPassadas = `<button id="finPassadasBtn_${id}" class="btn ghost small" style="width:100%;margin-bottom:10px" onclick="_finTogglePassadas('${id}')">▾ Ver histórico de cobranças${pagas.length?` (${pagas.length})`:""}</button>`;
+      const blocoPassadas = `<div id="finPassadas_${id}" data-n="${pagas.length}" style="display:none">${
+        pagas.length ? secHdr("Pagas")+pagas.map(linha).join("")
+                     : `<div class="meta-sm" style="padding:6px 2px 12px">Nenhuma cobrança no histórico ainda.</div>`
       }</div>`;
-      corpo = blocoPassadas
-            + (atuais.length?secHdr("Mês atual")+atuais.map(linha).join(""):"")
+      const emAbertoHTML = emAbertoLista.length
+        ? secHdr("Em aberto")+emAbertoLista.map(linha).join("")
+        : `<div class="meta-sm" style="padding:2px 2px 10px">Nenhuma cobrança em aberto no momento. 🎉</div>`;
+      corpo = blocoPassadas + emAbertoHTML
             + (futuras.length?secHdr("Próximas")+futuras.map(linha).join(""):"");
     }
     // "em aberto" conta só o mês atual para trás (atrasadas + a do mês); as futuras não entram
@@ -5921,7 +5928,7 @@
     if(!box) return;
     const abrir = box.style.display==="none";
     box.style.display = abrir ? "" : "none";
-    if(btn){ const n=box.getAttribute("data-n")||"0"; btn.innerHTML = abrir ? `▴ Ocultar cobranças anteriores` : `▾ Ver cobranças anteriores${(n&&n!=="0")?` (${n})`:""}`; }
+    if(btn){ const n=box.getAttribute("data-n")||"0"; btn.innerHTML = abrir ? `▴ Ocultar histórico de cobranças` : `▾ Ver histórico de cobranças${(n&&n!=="0")?` (${n})`:""}`; }
   }
   function _finToggleAcHist(id){
     const box=document.getElementById("finAcHist_"+id);
