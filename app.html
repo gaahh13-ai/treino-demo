@@ -5889,13 +5889,12 @@
       const passadas = cobs.filter(c=>compDe(c) && compDe(c)<atualComp);
       const atuais   = cobs.filter(c=>compDe(c)===atualComp).concat(cobs.filter(c=>!compDe(c)));
       const futuras  = cobs.filter(c=>compDe(c) && compDe(c)>atualComp);
-      // botão das anteriores fica FORA da área de rolagem (sempre visível); as linhas ficam recolhidas no topo da lista
-      if(passadas.length){
-        btnPassadas = `<button id="finPassadasBtn_${id}" class="btn ghost small" style="width:100%;margin-bottom:10px" onclick="_finTogglePassadas('${id}')">▾ Ver cobranças anteriores (${passadas.length})</button>`;
-      }
-      const blocoPassadas = passadas.length
-        ? `<div id="finPassadas_${id}" data-n="${passadas.length}" style="display:none">${secHdr("Anteriores")}${passadas.map(linha).join("")}</div>`
-        : "";
+      // botão das anteriores fica FORA da área de rolagem e SEMPRE aparece; vazio mostra aviso ao abrir
+      btnPassadas = `<button id="finPassadasBtn_${id}" class="btn ghost small" style="width:100%;margin-bottom:10px" onclick="_finTogglePassadas('${id}')">▾ Ver cobranças anteriores${passadas.length?` (${passadas.length})`:""}</button>`;
+      const blocoPassadas = `<div id="finPassadas_${id}" data-n="${passadas.length}" style="display:none">${
+        passadas.length ? secHdr("Anteriores")+passadas.map(linha).join("")
+                        : `<div class="meta-sm" style="padding:6px 2px 12px">Nenhuma cobrança anterior por enquanto.</div>`
+      }</div>`;
       corpo = blocoPassadas
             + (atuais.length?secHdr("Mês atual")+atuais.map(linha).join(""):"")
             + (futuras.length?secHdr("Próximas")+futuras.map(linha).join(""):"");
@@ -5922,7 +5921,7 @@
     if(!box) return;
     const abrir = box.style.display==="none";
     box.style.display = abrir ? "" : "none";
-    if(btn){ const n=box.getAttribute("data-n")||""; btn.innerHTML = abrir ? `▴ Ocultar cobranças anteriores` : `▾ Ver cobranças anteriores (${n})`; }
+    if(btn){ const n=box.getAttribute("data-n")||"0"; btn.innerHTML = abrir ? `▴ Ocultar cobranças anteriores` : `▾ Ver cobranças anteriores${(n&&n!=="0")?` (${n})`:""}`; }
   }
   function _finToggleAcHist(id){
     const box=document.getElementById("finAcHist_"+id);
