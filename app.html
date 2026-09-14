@@ -6016,7 +6016,8 @@
               const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : (x.modelo==="treino" ? `${fmtBRL(x.valor)}/treino` : `${fmtBRL(x.valor)}/mês`);
               const ini = fmtDate(x.data_inicio||x.criado_em);
               const fim = x.encerrado_em ? fmtDate(x.encerrado_em) : "—";
-              return `<div class="fin-hist-row"><span><b>${per}</b> · ${acFormaLabel(x.forma_pgto)}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
+              const obs = x.obs ? `<br><span class="meta-sm" style="font-weight:400">📝 ${esc(x.obs)}</span>` : "";
+              return `<div class="fin-hist-row"><span><b>${per}</b> · ${acFormaLabel(x.forma_pgto)}${obs}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
             }).join("")
           }</div>
         </div>`
