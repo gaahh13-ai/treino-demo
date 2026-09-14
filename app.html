@@ -6674,10 +6674,10 @@
   /* ---------- PROFISSIONAL: DESEMPENHO / RETENÇÃO ---------- */
   let RET_DADOS = [], RET_FILTRO = "todos";
   const RET_CLASSES = {
-    em_dia:    {label:"Em dia",    cor:"#15803d", bg:"#122110"},
-    oscilando: {label:"Oscilando", cor:"#b45309", bg:"#2a2410"},
-    risco:     {label:"Em risco",  cor:"#c2410c", bg:"#2a1f10"},
-    abandono:  {label:"Abandono",  cor:"#be123c", bg:"#2a1416"}
+    em_dia:    {label:"Em dia",    cor:"#15803d", bg:"#122110", dica:"treinou nos últimos 3 dias"},
+    oscilando: {label:"Oscilando", cor:"#b45309", bg:"#2a2410", dica:"4 a 7 dias sem treinar"},
+    risco:     {label:"Em risco",  cor:"#c2410c", bg:"#2a1f10", dica:"8 a 14 dias sem treinar"},
+    abandono:  {label:"Abandono",  cor:"#be123c", bg:"#2a1416", dica:"mais de 14 dias, ou nunca treinou"}
   };
   function classificaRet(dias){
     if(dias===null) return "abandono";
@@ -6712,7 +6712,11 @@
     p.style.display = "";
     if(key==="retencao"){
       p.innerHTML = `<h3>📈 Retenção dos alunos</h3>
-        <p class="meta-sm" style="margin-top:2px">Como está a frequência de cada aluno, pela data do último treino registrado. Clique numa faixa para filtrar.</p>
+        <p class="meta-sm" style="margin-top:2px">Cada aluno é classificado pelo tempo desde o <b>último treino registrado</b>. Clique numa faixa para filtrar.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px">
+          ${Object.keys(RET_CLASSES).map(k=>{ const c=RET_CLASSES[k]; return `<span class="meta-sm" style="display:inline-flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:50%;background:${c.cor};flex:none"></span><b style="color:var(--txt)">${c.label}</b> — ${c.dica}</span>`; }).join("")}
+        </div>
+        <p class="meta-sm" style="margin-top:8px;opacity:.75">Só entram alunos ativos, e conta apenas treinos finalizados.</p>
         <div id="retResumo" style="margin:14px 0"><div class="empty">Carregando…</div></div>
         <div id="retLista"></div>`;
       carregarDesempenho();
