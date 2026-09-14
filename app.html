@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Piik</title>
+<script>
+/* aplica a marca personalizada (cor de fundo, textos, destaque) ANTES de pintar a tela,
+   usando o que foi salvo da última visita — evita o "flash preto" antes do cinza entrar. */
+(function(){try{
+  var v=JSON.parse(localStorage.getItem('piik_brand_vars')||'null');
+  if(v&&typeof v==='object'){var R=document.documentElement.style;for(var k in v){ if(v[k]) R.setProperty(k,v[k],'important'); }}
+}catch(e){}})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{color-scheme:light;--txt:#e8eaee;--muted:#9aa0ab;--line:#262a33;--pink:#7fff00;--pink-deep:#5fbf00}
@@ -9524,7 +9532,8 @@
   }
   function aplicar(pz){
     var R=document.documentElement.style;
-    function set(k,v){ if(v) R.setProperty(k,v,'important'); }
+    var _saved={};
+    function set(k,v){ if(v){ R.setProperty(k,v,'important'); _saved[k]=v; } }
     var accent=pz.accent||null, bg=pz.bg||null;
     if(accent){
       set('--pink',accent);
@@ -9549,7 +9558,9 @@
     set('--txt',t1); set('--muted',t2);
     aplicarLogo(pz.logo_url);
     try{ window.PIIK_BRAND = { logo_url: pz.logo_url||null, accent: pz.accent||null }; }catch(e){}   // logo do personal p/ o card de parabéns
+    try{ localStorage.setItem('piik_brand_vars', JSON.stringify(_saved)); }catch(e){}   // guarda p/ aplicar cedo na próxima carga (evita flash preto)
   }
+  function _limparBrandCache(){ try{ localStorage.removeItem('piik_brand_vars'); }catch(e){} }
 
   async function run(){
     try{
@@ -9567,7 +9578,7 @@
       if(!user)return;
       var pr=await _sb.from('profiles').select('role,professional_id,brand_off').eq('id',user.id).single();
       var perfil=pr.data; if(!perfil)return;
-      if(perfil.brand_off===true) return;   // marca personalizada desativada só para esta conta — reversível pelo banco
+      if(perfil.brand_off===true){ _limparBrandCache(); return; }   // marca personalizada desativada só para esta conta — reversível pelo banco
       var profId=(perfil.role==='professional'||perfil.role==='creator')?user.id:perfil.professional_id;
       if(!profId)return;
       // A marca personalizada só é aplicada se o profissional dono estiver no plano You Piik (mais caro).
@@ -9575,9 +9586,9 @@
       var pprof=ppr&&ppr.data?ppr.data:null;
       var pplano=(pprof&&pprof.plano||'').toLowerCase();
       var ppodePerso=(pprof&&pprof.role==='creator')||pplano==='you_piik'||pplano==='pro';
-      if(!ppodePerso)return;
+      if(!ppodePerso){ _limparBrandCache(); return; }
       var pzr=await _sb.from('personalizacao').select('accent,bg,text1,text2,logo_url,ativo').eq('professional_id',profId).maybeSingle();
-      var pz=pzr.data; if(!pz||pz.ativo===false)return;
+      var pz=pzr.data; if(!pz||pz.ativo===false){ _limparBrandCache(); return; }
       aplicar(pz);
       if(pz.logo_url){
         var mo=new MutationObserver(function(){ aplicarLogo(pz.logo_url); });
