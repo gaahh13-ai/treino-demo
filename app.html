@@ -5876,7 +5876,12 @@
       const passadas = cobs.filter(c=>compDe(c) && compDe(c)<atualComp);
       const atuais   = cobs.filter(c=>compDe(c)===atualComp).concat(cobs.filter(c=>!compDe(c)));
       const futuras  = cobs.filter(c=>compDe(c) && compDe(c)>atualComp);
-      corpo = (passadas.length?secHdr("Anteriores")+passadas.map(linha).join(""):"")
+      // cobranças anteriores ficam recolhidas atrás de um botão (tela mais limpa)
+      const blocoPassadas = passadas.length
+        ? `<button id="finPassadasBtn_${id}" class="btn ghost small" style="width:100%;margin-bottom:8px" onclick="_finTogglePassadas('${id}')">▾ Ver cobranças anteriores (${passadas.length})</button>
+           <div id="finPassadas_${id}" data-n="${passadas.length}" style="display:none">${passadas.map(linha).join("")}</div>`
+        : "";
+      corpo = blocoPassadas
             + (atuais.length?secHdr("Mês atual")+atuais.map(linha).join(""):"")
             + (futuras.length?secHdr("Próximas")+futuras.map(linha).join(""):"");
     }
@@ -5892,6 +5897,15 @@
       ${dica}
       <div class="fin-cobs-scroll" id="finCobsScroll_${id}" style="max-height:344px;overflow-y:auto;padding-right:4px">${corpo}</div>
     </div>`;
+  }
+
+  function _finTogglePassadas(id){
+    const box=document.getElementById("finPassadas_"+id);
+    const btn=document.getElementById("finPassadasBtn_"+id);
+    if(!box) return;
+    const abrir = box.style.display==="none";
+    box.style.display = abrir ? "" : "none";
+    if(btn){ const n=box.getAttribute("data-n")||""; btn.innerHTML = abrir ? `▴ Ocultar cobranças anteriores` : `▾ Ver cobranças anteriores (${n})`; }
   }
 
   async function verFinanceiroAluno(id){
