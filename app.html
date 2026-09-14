@@ -6002,23 +6002,30 @@
         ? `<div class="ac-aulas"><span class="meta-sm" style="margin:0;font-weight:700">Aulas:</span>${grpsCard.map(g=>`<span class="achip">${esc(g.d)} <span class="d">${g.horas.map(esc).join(" · ")}</span></span>`).join("")}</div>`
         : "";
       const estAula = a.modelo==="aula"
-        ? `<div class="ac-obs">💡 Cobrança por aula: cada mês soma as aulas que caem no mês (veja em <b>Este mês</b>).</div>`
-        : ehTreino ? `<div class="ac-obs">💡 Cobrança por treino (online): esporádica — lance uma cobrança a cada treino entregue em <b>Cobranças</b>.</div>` : "";
-      const vencItem = ehTreino ? "" : `<div class="ac-item"><span class="k">Vencimento</span><span class="v">todo dia ${a.dia_venc||5}</span></div>`;
+        ? `<div class="ac-obs" style="margin-top:12px">💡 Cobrança por aula: cada mês soma as aulas que caem no mês (veja em <b>Cobranças</b>).</div>`
+        : ehTreino ? `<div class="ac-obs" style="margin-top:12px">💡 Cobrança por treino (online): esporádica — lance uma cobrança a cada treino entregue em <b>Cobranças</b>.</div>` : "";
+      const per = a.modelo==="aula" ? "/aula" : (ehTreino ? "/treino" : "/mês");
+      const gi = (k,v)=>`<div style="min-width:0"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">${k}</div><div style="font-size:15px;font-weight:700;margin-top:4px;color:var(--txt)">${v}</div></div>`;
+      const itens = [];
+      if(!ehTreino) itens.push(gi("Vencimento","todo dia "+(a.dia_venc||5)));
+      itens.push(gi("Pagamento", acFormaLabel(a.forma_pgto)));
+      itens.push(gi("Vigente desde", fmtDate(a.data_inicio||a.criado_em)));
       curHTML = `<div class="ac-sec ac-cur">
-        <div class="ac-h">
-          <div class="ac-t">🤝 Acordo atual</div>
-          <div class="ac-hactions">${ciente}<button class="btn small ghost" onclick="abrirNovoAcordo('${id}',true)">✏️ Editar</button><button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Novo acordo</button></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+          <div class="ac-t">Acordo atual</div>${ciente}
         </div>
-        <div class="ac-kv">
-          <div class="ac-item"><span class="k">Modelo</span><span class="v">${acModeloLabel(a)}</span></div>
-          <div class="ac-item"><span class="k">${valK}</span>${vLabel}</div>
-          ${vencItem}
-          <div class="ac-item"><span class="k">Pagamento</span><span class="v">${acFormaLabel(a.forma_pgto)}</span></div>
-          <div class="ac-item"><span class="k">Vigente desde</span><span class="v">${fmtDate(a.data_inicio||a.criado_em)}</span></div>
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:2px 0 16px">
+          <span style="font-size:30px;font-weight:800;letter-spacing:-.5px;color:var(--txt)">${fmtBRL(a.valor)}</span>
+          <span style="color:var(--muted);font-size:15px;font-weight:600">${per}</span>
+          <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;background:var(--pk-surf2,#1d2027);color:var(--txt);border:1px solid var(--line);padding:3px 9px;border-radius:999px">${acModeloLabel(a)}</span>
         </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">${itens.join("")}</div>
         ${aulas}${estAula}
-        ${a.obs?`<div class="ac-obs">📝 ${esc(a.obs)}</div>`:""}
+        ${a.obs?`<div class="ac-obs" style="margin-top:14px">📝 ${esc(a.obs)}</div>`:""}
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn small ghost" style="flex:1" onclick="abrirNovoAcordo('${id}',true)">✏️ Editar acordo</button>
+          <button class="btn small" style="flex:1" onclick="abrirNovoAcordo('${id}')">＋ Novo acordo</button>
+        </div>
       </div>`;
     }else{
       curHTML = `<div class="ac-empty">Nenhum acordo definido ainda.<br><br>
@@ -6028,7 +6035,7 @@
     // ----- Histórico de acordos (recolhido atrás de um botão) -----
     const antigos = FIN_AL.acordos.filter(x=>!x.ativo);
     const histHTML = antigos.length
-      ? `<div class="ac-sec">
+      ? `<div style="margin-top:12px">
           <button id="finAcHistBtn_${id}" class="btn ghost small" style="width:100%" onclick="_finToggleAcHist('${id}')">▾ Ver histórico de acordos (${antigos.length})</button>
           <div id="finAcHist_${id}" data-n="${antigos.length}" class="fin-al-hist" style="display:none;border:none;padding:0;margin-top:10px">${
             antigos.map(x=>{
@@ -6045,7 +6052,13 @@
     // ----- Cobranças (recorrentes geradas sozinhas + avulsas) -----
     const cobrHTML = _finCobsListaHTML(id);
 
-    el.innerHTML = `<div class="acordo-wrap">${curHTML}${histHTML}${cobrHTML}</div>`;
+    // duas seções bem separadas: Acordo (acordo atual + histórico) e Cobranças
+    const secHdr2 = (emoji,txt)=>`<div style="display:flex;align-items:center;gap:10px;margin:6px 2px 12px"><span style="font-size:13px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--txt)">${emoji} ${txt}</span><span style="flex:1;height:1px;background:var(--line)"></span></div>`;
+    const bStyle = "border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:22px;background:var(--pk-elev,#0f1116)";
+    el.innerHTML = `<div class="acordo-wrap">`
+      + secHdr2("🤝","Acordo") + `<div style="${bStyle}">${curHTML}${histHTML}</div>`
+      + secHdr2("💵","Cobranças") + `<div style="${bStyle}">${cobrHTML}</div>`
+      + `</div>`;
     // abre no topo: mês atual primeiro; o personal rola para baixo para ver os futuros
     setTimeout(()=>{ const box=document.getElementById("finCobsScroll_"+id); if(box) box.scrollTop = 0; }, 0);
   }
