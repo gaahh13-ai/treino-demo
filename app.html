@@ -5073,7 +5073,7 @@
   // Online/Presencial/Misto agora são GRUPOS. Cria os 3 padrão (se faltarem) e
   // associa cada aluno ao grupo da sua modalidade (uma vez). Depois o personal
   // gerencia tudo como grupo (multi-seleção), podendo criar outros.
-  const GRUPOS_PADRAO = ["Online","Presencial","Misto"];
+  const GRUPOS_PADRAO = ["Online","Presencial","Misto","Sem grupo"];
   function _grupoIdPorNome(n){ const g=GRUPOS.find(x=>(x.nome||"").toLowerCase()===String(n).toLowerCase()); return g?g.id:null; }
   async function garantirGruposPadrao(){
     const faltando = GRUPOS_PADRAO.filter(n=>!_grupoIdPorNome(n));
@@ -5082,8 +5082,8 @@
       if(novos) novos.forEach(g=>GRUPOS.push({id:g.id, nome:g.nome}));
       GRUPOS.sort((a,b)=>(a.nome||"").localeCompare(b.nome||"","pt-BR"));
     }
-    const idOn=_grupoIdPorNome("Online"), idPr=_grupoIdPorNome("Presencial"), idMi=_grupoIdPorNome("Misto");
-    const especiais=[idOn,idPr,idMi].filter(Boolean);
+    const idOn=_grupoIdPorNome("Online"), idPr=_grupoIdPorNome("Presencial"), idMi=_grupoIdPorNome("Misto"), idSem=_grupoIdPorNome("Sem grupo");
+    const especiais=[idOn,idPr,idMi,idSem].filter(Boolean);
     if(!especiais.length || _gruposMigrados) return;
     _gruposMigrados = true;
     let alunos=[];
@@ -5094,9 +5094,10 @@
     }catch(e){ return; }
     for(const a of alunos){
       const jaEm = especiais.some(gid=>(GRUPO_MEMBROS[gid]||new Set()).has(a.id));
-      if(jaEm) continue;
-      const m=(a.modalidade||"online").toLowerCase();
-      const gid = m==="presencial"?idPr : (m==="misto"?idMi : idOn);
+      if(jaEm) continue;   // já está em algum dos 4 grupos padrão
+      // aluno com modalidade antiga entra no grupo correspondente; sem classificação vai para "Sem grupo"
+      const m=(a.modalidade||"").toLowerCase();
+      const gid = m==="presencial"?idPr : (m==="misto"?idMi : (m==="online"?idOn : idSem));
       if(!gid) continue;
       try{
         const { error } = await sb.from("aluno_grupos").insert({ professional_id:ME.id, grupo_id:gid, student_id:a.id });
@@ -5198,6 +5199,7 @@
   }
   async function toggleGrupoAluno(studentId, grupoId){
     const set = GRUPO_MEMBROS[grupoId] = GRUPO_MEMBROS[grupoId] || new Set();
+    const foiAdd = !set.has(studentId);
     if(set.has(studentId)){
       const { error } = await sb.from("aluno_grupos").delete().eq("grupo_id",grupoId).eq("student_id",studentId);
       if(error){ piikAlert("Erro: "+error.message); return; }
@@ -5209,12 +5211,29 @@
     }
     // grupos especiais (Online/Presencial/Misto) mantêm a modalidade derivada em dia
     const nomeG = ((GRUPOS.find(g=>g.id===grupoId)||{}).nome||"").toLowerCase();
+    // ao classificar num grupo real, tira o aluno de "Sem grupo"
+    if(foiAdd && ["online","presencial","misto"].includes(nomeG)){
+      const idSem=_grupoIdPorNome("Sem grupo");
+      if(idSem && (GRUPO_MEMBROS[idSem]||new Set()).has(studentId)){
+        try{ await sb.from("aluno_grupos").delete().eq("grupo_id",idSem).eq("student_id",studentId); }catch(e){}
+        GRUPO_MEMBROS[idSem].delete(studentId);
+      }
+    }
     if(["online","presencial","misto"].includes(nomeG)){
       const nova = _modalidadeDerivada(studentId);
       const st = STUDENTS.find(x=>x.id===studentId);
       if(!st || (st.modalidade||"online")!==nova){
         try{ await sb.from("profiles").update({ modalidade:nova }).eq("id", studentId); }catch(e){}
         if(st) st.modalidade = nova;
+      }
+    }
+    // se o aluno ficou sem NENHUM grupo, volta automaticamente para "Sem grupo"
+    const idSem2 = _grupoIdPorNome("Sem grupo");
+    if(idSem2){
+      const emAlgum = GRUPOS.some(g => (GRUPO_MEMBROS[g.id]||new Set()).has(studentId));
+      if(!emAlgum){
+        try{ await sb.from("aluno_grupos").insert({ professional_id:ME.id, grupo_id:idSem2, student_id:studentId }); }catch(e){}
+        (GRUPO_MEMBROS[idSem2]=GRUPO_MEMBROS[idSem2]||new Set()).add(studentId);
       }
     }
     injetarSubmenuGrupos(); renderGruposBar(); if(VIEW==='grupos') renderListaGrupos(); renderGruposDoAluno(studentId);
@@ -5635,7 +5654,7 @@
     try{
       const [rp, rc] = await Promise.all([
         sb.from("pagamentos").select("competencia,valor,pago_em").eq("professional_id", ME.id),
-        sb.from("cobrancas_aluno").select("valor,pago,pago_em,criado_em").eq("professional_id", ME.id)
+        sb.from("cobrancas_aluno").select("valor,pago,pago_em,criado_em,vencimento,descricao").eq("professional_id", ME.id)
       ]);
       FIN_ANALISE = { pags: rp.data||[], cobs: rc.data||[] };
     }catch(e){ FIN_ANALISE = { pags:[], cobs:[] }; }
