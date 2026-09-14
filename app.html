@@ -801,7 +801,7 @@
   .grp-chip.sm{padding:4px 11px;font-size:12px}
   .modal-toggle{display:inline-flex;gap:6px;flex-wrap:wrap}
   /* desempenho: quadros grandes */
-  .desp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .desp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
   .desp-tile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;min-height:118px;justify-content:center;color:var(--txt,#e8eaee);
     background:var(--pk-surf,#15171c);border:1px solid var(--line,#262a33);border-radius:16px;padding:16px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
   .desp-tile:hover{transform:translateY(-2px);border-color:var(--pink-deep,#5fbf00)}
@@ -809,6 +809,7 @@
   .desp-ic{font-size:26px;line-height:1}
   .desp-tt{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:17px;color:var(--txt,#e8eaee)}
   .desp-td{font-size:11.5px;color:var(--muted,#9aa0ab)}
+  @media(max-width:1024px){ .desp-grid{grid-template-columns:repeat(3,1fr)} }
   @media(max-width:640px){ .desp-grid{grid-template-columns:repeat(2,1fr)} }
   /* agenda semanal */
   .agenda-resumo{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
