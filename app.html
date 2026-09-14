@@ -9,7 +9,12 @@
    usando o que foi salvo da última visita — evita o "flash preto" antes do cinza entrar. */
 (function(){try{
   var v=JSON.parse(localStorage.getItem('piik_brand_vars')||'null');
-  if(v&&typeof v==='object'){var R=document.documentElement.style;for(var k in v){ if(v[k]) R.setProperty(k,v[k],'important'); }}
+  if(v&&typeof v==='object'){
+    var R=document.documentElement.style;
+    for(var k in v){ if(v[k]) R.setProperty(k,v[k],'important'); }
+    // pinta o fundo já no <html>, antes do body existir, pra não passar pelo preto
+    if(v['--pk-bg']){ R.setProperty('background-color', v['--pk-bg'], 'important'); document.documentElement.style.backgroundColor = v['--pk-bg']; }
+  }
 }catch(e){}})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -5895,9 +5900,10 @@
             + (atuais.length?secHdr("Mês atual")+atuais.map(linha).join(""):"")
             + (futuras.length?secHdr("Próximas")+futuras.map(linha).join(""):"");
     }
-    const abertas = cobs.filter(c=>!c.pago);
-    const totalAberto = abertas.reduce((s,c)=>s+(Number(c.valor)||0),0);
-    const resumo = abertas.length ? `<span class="cchip wait">${abertas.length} em aberto · ${fmtBRL(totalAberto)}</span>` : "";
+    // "em aberto" conta só o mês atual para trás (atrasadas + a do mês); as futuras não entram
+    const emAberto = cobs.filter(c=>!c.pago && (!compDe(c) || compDe(c) <= atualComp));
+    const totalAberto = emAberto.reduce((s,c)=>s+(Number(c.valor)||0),0);
+    const resumo = emAberto.length ? `<span class="cchip wait">${emAberto.length} em aberto · ${fmtBRL(totalAberto)}</span>` : "";
     const dica = ehTreino ? "" : `<p class="meta-sm" style="margin:-4px 0 10px">As mensalidades entram sozinhas todo mês. Marque <b>Registrar pagamento</b> quando o aluno pagar; a parcela em destaque é a do mês atual.</p>`;
     return `<div class="ac-sec">
       <div class="ac-h" style="margin-bottom:12px">
@@ -6014,12 +6020,8 @@
     const cobrHTML = _finCobsListaHTML(id);
 
     el.innerHTML = `<div class="acordo-wrap">${curHTML}${histHTML}${cobrHTML}</div>`;
-    // posiciona a rolagem para mostrar os últimos meses + os próximos em aberto
-    setTimeout(()=>{
-      const box=document.getElementById("finCobsScroll_"+id); if(!box) return;
-      const alvo = box.querySelector('.fin-parc[data-comp="'+compAtual()+'"]') || box.querySelector('.fin-parc');
-      if(alvo) box.scrollTop = Math.max(0, alvo.offsetTop - 96);
-    }, 0);
+    // abre no topo: mês atual primeiro; o personal rola para baixo para ver os futuros
+    setTimeout(()=>{ const box=document.getElementById("finCobsScroll_"+id); if(box) box.scrollTop = 0; }, 0);
   }
 
   function finAlunoMes(id, delta){
