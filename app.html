@@ -5907,6 +5907,14 @@
     box.style.display = abrir ? "" : "none";
     if(btn){ const n=box.getAttribute("data-n")||""; btn.innerHTML = abrir ? `▴ Ocultar cobranças anteriores` : `▾ Ver cobranças anteriores (${n})`; }
   }
+  function _finToggleAcHist(id){
+    const box=document.getElementById("finAcHist_"+id);
+    const btn=document.getElementById("finAcHistBtn_"+id);
+    if(!box) return;
+    const abrir = box.style.display==="none";
+    box.style.display = abrir ? "" : "none";
+    if(btn){ const n=box.getAttribute("data-n")||""; btn.innerHTML = abrir ? `▴ Ocultar histórico de acordos` : `▾ Ver histórico de acordos (${n})`; }
+  }
 
   async function verFinanceiroAluno(id){
     const el = document.getElementById("finList_"+id);
@@ -5975,17 +5983,20 @@
         <button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Definir acordo</button></div>`;
     }
 
-    // ----- Histórico de acordos (logo abaixo do acordo atual) -----
+    // ----- Histórico de acordos (recolhido atrás de um botão) -----
     const antigos = FIN_AL.acordos.filter(x=>!x.ativo);
     const histHTML = antigos.length
-      ? `<div class="ac-sec"><div class="ac-t" style="margin-bottom:10px">📜 Histórico de acordos</div><div class="fin-al-hist" style="border:none;padding:0">${
-          antigos.map(x=>{
-            const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : (x.modelo==="treino" ? `${fmtBRL(x.valor)}/treino` : `${fmtBRL(x.valor)}/mês`);
-            const ini = fmtDate(x.data_inicio||x.criado_em);
-            const fim = x.encerrado_em ? fmtDate(x.encerrado_em) : "—";
-            return `<div class="fin-hist-row"><span><b>${per}</b> · ${acFormaLabel(x.forma_pgto)}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
-          }).join("")
-        }</div></div>`
+      ? `<div class="ac-sec">
+          <button id="finAcHistBtn_${id}" class="btn ghost small" style="width:100%" onclick="_finToggleAcHist('${id}')">▾ Ver histórico de acordos (${antigos.length})</button>
+          <div id="finAcHist_${id}" data-n="${antigos.length}" class="fin-al-hist" style="display:none;border:none;padding:0;margin-top:10px">${
+            antigos.map(x=>{
+              const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : (x.modelo==="treino" ? `${fmtBRL(x.valor)}/treino` : `${fmtBRL(x.valor)}/mês`);
+              const ini = fmtDate(x.data_inicio||x.criado_em);
+              const fim = x.encerrado_em ? fmtDate(x.encerrado_em) : "—";
+              return `<div class="fin-hist-row"><span><b>${per}</b> · ${acFormaLabel(x.forma_pgto)}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
+            }).join("")
+          }</div>
+        </div>`
       : "";
 
     // ----- Cobranças (recorrentes geradas sozinhas + avulsas) -----
