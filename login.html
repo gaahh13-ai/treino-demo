@@ -11,69 +11,57 @@
 <style>
 :root{
   --pink:#7fff00; --pink-deep:#5fbf00;
-  --bg:#0a0b0d; --surf:#111318; --surf2:#171a20;
-  --txt:#e8eaee; --muted:#9aa0ab; --line:#23262e;
+  --bg:#0a0b0d; --surf:#15171c; --field:#262a33;
+  --txt:#e8eaee; --muted:#9aa0ab; --line:#2a2e37;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;max-width:100%}
 a{color:inherit;text-decoration:none}
 
-.page{display:grid;grid-template-columns:55% 45%;min-height:100vh;width:100%;max-width:100%}
+.page{display:grid;grid-template-columns:48% 52%;min-height:100vh;width:100%;max-width:100%}
 
 /* ===== ESQUERDA: FOTO ===== */
 .hero{position:relative;min-width:0;overflow:hidden;background:#000}
 .hero .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:48% 42%}
-.hero .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,transparent 24%,transparent 52%,rgba(0,0,0,.8) 100%)}
-.brand{position:absolute;top:clamp(28px,4vw,48px);left:clamp(28px,4vw,56px);z-index:3}
-.brand img{height:clamp(30px,3.4vw,42px);width:auto;display:block;filter:drop-shadow(0 2px 12px rgba(0,0,0,.6))}
-.cap{position:absolute;left:clamp(28px,4vw,56px);bottom:clamp(120px,15vh,180px);z-index:3;
+.hero .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,transparent 26%,transparent 55%,rgba(0,0,0,.8) 100%)}
+.brand{position:absolute;top:clamp(28px,4vw,46px);left:clamp(26px,3.5vw,48px);z-index:3}
+.brand img{height:clamp(28px,3vw,38px);width:auto;display:block;filter:drop-shadow(0 2px 12px rgba(0,0,0,.6))}
+.cap{position:absolute;left:clamp(26px,3.5vw,48px);bottom:clamp(112px,15vh,176px);z-index:3;
   font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#0a0b0d;background:var(--pink);padding:6px 12px;border-radius:8px}
-.htitle{position:absolute;left:clamp(28px,4vw,56px);right:clamp(40px,6vw,90px);bottom:clamp(48px,7vh,80px);z-index:3;
-  font-family:Rajdhani,sans-serif;font-weight:700;font-size:clamp(26px,2.4vw,36px);line-height:1.14;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.7)}
+.htitle{position:absolute;left:clamp(26px,3.5vw,48px);right:clamp(30px,4vw,64px);bottom:clamp(46px,7vh,74px);z-index:3;
+  font-family:Rajdhani,sans-serif;font-weight:700;font-size:clamp(24px,2.1vw,32px);line-height:1.14;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.7)}
 .htitle span{color:var(--pink)}
 
-/* ===== DIREITA: LOGIN ===== */
-.side{position:relative;min-width:0;display:flex;align-items:center;justify-content:center;padding:40px 24px;background:#0c0d10;overflow-x:hidden}
-.side:before{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 70% 0%,rgba(127,255,0,.05),transparent 60%);pointer-events:none}
-.box{position:relative;min-width:0;width:100%;max-width:min(420px,100%)}
-.mlogo{display:none;margin-bottom:26px}
-.mlogo img{height:36px}
-.welcome{font-size:15px;color:var(--muted);margin-bottom:6px}
-h1{font-family:Rajdhani,sans-serif;font-weight:700;font-size:clamp(28px,3vw,34px);color:#fff;margin-bottom:32px}
+/* ===== DIREITA: CARD DE LOGIN ===== */
+.side{position:relative;min-width:0;display:flex;align-items:center;justify-content:center;padding:40px 24px;background:var(--bg);overflow-x:hidden}
+.card{position:relative;min-width:0;width:100%;max-width:min(430px,100%);
+  background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:clamp(28px,3vw,38px)}
+h1{font-family:Rajdhani,sans-serif;font-weight:700;font-size:26px;color:#fff;text-align:center}
+.sub{font-size:14px;color:var(--muted);text-align:center;margin:4px 0 26px}
 .field{margin-bottom:16px}
 label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:8px}
-.control{position:relative;display:flex;align-items:center;background:var(--surf);border:1px solid var(--line);border-radius:14px;transition:border-color .15s,box-shadow .15s}
-.control:focus-within{border-color:var(--pink-deep);box-shadow:0 0 0 3px rgba(127,255,0,.12)}
-.control .ico{padding:0 4px 0 16px;color:#6a6f79;font-size:16px;display:flex;align-items:center}
-.control input{flex:1;min-width:0;height:56px;background:transparent;border:none;outline:none;color:var(--txt);font-size:15px;padding:0 12px}
-.control input::placeholder{color:#6a6f79}
-.eye{background:none;border:none;color:#6a6f79;cursor:pointer;font-size:16px;padding:0 16px;height:56px}
-.eye:hover{color:var(--txt)}
-.rowopts{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;justify-content:space-between;margin:4px 2px 24px}
-.remember{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
-.remember input{appearance:none;width:18px;height:18px;border:1.5px solid var(--line);border-radius:5px;background:var(--surf);cursor:pointer;position:relative}
-.remember input:checked{background:var(--pink);border-color:var(--pink)}
-.remember input:checked:after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#08130a;font-size:12px;font-weight:900}
-.forgot{font-size:13px;color:var(--pink-deep);font-weight:600}
-.forgot:hover{text-decoration:underline}
-.btn{width:100%;height:58px;border-radius:14px;border:none;cursor:pointer;background:var(--pink);color:#08130a;
-  font-family:Rajdhani,sans-serif;font-weight:700;font-size:19px;display:flex;align-items:center;justify-content:center;gap:10px;
-  box-shadow:0 10px 30px rgba(127,255,0,.28);transition:filter .15s,transform .05s}
+input.inp{width:100%;height:54px;background:var(--field);border:1px solid transparent;border-radius:13px;color:var(--txt);
+  font-size:15px;padding:0 16px;outline:none;transition:border-color .15s,box-shadow .15s}
+input.inp::placeholder{color:#7a808b}
+input.inp:focus{border-color:var(--pink-deep);box-shadow:0 0 0 3px rgba(127,255,0,.12)}
+.btn{width:100%;height:54px;margin-top:4px;border-radius:13px;border:none;cursor:pointer;background:var(--pink);color:#08130a;
+  font-family:Rajdhani,sans-serif;font-weight:700;font-size:19px;letter-spacing:.3px;
+  box-shadow:0 10px 30px rgba(127,255,0,.24);transition:filter .15s,transform .05s}
 .btn:hover{filter:brightness(1.06)} .btn:active{transform:translateY(1px)}
+.links{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;justify-content:space-between;margin-top:18px}
+.links .primeiro{font-size:13.5px;font-weight:700;color:var(--pink-deep);cursor:pointer}
+.links .esqueci{font-size:13.5px;color:var(--muted);cursor:pointer}
+.links a:hover,.links span:hover{text-decoration:underline}
+.voltar{display:block;text-align:center;margin-top:22px;font-size:13.5px;color:var(--muted)}
+.voltar:hover{color:var(--txt)}
 .err,.info{display:none;font-size:13px;padding:10px 14px;border-radius:12px;margin-bottom:16px;line-height:1.4}
 .err{background:rgba(220,40,60,.1);border:1px solid rgba(220,40,60,.4);color:#ff8a9a}
 .info{background:rgba(127,255,0,.08);border:1px solid rgba(127,255,0,.35);color:#cdeeb0}
-.foot{text-align:center;font-size:13.5px;color:var(--muted);margin-top:28px}
-.foot a{color:var(--txt);font-weight:700}
-.foot a:hover{color:var(--pink)}
-.tiny{margin-top:26px;text-align:center;font-size:12px;color:#4c515a}
 
-/* ===== RESPONSIVO ===== */
 @media (max-width:980px){
   .page{grid-template-columns:1fr}
   .hero{display:none}
-  .mlogo{display:block}
   .side{min-height:100vh}
 }
 </style>
@@ -92,61 +80,46 @@ label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-b
 
   <!-- LOGIN -->
   <div class="side">
-    <form class="box" id="loginForm" onsubmit="return entrar(event)">
-      <div class="mlogo"><img src="data:image/png;base64,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" alt="Piik"></div>
-      <div class="welcome">Que bom ter você de volta 👋</div>
-      <h1>Acesse a sua conta</h1>
+    <!-- Card principal -->
+    <form class="card" id="loginForm" onsubmit="return entrar(event)">
+      <h1>Área do aluno</h1>
+      <div class="sub">Acompanhe sua evolução com a Piik.</div>
 
       <div class="info" id="info"></div>
-        <div class="err" id="err">E-mail ou senha incorretos. Tente novamente.</div>
+      <div class="err" id="err"></div>
 
       <div class="field">
         <label for="email">E-mail</label>
-        <div class="control">
-          <span class="ico">✉️</span>
-          <input id="email" name="email" type="email" autocomplete="email" placeholder="seu@email.com" required>
-        </div>
+        <input class="inp" id="email" name="email" type="email" autocomplete="email" placeholder="seu@email.com" required>
       </div>
-
       <div class="field">
         <label for="senha">Senha</label>
-        <div class="control">
-          <span class="ico">🔒</span>
-          <input id="senha" name="senha" type="password" autocomplete="current-password" placeholder="••••••••" required>
-          <button type="button" class="eye" id="eye" aria-label="Mostrar senha" onclick="toggleSenha()">👁</button>
-        </div>
+        <input class="inp" id="senha" name="senha" type="password" autocomplete="current-password" placeholder="••••••••" required>
       </div>
 
-      <div class="rowopts">
-        <label class="remember"><input type="checkbox" id="lembrar" checked> Lembrar de mim</label>
-        <a class="forgot" href="#" id="forgot" onclick="return esqueci(event)">Esqueci minha senha</a>
+      <button class="btn" type="submit" id="btnEntrar">Entrar</button>
+
+      <div class="links">
+        <span class="primeiro" id="primeiro" onclick="primeiroAcesso()">Primeiro acesso</span>
+        <span class="esqueci" id="esqueci" onclick="esqueci()">Esqueci minha senha</span>
       </div>
-
-      <button class="btn" type="submit" id="btnEntrar">Entrar →</button>
-
-      <div class="foot">Ainda não tem conta? <a href="#">Fale com a gente</a></div>
-      <div class="tiny">Piik · plataforma para personal trainers</div>
+      <a class="voltar" href="https://piik.com.br">← Voltar ao site</a>
     </form>
 
-    <form class="box" id="resetForm" style="display:none" onsubmit="return redefinir(event)">
-      <div class="mlogo"><img src="data:image/png;base64,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" alt="Piik"></div>
-      <div class="welcome">Quase lá 🔒</div>
-      <h1>Defina uma nova senha</h1>
+    <!-- Card de redefinição de senha -->
+    <form class="card" id="resetForm" style="display:none" onsubmit="return redefinir(event)">
+      <h1>Nova senha</h1>
+      <div class="sub">Defina a sua nova senha de acesso.</div>
       <div class="err" id="errReset"></div>
       <div class="field">
         <label for="novaSenha">Nova senha</label>
-        <div class="control"><span class="ico">🔒</span>
-          <input id="novaSenha" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres" required>
-          <button type="button" class="eye" onclick="toggle2()" aria-label="Mostrar senha">👁</button>
-        </div>
+        <input class="inp" id="novaSenha" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres" required>
       </div>
       <div class="field">
         <label for="novaSenha2">Confirmar senha</label>
-        <div class="control"><span class="ico">🔒</span>
-          <input id="novaSenha2" type="password" autocomplete="new-password" placeholder="repita a senha" required>
-        </div>
+        <input class="inp" id="novaSenha2" type="password" autocomplete="new-password" placeholder="repita a senha" required>
       </div>
-      <button class="btn" type="submit" id="btnReset">Salvar nova senha →</button>
+      <button class="btn" type="submit" id="btnReset">Salvar nova senha</button>
     </form>
   </div>
 
@@ -162,26 +135,20 @@ label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-b
   });
 
   const $ = (s)=>document.querySelector(s);
-  const showErr  = (m)=>{ const e=$("#err");  e.textContent=m; e.style.display="block"; };
+  const showErr  = (m)=>{ const e=$("#err");  e.textContent=m; e.style.display="block"; $("#info").style.display="none"; };
   const hideErr  = ()=>{ $("#err").style.display="none"; };
-  const showInfo = (m)=>{ const e=$("#info"); e.textContent=m; e.style.display="block"; };
+  const showInfo = (m)=>{ const e=$("#info"); e.textContent=m; e.style.display="block"; $("#err").style.display="none"; };
 
-  // Mensagens vindas do app (sessao expirada, conta excluida, etc.)
+  // Mensagens vindas do app
   (function(){
     const q = new URLSearchParams(location.search);
-    if(q.get("expirou"))                       showInfo("Sua sessão expirou. Entre novamente para continuar.");
-    else if(q.get("conta")==="excluida")       showInfo("Sua conta foi excluída.");
+    if(q.get("expirou"))                            showInfo("Sua sessão expirou. Entre novamente para continuar.");
+    else if(q.get("conta")==="excluida")            showInfo("Sua conta foi excluída.");
     else if(q.get("conta")==="exclusao_solicitada") showInfo("Recebemos seu pedido de exclusão de conta.");
-    else if(q.get("redefinida"))               showInfo("Senha redefinida! Entre com a nova senha.");
+    else if(q.get("redefinida"))                    showInfo("Senha definida! Entre com a sua nova senha.");
   })();
 
-  // Lembrar o e-mail neste dispositivo
-  try{
-    const salvo = localStorage.getItem("piik_email_lembrado");
-    if(salvo){ $("#email").value = salvo; $("#lembrar").checked = true; }
-  }catch(e){}
-
-  // Fluxo de redefinicao de senha (link do e-mail traz #type=recovery)
+  // Fluxo de redefinicao/primeiro acesso (link do e-mail traz #type=recovery)
   const isRecovery = /type=recovery/.test(location.hash) || new URLSearchParams(location.search).get("type")==="recovery";
   function mostrarReset(){ $("#loginForm").style.display="none"; $("#resetForm").style.display="block"; }
   sb.auth.onAuthStateChange((ev)=>{ if(ev==="PASSWORD_RECOVERY") mostrarReset(); });
@@ -190,31 +157,6 @@ label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-b
   // Se ja estiver logado (e nao for recovery), vai direto pro app
   if(!isRecovery){
     sb.auth.getSession().then(({data})=>{ if(data && data.session) location.replace(APP_URL); });
-  }
-
-  function toggle2(){ const s=$("#novaSenha"); s.type = s.type==="password" ? "text" : "password"; }
-
-  async function redefinir(ev){
-    ev.preventDefault();
-    const e=$("#errReset"); e.style.display="none";
-    const p1=$("#novaSenha").value, p2=$("#novaSenha2").value;
-    if(p1.length<6){ e.textContent="A senha precisa ter ao menos 6 caracteres."; e.style.display="block"; return false; }
-    if(p1!==p2){ e.textContent="As senhas não conferem."; e.style.display="block"; return false; }
-    const btn=$("#btnReset"); btn.disabled=true; const l=btn.textContent; btn.textContent="Salvando…";
-    try{
-      const { error } = await sb.auth.updateUser({ password: p1 });
-      if(error){ e.textContent=error.message||"Não foi possível redefinir a senha."; e.style.display="block"; btn.disabled=false; btn.textContent=l; return false; }
-      await sb.auth.signOut();
-      location.replace("login.html?redefinida=1");
-    }catch(err){
-      e.textContent="Erro de conexão. Tente novamente."; e.style.display="block"; btn.disabled=false; btn.textContent=l;
-    }
-    return false;
-  }
-
-  function toggleSenha(){
-    const s=$("#senha"), e=$("#eye");
-    if(s.type==="password"){ s.type="text"; e.textContent="🙈"; } else { s.type="password"; e.textContent="👁"; }
   }
 
   async function entrar(ev){
@@ -230,17 +172,13 @@ label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-b
       const { error } = await sb.auth.signInWithPassword({ email, password: senha });
       if(error){
         showErr(
-          /invalid login/i.test(error.message)   ? "E-mail ou senha incorretos. Tente novamente." :
+          /invalid login/i.test(error.message)       ? "E-mail ou senha incorretos. Tente novamente." :
           /email not confirmed/i.test(error.message) ? "Confirme seu e-mail antes de entrar." :
           (error.message || "Não foi possível entrar. Tente novamente.")
         );
         btn.disabled=false; btn.textContent=label; return false;
       }
-      try{
-        if($("#lembrar").checked) localStorage.setItem("piik_email_lembrado", email);
-        else localStorage.removeItem("piik_email_lembrado");
-        localStorage.setItem("sessao_inicio", String(Date.now()));
-      }catch(e){}
+      try{ localStorage.setItem("sessao_inicio", String(Date.now())); }catch(e){}
       location.replace(APP_URL);
     }catch(e){
       showErr("Erro de conexão. Verifique sua internet e tente novamente.");
@@ -249,15 +187,30 @@ label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-b
     return false;
   }
 
-  async function esqueci(ev){
-    ev.preventDefault();
-    hideErr();
+  async function enviarLink(msgOk){
     const email = $("#email").value.trim();
-    if(!email){ showErr("Digite seu e-mail no campo acima e clique de novo em \u201cEsqueci minha senha\u201d."); $("#email").focus(); return false; }
+    if(!email){ showErr("Digite seu e-mail no campo acima primeiro."); $("#email").focus(); return; }
+    try{ await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/login.html" }); }catch(e){}
+    showInfo(msgOk);
+  }
+  function esqueci(){ enviarLink("Se este e-mail tiver conta no Piik, enviamos um link para redefinir a senha. Confira sua caixa de entrada."); }
+  function primeiroAcesso(){ enviarLink("Enviamos um link para o seu e-mail para você criar a sua senha de acesso. Confira a caixa de entrada."); }
+
+  async function redefinir(ev){
+    ev.preventDefault();
+    const e=$("#errReset"); e.style.display="none";
+    const p1=$("#novaSenha").value, p2=$("#novaSenha2").value;
+    if(p1.length<6){ e.textContent="A senha precisa ter ao menos 6 caracteres."; e.style.display="block"; return false; }
+    if(p1!==p2){ e.textContent="As senhas não conferem."; e.style.display="block"; return false; }
+    const btn=$("#btnReset"); btn.disabled=true; const l=btn.textContent; btn.textContent="Salvando…";
     try{
-      await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/login.html" });
-    }catch(e){}
-    showInfo("Se este e-mail tiver conta no Piik, enviamos um link para redefinir a senha. Confira sua caixa de entrada.");
+      const { error } = await sb.auth.updateUser({ password: p1 });
+      if(error){ e.textContent=error.message||"Não foi possível salvar a senha."; e.style.display="block"; btn.disabled=false; btn.textContent=l; return false; }
+      await sb.auth.signOut();
+      location.replace("login.html?redefinida=1");
+    }catch(err){
+      e.textContent="Erro de conexão. Tente novamente."; e.style.display="block"; btn.disabled=false; btn.textContent=l;
+    }
     return false;
   }
 </script>
