@@ -1343,7 +1343,7 @@
   function telaPrimeiroAcesso(token){
     const o = document.createElement("div"); o.className="modal-ov"; o.style.zIndex="99999";
     o.innerHTML = `<div class="modal-cx" style="max-width:400px">
-      <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">P<span style="color:var(--pink,#7fff00)">ii</span>k</div>
+      ${_marcaHTML()}
       <h3 style="margin:0 0 6px;text-align:center">Bem-vindo! Defina sua senha</h3>
       <p class="meta-sm" style="margin:0 0 14px;text-align:center">Crie uma senha para acessar seu treino. Da próxima vez, você entra com seu e-mail e essa senha.</p>
       <div class="field"><label>Nova senha</label><input id="pa1" type="password" placeholder="mín. 6 caracteres"></div>
@@ -1980,13 +1980,23 @@
     </div>`;
   }
 
+  // marca no topo dos modais: usa o logo do personal quando houver personalização; senão, o wordmark Piik
+  function _marcaHTML(){
+    var b = (window.PIIK_BRAND||{});
+    if(b.logo_url){
+      var safe = String(b.logo_url).replace(/"/g,"&quot;");
+      return '<div style="text-align:center;margin:0 0 12px"><img src="'+safe+'" alt="" style="height:40px;max-width:200px;object-fit:contain;display:inline-block;border-radius:6px"></div>';
+    }
+    return '<div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:var(--txt,#fff)">P<span style="color:var(--pink,#7fff00)">ii</span>k</div>';
+  }
+
   // Modal de confirmação com a cara da Piik (substitui o confirm nativo)
   function piikConfirm(opts){
     if(typeof opts === "string") opts = { msg: opts };
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
       o.innerHTML=`<div class="modal-cx" style="max-width:380px">
-        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">P<span style="color:var(--pink,#7fff00)">ii</span>k</div>
+        ${_marcaHTML()}
         <h3 style="margin:0 0 8px;text-align:center">${opts.titulo||""}</h3>
         ${opts.msg?`<p class="meta-sm" style="margin:0 0 18px;text-align:center">${opts.msg}</p>`:`<div style="height:10px"></div>`}
         <button class="btn" style="width:100%;margin-bottom:8px" id="lcOk">${opts.ok||"Confirmar"}</button>
@@ -2006,7 +2016,7 @@
     return new Promise(res=>{
       const o=document.createElement("div"); o.className="modal-ov";
       o.innerHTML=`<div class="modal-cx" style="max-width:380px">
-        <div style="text-align:center;margin:0 0 12px;font-weight:800;font-style:italic;font-size:22px;letter-spacing:1px;color:#fff">P<span style="color:var(--pink,#7fff00)">ii</span>k</div>
+        ${_marcaHTML()}
         ${opts.emoji?`<div style="text-align:center;font-size:34px;line-height:1;margin:0 0 8px">${opts.emoji}</div>`:""}
         <h3 style="margin:0 0 8px;text-align:center">${opts.titulo||""}</h3>
         ${opts.msg?`<p class="meta-sm" style="margin:0 0 18px;text-align:center">${opts.msg}</p>`:`<div style="height:10px"></div>`}
@@ -2715,7 +2725,7 @@
           const info = [esq, (x.carga_alvo!=null?String(x.carga_alvo):""), (x.descanso_seg!=null?("desc "+x.descanso_seg+"s"):"")].filter(Boolean).join(" · ");
           return `<div class="fa-ex"><b>${esc(x.nome_cache||"Exercício")}</b>${info?` <span class="meta-sm">${esc(info)}</span>`:""}</div>`;
         }).join("");
-        return `<div class="fa-dia"><div class="fa-dia-tit">${esc(d.label)}</div>${its || '<div class="meta-sm">sem exercícios</div>'}</div>`;
+        return `<div class="fa-dia"><div class="fa-dia-tit">${esc(nomeDiaFull(d))}</div>${its || '<div class="meta-sm">sem exercícios</div>'}</div>`;
       }).join("");
     }
   }
@@ -2782,7 +2792,7 @@
       const ultTxt = ult ? `Último treino: ${ult}` : "Você ainda não fez este treino";
       return `<button class="treino-linha ${d.id===ALUNO_DIA?"sel":""}" onclick="selDiaAluno('${d.id}')">
         <span>
-          <span class="tl-nome">${esc(d.label)}</span>
+          <span class="tl-nome">${esc(nomeDiaFull(d))}</span>
           <span class="tl-ult">${qtd} exercício${qtd===1?"":"s"} · ${ultTxt}</span>
         </span>
         <span class="tl-seta">›</span>
@@ -2842,6 +2852,18 @@
       const x = (ALUNO_EXS||[]).find(e=>e.id===exId); if(x) x.carga_alvo = v;
     }catch(e){ piikAlert("Não consegui salvar a carga: " + (e.message||e)); }
   }
+  // nome do dia com a descrição opcional (ex.: "Treino A · Perna e costas")
+  function nomeDiaFull(d){ return d ? (d.label + (d.descricao && String(d.descricao).trim() ? " · " + String(d.descricao).trim() : "")) : "Treino"; }
+  // salva a descrição do dia (edição do personal)
+  async function updDiaDescricao(v){
+    const d = FICHA_DIAS.find(x=>x.id===FICHA_DIA); if(!d) return;
+    const val = (v||"").trim() || null;
+    d.descricao = val;
+    try{ await sb.from("ficha_dias").update({ descricao: val }).eq("id", d.id); }catch(e){}
+    const tabs = document.querySelectorAll(".chip-f");   // atualiza o tooltip da aba
+    tabs.forEach(b=>{ if(b.getAttribute("onclick")===`selDia('${d.id}')`) b.title = val||""; });
+  }
+
   function renderAlunoExs(){
     const box = document.getElementById("treinoBoxAluno");
     if(!box) return;
@@ -2849,7 +2871,7 @@
     const lista = ALUNO_EXS.filter(x=>x.dia_id===ALUNO_DIA);
     const dia = ALUNO_DIAS.find(d=>d.id===ALUNO_DIA);
     if(!lista.length){ box.innerHTML = `<div class="empty">Sem exercícios neste dia.</div>`; return; }
-    const titulo = `<div style="font-weight:800;font-size:15px;margin:14px 0 4px">${esc(dia?dia.label:"Treino")}</div>`;
+    const titulo = `<div style="font-weight:800;font-size:15px;margin:14px 0 4px">${esc(nomeDiaFull(dia))}</div>`;
     // ambos (aluno e personal) sempre podem registrar treino realizado
     const btnIniciar = `<button class="btn" style="margin:6px 0 14px" onclick="iniciarTreino('${ALUNO_DIA}')">▶ Iniciar este treino</button>`;
     box.innerHTML = titulo + btnIniciar + agruparBiset(lista).map(g=>{
@@ -3018,7 +3040,7 @@
     p.innerHTML = `
       <div class="exec-top">
         <div style="flex:1;text-align:center">
-          <div class="exec-titulo">${esc(dia.label)}</div>
+          <div class="exec-titulo">${esc(nomeDiaFull(dia))}</div>
           <span class="exec-crono js-crono" id="execCrono">⏲️ 00:00</span>
         </div>
       </div>
@@ -8459,7 +8481,7 @@
       return;
     }
     const chips = FICHA_DIAS.map(d=>
-      `<button class="chip-f ${d.id===FICHA_DIA?"sel":""}" onclick="selDia('${d.id}')">${esc(d.label)}</button>`
+      `<button class="chip-f ${d.id===FICHA_DIA?"sel":""}" title="${esc(d.descricao||"")}" onclick="selDia('${d.id}')">${esc(d.label)}</button>`
     ).join("") + (FICHA_READONLY ? "" : `<button class="chip-f" style="border-style:dashed" onclick="addDia()">＋ Dia</button>`);
     box.innerHTML = head + toggle + `<div class="ficha-chips">${chips}</div>`;
     renderConteudoDia();
@@ -8600,7 +8622,7 @@
       const vazio = lista.length ? "" : `<div class="kb-empty">Sem exercícios ainda.</div>`;
       const add = podeEditar ? `<button class="kb-add" onclick="editarDiaKanban('${d.id}')">＋ exercício</button>` : "";
       return `<div class="kb-col">
-          <div class="kb-head"><div class="kb-cl">${esc(d.label)}</div><div class="kb-cnt-sub">${lista.length} exercício${lista.length===1?"":"s"}</div></div>
+          <div class="kb-head"><div class="kb-cl">${esc(nomeDiaFull(d))}</div><div class="kb-cnt-sub">${lista.length} exercício${lista.length===1?"":"s"}</div></div>
           <div class="kb-body">${cards}${vazio}${add}</div>
         </div>`;
     }).join("");
@@ -8674,10 +8696,10 @@
         }).join("");
         return g.length>1 ? `<div class="biset-grupo"><div class="biset-tag">🔗 Bi-set — faça em sequência</div>${inner}</div>` : inner;
       }).join("");
-      const cabecalho = lista.length ? `<div class="tr-head">${esc(nomeDia)} · ${lista.length} exercício${lista.length===1?"":"s"}</div>` : "";
+      const cabecalho = lista.length ? `<div class="tr-head">${esc(nomeDiaFull(dia))} · ${lista.length} exercício${lista.length===1?"":"s"}</div>` : "";
       box.innerHTML = `
         ${cabecalho}
-        ${lista.length ? rowsView : `<div class="empty">Nenhum exercício em ${esc(nomeDia)} ainda.</div>`}
+        ${lista.length ? rowsView : `<div class="empty">Nenhum exercício em ${esc(nomeDiaFull(dia))} ainda.</div>`}
         ${FICHA_EDIT ? `<div class="fx-acoes">
           <button class="btn small" onclick="editarDia()">✏️ ${lista.length?"Editar treino":"Montar treino"}</button>
           <button class="btn small ghost" onclick="removerDia()">Remover dia</button>
@@ -8734,11 +8756,13 @@
             <button class="btn small ghost" onclick="concluirDia()">✓ Concluir ${esc(nomeDia)}</button>
             <button class="btn small ghost" onclick="removerDia()">Remover dia</button>
           </div>
+          <input class="dia-desc" type="text" maxlength="60" placeholder="Descrição do dia (ex.: Perna e costas)" value="${esc(dia&&dia.descricao||"")}" onchange="updDiaDescricao(this.value)" style="width:100%;box-sizing:border-box;margin:2px 0 10px;background:var(--pk-elev,#0f1116);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px">
+          <div class="meta-sm" style="margin:-6px 2px 10px">Aparece junto do nome do treino, pra você e pro aluno.</div>
           ${lista.length>=2 ? `<div class="fx-replicar">
             <button class="btn small ghost" onclick="replicarSeriesDescanso()" title="Copia séries e descanso do 1º exercício para todos deste dia">⤵ Replicar séries/descanso</button>
             <button class="btn small ghost" onclick="replicarObs()" title="Copia a observação do 1º exercício para todos deste dia">⤵ Replicar observação</button>
           </div>` : ""}
-          ${lista.length?`<div class="tr-head">${esc(nomeDia)} · ${lista.length} exercício${lista.length===1?"":"s"}</div>`:""}
+          ${lista.length?`<div class="tr-head">${esc(nomeDiaFull(dia))} · ${lista.length} exercício${lista.length===1?"":"s"}</div>`:""}
           <div class="fx-added">${lista.length ? rows : `<div class="empty">Nenhum exercício ainda. Escolha na biblioteca ao lado →</div>`}</div>
         </div>
         <aside class="montador-dir">
