@@ -45,6 +45,19 @@ input.inp{width:100%;height:54px;background:var(--field);border:1px solid transp
   font-size:15px;padding:0 16px;outline:none;transition:border-color .15s,box-shadow .15s}
 input.inp::placeholder{color:#7a808b}
 input.inp:focus{border-color:var(--pink-deep);box-shadow:0 0 0 3px rgba(127,255,0,.12)}
+/* impede o Chrome de deixar o campo claro ao preencher automaticamente */
+input.inp:-webkit-autofill,
+input.inp:-webkit-autofill:hover,
+input.inp:-webkit-autofill:focus,
+input.inp:-webkit-autofill:active{
+  -webkit-text-fill-color:var(--txt);
+  -webkit-box-shadow:0 0 0 1000px var(--field) inset;
+  box-shadow:0 0 0 1000px var(--field) inset;
+  caret-color:var(--txt);
+  border:1px solid transparent;
+  transition:background-color 9999s ease-out 0s;
+}
+input.inp:-webkit-autofill:focus{border-color:var(--pink-deep)}
 .btn{width:100%;height:54px;margin-top:4px;border-radius:13px;border:none;cursor:pointer;background:var(--pink);color:#08130a;
   font-family:Rajdhani,sans-serif;font-weight:700;font-size:19px;letter-spacing:.3px;
   box-shadow:0 10px 30px rgba(127,255,0,.24);transition:filter .15s,transform .05s}
