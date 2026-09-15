@@ -1197,7 +1197,7 @@
 </head>
 <body>
 <nav class="top"><div class="in">
-  <a href="index.html"><span class="logo-piik">P<span class="ac">ii</span>k</span></a>
+  <a href="app.html"><span class="logo-piik">P<span class="ac">ii</span>k</span></a>
   <div class="top-acoes" id="topAcoes"></div>
   <button id="navVoltar" class="nav-voltar" onclick="minimizarTreino()">← Voltar</button>
 </div></nav>
@@ -1598,7 +1598,8 @@
       </div>`;
     mostrar();
 
-    const inicial = !first ? "perfil" : (role === "student" ? "dash" : "inicio");
+    let inicial = !first ? "perfil" : (role === "student" ? "dash" : "inicio");
+    if(role !== "student" && PENDING_SELECT) inicial = "alunos";   // voltando do dashboard de um aluno → abre direto na tela dele
     go(inicial);
     carregarVinculoPendente();
     checarInadimplencia();
