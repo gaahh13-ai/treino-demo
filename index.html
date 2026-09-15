@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{ --ac:#8bff1f; --ink:#07090b; }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -29,9 +30,11 @@
 
   /* topo: Entrar (usuários existentes) */
   .top{position:fixed;top:22px;right:22px;z-index:3}
-  .entrar{display:inline-block;color:#cfe8b0;text-decoration:none;font-weight:700;font-size:14px;
+  .entrar{display:inline-flex;align-items:center;gap:8px;color:#cfe8b0;text-decoration:none;font-weight:700;font-size:14px;
     border:1px solid rgba(139,255,31,.35);border-radius:999px;padding:9px 18px;background:rgba(139,255,31,.06);transition:all .15s}
   .entrar:hover{background:rgba(139,255,31,.14);border-color:var(--ac);color:#fff}
+  .entrar .av{width:22px;height:22px;border-radius:50%;background:var(--ac);color:var(--ink);
+    display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;flex:none}
 
   .kicker{display:inline-flex;align-items:center;gap:9px;font-weight:800;font-size:13px;letter-spacing:.26em;
     text-transform:uppercase;color:var(--ac);margin-bottom:26px}
@@ -61,7 +64,7 @@
   <div class="bg"></div>
   <div class="orb"></div>
 
-  <div class="top"><a class="entrar" href="login.html">Entrar &rarr;</a></div>
+  <div class="top"><a class="entrar" id="entrarBtn" href="login.html">Entrar &rarr;</a></div>
 
   <div class="content">
     <div class="kicker"><span class="dot"></span> Lançamento em breve</div>
@@ -76,5 +79,33 @@
   </div>
 
   <div class="foot">O app que deixa o personal trainer mais profissional. · Piik</div>
+
+<script>
+  /* Se já estiver logado, o botão "Entrar" vira o nome do usuário e leva pro painel */
+  (function(){
+    var el = document.getElementById("entrarBtn");
+    if(!el || !window.supabase) return;
+    try{
+      var sb = window.supabase.createClient(
+        "https://qpsraxnzgybehbwrtqjd.supabase.co",
+        "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_",
+        { auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true } }
+      );
+      var escapa = function(s){ return String(s||"").replace(/[&<>"]/g, function(m){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]; }); };
+      sb.auth.getSession().then(function(r){
+        var s = r && r.data ? r.data.session : null;
+        if(!s) return;   // não logado: mantém "Entrar →"
+        sb.from("profiles").select("full_name").eq("id", s.user.id).single().then(function(pr){
+          var nome = (pr && pr.data && pr.data.full_name) ? pr.data.full_name : ((s.user.email||"").split("@")[0]);
+          var primeiro = (nome||"").trim().split(/\s+/)[0] || "Minha conta";
+          var inicial = primeiro.charAt(0).toUpperCase();
+          el.href = "app.html";
+          el.title = "Ir para o meu painel";
+          el.innerHTML = '<span class="av">'+escapa(inicial)+'</span> '+escapa(primeiro)+' &rarr;';
+        });
+      });
+    }catch(e){}
+  })();
+</script>
 </body>
 </html>
