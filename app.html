@@ -8344,7 +8344,9 @@
     if(FICHA_READONLY || !FICHA_DIAS.length) return "";
     // o personal sempre pode registrar um treino realizado do aluno (independe de modalidade)
     return `<div class="presenca-box">
-        <div class="presenca-tit">Registrar treino realizado de hoje <span class="meta-sm">(marca no diário do aluno)</span></div>
+        <div class="presenca-tit">Registrar treino realizado <span class="meta-sm">(marca no diário do aluno)</span></div>
+        <button class="btn small" style="margin:2px 0 12px" onclick="abrirRegistroTreino()">＋ Registrar treino</button>
+        <div class="meta-sm" style="margin:-6px 2px 8px">Atalho — marcar como treinado hoje:</div>
         <div class="presenca-btns">${FICHA_DIAS.map(d=>`<button class="btn ghost small" onclick="marcarPresenca('${d.id}')">${esc(d.label)}</button>`).join("")}</div>
       </div>`;
   }
@@ -8381,6 +8383,48 @@
     });
     if(error){ piikAlert("Erro ao registrar: "+error.message); return; }
     piikAlert(`Presença de "${dia.label}" registrada para hoje! ✅`);
+  }
+
+  // Popup para registrar um treino realizado escolhendo a data e o dia (Treino A, B, C…)
+  function abrirRegistroTreino(){
+    if(FICHA_READONLY || !FICHA || !FICHA_DIAS.length) return;
+    const hoje = new Date();
+    const isoHoje = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,"0")}-${String(hoje.getDate()).padStart(2,"0")}`;
+    const lblInp = "display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin:12px 2px 6px;text-align:left";
+    const campo = "width:100%;box-sizing:border-box;background:var(--pk-elev,#0f1116);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px";
+    const opts = FICHA_DIAS.map(d=>`<option value="${d.id}">${esc(nomeDiaFull(d))}</option>`).join("");
+    const o=document.createElement("div"); o.className="modal-ov";
+    o.innerHTML=`<div class="modal-cx" style="max-width:400px">
+        ${_marcaHTML()}
+        <h3 style="margin:0 0 4px;text-align:center">Registrar treino realizado</h3>
+        <p class="meta-sm" style="margin:0 0 6px;text-align:center">Marca no diário do aluno.</p>
+        <label style="${lblInp}">Data</label>
+        <input type="date" id="regData" value="${isoHoje}" max="${isoHoje}" style="${campo}">
+        <label style="${lblInp}">Treino</label>
+        <select id="regDia" style="${campo}">${opts}</select>
+        <button class="btn" style="width:100%;margin-top:18px" id="regOk">Confirmar</button>
+        <button class="btn ghost" style="width:100%;margin-top:8px" id="regNo">Cancelar</button>
+      </div>`;
+    document.body.appendChild(o);
+    const fechar=()=>o.remove();
+    o.addEventListener("click",e=>{ if(e.target===o) fechar(); });
+    o.querySelector("#regNo").onclick=fechar;
+    o.querySelector("#regOk").onclick=async ()=>{
+      const dataStr = o.querySelector("#regData").value;
+      const diaId = o.querySelector("#regDia").value;
+      const dia = FICHA_DIAS.find(d=>d.id===diaId);
+      if(!dataStr || !dia){ return; }
+      const btn=o.querySelector("#regOk"); btn.disabled=true; btn.textContent="Salvando…";
+      const iso = new Date(dataStr+"T12:00:00").toISOString();
+      const { error } = await sb.from("sessoes").insert({
+        student_id: FICHA.student_id, professional_id: ME.id,
+        dia_id: diaId, ficha_id: FICHA.id, finalizada: true, data: iso
+      });
+      if(error){ btn.disabled=false; btn.textContent="Confirmar"; piikAlert("Erro ao registrar: "+error.message); return; }
+      fechar();
+      const quando = dataStr===isoHoje ? "hoje" : ("em "+dataStr.split("-").reverse().join("/"));
+      piikAlert(`Treino "${dia.label}" registrado ${quando}! ✅`);
+    };
   }
 
   function novoTreino(){
