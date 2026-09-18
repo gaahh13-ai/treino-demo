@@ -8343,11 +8343,9 @@
   function presencaBlockHTML(){
     if(FICHA_READONLY || !FICHA_DIAS.length) return "";
     // o personal sempre pode registrar um treino realizado do aluno (independe de modalidade)
-    return `<div class="presenca-box">
-        <div class="presenca-tit">Registrar treino realizado <span class="meta-sm">(marca no diário do aluno)</span></div>
-        <button class="btn small" style="margin:2px 0 12px" onclick="abrirRegistroTreino()">＋ Registrar treino</button>
-        <div class="meta-sm" style="margin:-6px 2px 8px">Atalho — marcar como treinado hoje:</div>
-        <div class="presenca-btns">${FICHA_DIAS.map(d=>`<button class="btn ghost small" onclick="marcarPresenca('${d.id}')">${esc(d.label)}</button>`).join("")}</div>
+    return `<div class="presenca-box" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div class="meta-sm" style="margin:0">Marque um treino que o aluno fez — entra no diário e no histórico dele.</div>
+        <button class="btn small" style="margin:0;white-space:nowrap" onclick="abrirRegistroTreino()">＋ Registrar um dia treinado</button>
       </div>`;
   }
   // lista de treinos passados (aba "Passados")
