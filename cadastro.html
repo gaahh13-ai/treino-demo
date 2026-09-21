@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Criar conta · Piik</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --pink:#7fff00; --pink-deep:#5fbf00;
+  --bg:#0a0b0d; --surf:#15171c; --field:#262a33;
+  --txt:#e8eaee; --muted:#9aa0ab; --line:#2a2e37;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+.page{display:grid;grid-template-columns:48% 52%;min-height:100vh;width:100%;max-width:100%}
+
+/* ===== ESQUERDA: PAINEL DE MARCA ===== */
+.hero{position:relative;min-width:0;overflow:hidden;background:#07090b;display:flex;flex-direction:column;justify-content:space-between;padding:clamp(28px,4vw,48px)}
+.hero .glow{position:absolute;z-index:0;border-radius:50%;filter:blur(90px);opacity:.5;background:radial-gradient(circle,rgba(127,255,0,.3),transparent 70%);width:560px;height:560px;left:35%;top:-140px;transform:translateX(-50%)}
+.brand-logo{position:relative;z-index:2;font-family:Rajdhani,sans-serif;font-weight:700;font-size:32px;letter-spacing:-.02em;color:#fff}
+.brand-logo i{color:var(--pink);font-style:normal}
+.hero .cap{position:relative;z-index:2;align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#0a0b0d;background:var(--pink);padding:6px 12px;border-radius:8px;margin-bottom:16px;display:none}
+.hero.beta .cap{display:inline-block}
+.htitle{position:relative;z-index:2;font-family:Rajdhani,sans-serif;font-weight:700;font-size:clamp(26px,2.3vw,36px);line-height:1.14;color:#fff}
+.htitle span{color:var(--pink)}
+.hsub{position:relative;z-index:2;font-size:14.5px;color:var(--muted);margin-top:14px;max-width:400px;line-height:1.6}
+
+/* ===== DIREITA: CARD ===== */
+.side{position:relative;min-width:0;display:flex;align-items:center;justify-content:center;padding:40px 24px;background:var(--bg);overflow-x:hidden}
+.card{position:relative;min-width:0;width:100%;max-width:min(440px,100%);background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:clamp(26px,3vw,36px)}
+h1{font-family:Rajdhani,sans-serif;font-weight:700;font-size:26px;color:#fff;text-align:center}
+.sub{font-size:14px;color:var(--muted);text-align:center;margin:4px 0 22px}
+
+/* seletor de tipo */
+.roletabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:22px}
+.roletab{position:relative;border:none;border-radius:10px;cursor:pointer;background:transparent;color:var(--muted);
+  font-family:Inter,sans-serif;font-weight:700;font-size:14px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:background .15s,color .15s}
+.roletab .rt-ic{font-size:18px}
+.roletab.on{background:var(--pink);color:#08130a}
+.roletab.off{cursor:not-allowed;opacity:.6}
+.roletab .rt-hint{font-size:10px;font-weight:600;letter-spacing:.02em}
+.roletab.off .rt-hint{color:var(--muted)}
+.soon{position:absolute;top:6px;right:8px;font-size:8.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--field);border-radius:20px;padding:2px 6px}
+
+.field{margin-bottom:15px}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:8px}
+input.inp{width:100%;height:54px;background:var(--field);border:1px solid transparent;border-radius:13px;color:var(--txt);font-size:15px;padding:0 16px;outline:none;transition:border-color .15s,box-shadow .15s}
+input.inp::placeholder{color:#7a808b}
+input.inp:focus{border-color:var(--pink-deep);box-shadow:0 0 0 3px rgba(127,255,0,.12)}
+input.inp:-webkit-autofill,input.inp:-webkit-autofill:hover,input.inp:-webkit-autofill:focus,input.inp:-webkit-autofill:active{
+  -webkit-text-fill-color:var(--txt);-webkit-box-shadow:0 0 0 1000px var(--field) inset;box-shadow:0 0 0 1000px var(--field) inset;
+  caret-color:var(--txt);border:1px solid transparent;transition:background-color 9999s ease-out 0s}
+input.inp:-webkit-autofill:focus{border-color:var(--pink-deep)}
+.hint{font-size:11.5px;color:#7a808b;margin-top:6px}
+.btn{width:100%;height:54px;margin-top:6px;border-radius:13px;border:none;cursor:pointer;background:var(--pink);color:#08130a;
+  font-family:Rajdhani,sans-serif;font-weight:700;font-size:19px;letter-spacing:.3px;box-shadow:0 10px 30px rgba(127,255,0,.24);transition:filter .15s,transform .05s}
+.btn:hover{filter:brightness(1.06)} .btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.6;cursor:default;filter:none}
+.entrar-link{display:block;text-align:center;margin-top:18px;font-size:13.5px;color:var(--muted)}
+.entrar-link b{color:var(--pink-deep)}
+.entrar-link:hover b{text-decoration:underline}
+.voltar{display:block;text-align:center;margin-top:14px;font-size:13.5px;color:var(--muted)}
+.voltar:hover{color:var(--txt)}
+.err,.info{display:none;font-size:13px;padding:10px 14px;border-radius:12px;margin-bottom:16px;line-height:1.45}
+.err{background:rgba(220,40,60,.1);border:1px solid rgba(220,40,60,.4);color:#ff8a9a}
+.err a{color:#fff;font-weight:700;text-decoration:underline}
+.info{background:rgba(127,255,0,.08);border:1px solid rgba(127,255,0,.35);color:#cdeeb0}
+
+/* sucesso (confirme e-mail) */
+.ok-panel{display:none;text-align:center}
+.ok-panel .ok-emoji{font-size:48px;line-height:1}
+.ok-panel h2{font-family:Rajdhani,sans-serif;font-weight:700;font-size:24px;color:#fff;margin:12px 0 8px}
+.ok-panel p{font-size:14px;color:var(--muted);line-height:1.6}
+.ok-panel .mail{color:var(--txt);font-weight:700;word-break:break-all}
+.ok-panel .btn{margin-top:22px}
+.is-ok .form-wrap{display:none}
+.is-ok .ok-panel{display:block}
+
+@media (max-width:980px){
+  .page{grid-template-columns:1fr}
+  .hero{display:none}
+  .side{min-height:100vh}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- PAINEL DE MARCA -->
+  <div class="hero" id="heroPanel">
+    <div class="glow"></div>
+    <a href="https://piik.com.br" class="brand-logo">P<i>ii</i>k</a>
+    <div>
+      <span class="cap">🎟️ Convite Beta</span>
+      <div class="htitle">Crie sua conta e comece com a <span>sua marca</span>.</div>
+      <div class="hsub">Monte os treinos, dê ao seu aluno um app com a sua identidade e acompanhe tudo num lugar só.</div>
+    </div>
+  </div>
+
+  <!-- CARD -->
+  <div class="side">
+    <div class="card" id="card">
+
+      <div class="form-wrap">
+        <h1>Criar conta</h1>
+        <div class="sub" id="cardSub">Comece agora, é rápido.</div>
+
+        <div class="roletabs" role="tablist" aria-label="Tipo de conta">
+          <button type="button" class="roletab on" id="tabPersonal" aria-selected="true">
+            <span class="rt-ic">🏋️</span> Personal
+            <span class="rt-hint">Treinador</span>
+          </button>
+          <button type="button" class="roletab off" id="tabAluno" aria-selected="false" disabled title="A conta de aluno é criada pelo seu personal">
+            <span class="soon">em breve</span>
+            <span class="rt-ic">🧑</span> Aluno
+            <span class="rt-hint">Criada pelo personal</span>
+          </button>
+        </div>
+
+        <div class="err" id="err"></div>
+        <div class="info" id="info"></div>
+
+        <form id="cadForm" novalidate>
+          <div class="field">
+            <label for="nome">Nome e sobrenome</label>
+            <input class="inp" id="nome" type="text" autocomplete="name" placeholder="ex: João Silva" required>
+          </div>
+          <div class="field">
+            <label for="cpf">CPF</label>
+            <input class="inp" id="cpf" type="text" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="000.000.000-00" required>
+          </div>
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input class="inp" id="email" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com" required>
+          </div>
+          <div class="field">
+            <label for="senha">Senha</label>
+            <input class="inp" id="senha" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres" required>
+          </div>
+          <div class="field">
+            <label for="senha2">Confirmar senha</label>
+            <input class="inp" id="senha2" type="password" autocomplete="new-password" placeholder="repita a senha" required>
+          </div>
+          <button class="btn" type="submit" id="btnCriar">Criar conta de personal</button>
+        </form>
+
+        <a class="entrar-link" href="login.html">Já tem conta? <b>Entrar</b></a>
+        <a class="voltar" href="https://piik.com.br">← Voltar ao site</a>
+      </div>
+
+      <!-- confirme e-mail -->
+      <div class="ok-panel" id="okPanel">
+        <div class="ok-emoji">📧</div>
+        <h2>Confirme seu e-mail</h2>
+        <p>Enviamos um link de confirmação para <span class="mail" id="okMail">seu e-mail</span>. Clique nele para ativar sua conta e entrar no Piik.</p>
+        <p style="margin-top:10px;font-size:12.5px">Não achou? Olhe no spam/lixo eletrônico. O link pode levar alguns minutinhos pra chegar.</p>
+        <a class="btn" href="login.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Ir para o login</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL  = "https://qpsraxnzgybehbwrtqjd.supabase.co";
+  const SUPABASE_ANON = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+  });
+
+  const $ = (s)=>document.querySelector(s);
+  const IS_BETA = /(^|[?&])convite=beta(&|$)/.test(location.search);
+
+  // ===== CPF: máscara + validação =====
+  const soDigitos = (v)=> (v||"").replace(/\D/g,"");
+  function mascaraCpf(el){
+    let v = soDigitos(el.value).slice(0,11);
+    v = v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2");
+    el.value = v;
+  }
+  function cpfValido(cpf){
+    cpf = soDigitos(cpf);
+    if(cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+    let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i);
+    let d1=(s*10)%11; if(d1===10) d1=0; if(d1!==parseInt(cpf[9])) return false;
+    s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i);
+    let d2=(s*10)%11; if(d2===10) d2=0; return d2===parseInt(cpf[10]);
+  }
+  $("#cpf").addEventListener("input", function(){ mascaraCpf(this); });
+
+  // modo beta: mostra o selo e ajusta o texto
+  if(IS_BETA){
+    $("#heroPanel").classList.add("beta");
+    $("#cardSub").textContent = "Bem-vindo ao beta 🎟️ Crie sua conta de personal.";
+  }
+
+  // já logado? vai pro app
+  sb.auth.getSession().then(({data})=>{ if(data && data.session) location.replace("app.html"); });
+
+  const showErr  = (html)=>{ const e=$("#err");  e.innerHTML=html; e.style.display="block"; $("#info").style.display="none"; };
+  const hideErr  = ()=>{ $("#err").style.display="none"; };
+
+  // seletor de tipo (aluno é apenas visual por enquanto)
+  $("#tabAluno").addEventListener("click",(e)=>{ e.preventDefault(); });
+
+  $("#cadForm").addEventListener("submit", async (ev)=>{
+    ev.preventDefault();
+    hideErr();
+    const nome  = $("#nome").value.trim();
+    const cpf   = soDigitos($("#cpf").value);
+    const email = $("#email").value.trim().toLowerCase();
+    const s1    = $("#senha").value;
+    const s2    = $("#senha2").value;
+
+    if(nome.length < 2 || nome.split(/\s+/).length < 2){ showErr("Digite seu nome e sobrenome."); return; }
+    if(!cpfValido(cpf)){ showErr("Digite um CPF válido."); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ showErr("Digite um e-mail válido."); return; }
+    if(s1.length < 6){ showErr("A senha precisa ter ao menos 6 caracteres."); return; }
+    if(s1 !== s2){ showErr("As senhas não conferem."); return; }
+
+    const btn = $("#btnCriar");
+    btn.disabled = true; const label = btn.textContent; btn.textContent = "Criando…";
+
+    try{
+      const { data, error } = await sb.auth.signUp({
+        email, password: s1,
+        options:{
+          data:{ role:"professional", full_name: nome, cpf: cpf, origem: IS_BETA ? "beta" : "site" },
+          emailRedirectTo: location.origin + "/login.html"
+        }
+      });
+
+      if(error){
+        const m = (error.message||"").toLowerCase();
+        if(/registered|already|exist/.test(m)){
+          showErr('Esse e-mail já tem uma conta no Piik. <a href="login.html">Fazer login</a>.');
+        }else if(/password/.test(m)){
+          showErr("A senha precisa ter ao menos 6 caracteres.");
+        }else{
+          showErr("Não consegui criar sua conta agora. Tente de novo em instantes.");
+        }
+        btn.disabled=false; btn.textContent=label; return;
+      }
+
+      // conta já existente (Supabase às vezes não retorna erro) → identities vazio
+      const ident = data && data.user && data.user.identities;
+      if(ident && ident.length === 0){
+        showErr('Esse e-mail já tem uma conta no Piik. <a href="login.html">Fazer login</a>.');
+        btn.disabled=false; btn.textContent=label; return;
+      }
+
+      $("#okMail").textContent = email;
+      $("#card").classList.add("is-ok");
+    }catch(e){
+      showErr("Erro de conexão. Verifique sua internet e tente novamente.");
+      btn.disabled=false; btn.textContent=label;
+    }
+  });
+</script>
+</body>
+</html>
