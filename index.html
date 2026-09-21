@@ -3,432 +3,109 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Piik — Seu app de treinos, com a sua marca</title>
-<meta name="description" content="O Piik é a plataforma que deixa o personal trainer mais profissional: monte treinos, dê ao seu aluno um app com a sua marca e acompanhe tudo num lugar só. Entre na lista de espera do lançamento.">
-<meta property="og:title" content="Piik — Seu app de treinos, com a sua marca">
-<meta property="og:description" content="Tenha o seu próprio app de treinos, com a sua identidade. Entre na lista de espera e garanta condição de Fundador.">
-<meta property="og:type" content="website">
+<title>Piik — Lançamento em breve</title>
+<meta name="description" content="O app que deixa o personal trainer mais profissional. Lançamento em breve.">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{
-    --ac:#8bff1f; --ac-deep:#5fbf00; --ink:#07090b;
-    --bg:#07090b; --bg2:#0b0f0a; --card:#0f140c; --card2:#131a0f; --line:#1e271a; --line2:#2a3622;
-    --txt:#eaf0e4; --muted:#9aa48f; --faint:#727c67;
-    --disp:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    --body:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  }
+  :root{ --ac:#8bff1f; --ink:#07090b; }
   *{margin:0;padding:0;box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{background:var(--bg);color:var(--txt);font-family:var(--body);line-height:1.55;
-    -webkit-font-smoothing:antialiased;overflow-x:hidden}
-  a{color:inherit;text-decoration:none}
-  img{max-width:100%}
-  .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
-  .disp{font-family:var(--disp)}
+  html,body{height:100%}
+  body{
+    min-height:100vh;font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:#e9eee4;background:#07090b;overflow:hidden;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px}
+  /* fundos / brilho */
+  .bg{position:fixed;inset:0;z-index:0;
+    background:radial-gradient(120% 90% at 50% 8%,#1a2414 0%,#0c1109 52%,#07090b 100%)}
+  .orb{position:fixed;z-index:0;border-radius:50%;filter:blur(90px);opacity:.5;
+    background:radial-gradient(circle,rgba(139,255,31,.35),transparent 70%);
+    width:620px;height:620px;left:50%;top:8%;transform:translateX(-50%);animation:pulse 6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.35;transform:translateX(-50%) scale(1)}50%{opacity:.6;transform:translateX(-50%) scale(1.08)}}
+  .content{position:relative;z-index:2;max-width:640px;width:100%}
 
-  /* ===== NAV ===== */
-  nav{position:sticky;top:0;z-index:40;background:rgba(7,9,11,.72);backdrop-filter:blur(12px);
-    border-bottom:1px solid var(--line)}
-  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
-  .logo{font-family:var(--disp);font-weight:900;font-size:26px;letter-spacing:-.02em;color:#fff}
-  .logo i{color:var(--ac);font-style:normal}
-  .nav-cta{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px;
-    border:1px solid var(--line2);border-radius:999px;padding:9px 17px;color:#d6e6c4;transition:.15s}
-  .nav-cta:hover{background:rgba(139,255,31,.08);border-color:var(--ac);color:#fff}
-  .nav-cta .av{width:22px;height:22px;border-radius:50%;background:var(--ac);color:var(--ink);
+  /* topo: Entrar (usuários existentes) */
+  .top{position:fixed;top:22px;right:22px;z-index:3}
+  .entrar{display:inline-flex;align-items:center;gap:8px;color:#cfe8b0;text-decoration:none;font-weight:700;font-size:14px;
+    border:1px solid rgba(139,255,31,.35);border-radius:999px;padding:9px 18px;background:rgba(139,255,31,.06);transition:all .15s}
+  .entrar:hover{background:rgba(139,255,31,.14);border-color:var(--ac);color:#fff}
+  .entrar .av{width:22px;height:22px;border-radius:50%;background:var(--ac);color:var(--ink);
     display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;flex:none}
 
-  /* ===== HERO ===== */
-  .hero{position:relative;padding:64px 0 56px;overflow:hidden}
-  .glow{position:absolute;z-index:0;border-radius:50%;filter:blur(90px);opacity:.5;pointer-events:none;
-    background:radial-gradient(circle,rgba(139,255,31,.32),transparent 70%);
-    width:680px;height:680px;left:60%;top:-160px;transform:translateX(-50%)}
-  .hero-in{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
-  .kicker{display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:800;font-size:12px;
-    letter-spacing:.14em;text-transform:uppercase;color:var(--ac);
-    background:rgba(139,255,31,.08);border:1px solid rgba(139,255,31,.25);border-radius:999px;padding:7px 14px}
-  .kicker .dot{width:8px;height:8px;border-radius:50%;background:var(--ac);animation:blink 1.8s ease-in-out infinite}
-  @keyframes blink{0%{box-shadow:0 0 0 0 rgba(139,255,31,.6)}70%{box-shadow:0 0 0 10px rgba(139,255,31,0)}100%{box-shadow:0 0 0 0 rgba(139,255,31,0)}}
-  h1{font-family:var(--disp);font-weight:900;letter-spacing:-.025em;line-height:1.02;
-    font-size:clamp(34px,5.4vw,56px);margin:22px 0 0}
-  h1 b{color:var(--ac)}
-  .sub{font-size:clamp(16px,2.2vw,19px);color:var(--muted);margin-top:20px;max-width:540px}
-  .sub b{color:var(--txt);font-weight:600}
-  .trust{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:26px}
-  .trust span{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;color:#c3cdb6;font-weight:600}
-  .trust .ck{color:var(--ac);font-weight:900}
+  .kicker{display:inline-flex;align-items:center;gap:9px;font-weight:800;font-size:13px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--ac);margin-bottom:26px}
+  .kicker .dot{width:9px;height:9px;border-radius:50%;background:var(--ac);box-shadow:0 0 0 0 rgba(139,255,31,.7);animation:blink 1.8s ease-in-out infinite}
+  @keyframes blink{0%{box-shadow:0 0 0 0 rgba(139,255,31,.6)}70%{box-shadow:0 0 0 12px rgba(139,255,31,0)}100%{box-shadow:0 0 0 0 rgba(139,255,31,0)}}
 
-  /* ===== FORM CARD ===== */
-  .form-card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line2);
-    border-radius:20px;padding:26px 24px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
-  .fc-badge{display:inline-flex;align-items:center;gap:7px;font-family:var(--disp);font-weight:800;font-size:11.5px;
-    letter-spacing:.1em;text-transform:uppercase;color:var(--ink);background:var(--ac);border-radius:999px;padding:5px 12px}
-  .fc-tit{font-family:var(--disp);font-weight:800;font-size:22px;margin:14px 0 4px}
-  .fc-desc{font-size:13.5px;color:var(--muted);margin-bottom:18px}
-  .field{margin-bottom:12px}
-  .field label{display:block;font-size:12.5px;font-weight:700;color:#c3cdb6;margin-bottom:6px}
-  .field input{width:100%;background:var(--bg2);color:var(--txt);border:1px solid var(--line2);border-radius:12px;
-    padding:13px 14px;font-size:15px;font-family:var(--body);transition:border-color .15s,box-shadow .15s}
-  .field input::placeholder{color:var(--faint)}
-  .field input:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px rgba(139,255,31,.16)}
-  .field input:-webkit-autofill,.field input:-webkit-autofill:focus{
-    -webkit-text-fill-color:var(--txt);-webkit-box-shadow:0 0 0 60px var(--bg2) inset;caret-color:var(--txt)}
-  .btn-main{width:100%;margin-top:8px;background:var(--ac);color:var(--ink);border:none;border-radius:12px;
-    font-family:var(--disp);font-weight:800;font-size:16px;padding:15px;cursor:pointer;
-    box-shadow:0 10px 26px rgba(139,255,31,.22);transition:transform .12s,filter .12s}
-  .btn-main:hover{transform:translateY(-1px);filter:brightness(1.05)}
-  .btn-main:disabled{opacity:.6;cursor:default;transform:none}
-  .fc-fine{font-size:12px;color:var(--faint);margin-top:11px;text-align:center;line-height:1.5}
-  .fc-msg{font-size:13px;font-weight:600;margin-top:12px;text-align:center;display:none}
-  .fc-msg.err{display:block;color:#ff8a7a}
-  /* success */
-  .fc-ok{display:none;text-align:center;padding:8px 4px}
-  .fc-ok .big{font-size:44px;line-height:1}
-  .fc-ok h3{font-family:var(--disp);font-weight:800;font-size:22px;margin:12px 0 6px}
-  .fc-ok p{font-size:14px;color:var(--muted)}
-  .fc-ok .ig{display:inline-flex;align-items:center;gap:8px;margin-top:16px;font-weight:700;font-size:14px;
-    background:rgba(139,255,31,.1);border:1px solid rgba(139,255,31,.3);border-radius:999px;padding:10px 18px;color:#d6e6c4}
-  .is-done .form-body{display:none}
-  .is-done .fc-ok{display:block}
+  .logo{font-weight:900;font-size:clamp(72px,16vw,150px);line-height:.9;letter-spacing:-.03em;color:#fff}
+  .logo i{color:var(--ac);font-style:normal}
+  .tag{margin-top:18px;font-size:clamp(16px,3.6vw,22px);font-weight:700;color:#c7cdbf}
+  .tag b{color:var(--ac)}
 
-  /* ===== SECTIONS ===== */
-  section.blk{padding:64px 0}
-  .eyebrow{font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);text-align:center}
-  .h2{font-family:var(--disp);font-weight:900;letter-spacing:-.02em;font-size:clamp(26px,3.6vw,38px);text-align:center;margin:12px auto 0;max-width:760px;line-height:1.08}
-  .lead{text-align:center;color:var(--muted);font-size:16px;max-width:620px;margin:16px auto 0}
+  .bar{margin:34px auto 0;width:min(320px,80%);height:6px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden;position:relative}
+  .bar > i{position:absolute;left:0;top:0;bottom:0;width:85%;border-radius:99px;
+    background:linear-gradient(90deg,#46c93a,var(--ac))}
+  .barlabel{margin-top:12px;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#8a927f}
 
-  /* problem */
-  .prob{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .prob-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:36px}
-  .prob-col{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
-  .prob-col h3{font-family:var(--disp);font-size:15px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:9px}
-  .prob-col.bad h3{color:#ff8a7a}
-  .prob-col.good h3{color:var(--ac)}
-  .prob-col ul{list-style:none;display:flex;flex-direction:column;gap:11px}
-  .prob-col li{display:flex;gap:10px;font-size:14.5px;color:#cdd6c2}
-  .prob-col li .mk{flex:none;font-weight:900}
-  .prob-col.bad li .mk{color:#ff8a7a}
-  .prob-col.good li .mk{color:var(--ac)}
+  .cta{display:inline-flex;align-items:center;gap:10px;margin-top:40px;background:var(--ac);color:var(--ink);
+    text-decoration:none;font-weight:800;font-size:16px;padding:15px 26px;border-radius:14px;
+    box-shadow:0 10px 30px rgba(139,255,31,.22);transition:transform .15s}
+  .cta:hover{transform:translateY(-2px)}
+  .ctahint{margin-top:14px;font-size:13px;color:#8a927f}
 
-  /* benefits */
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;transition:border-color .15s,transform .15s}
-  .card:hover{border-color:var(--line2);transform:translateY(-2px)}
-  .card .ic{width:46px;height:46px;border-radius:12px;background:rgba(139,255,31,.1);border:1px solid rgba(139,255,31,.24);
-    display:flex;align-items:center;justify-content:center;font-size:23px}
-  .card h3{font-family:var(--disp);font-weight:800;font-size:18px;margin:16px 0 8px}
-  .card p{font-size:14px;color:var(--muted);line-height:1.6}
-
-  /* steps */
-  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
-  .step{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 22px}
-  .step .n{font-family:var(--disp);font-weight:900;font-size:15px;width:34px;height:34px;border-radius:10px;
-    background:var(--ac);color:var(--ink);display:flex;align-items:center;justify-content:center}
-  .step h3{font-family:var(--disp);font-weight:800;font-size:17px;margin:16px 0 8px}
-  .step p{font-size:14px;color:var(--muted)}
-
-  /* founder */
-  .founder{background:radial-gradient(120% 130% at 50% 0%,rgba(139,255,31,.08),transparent 60%)}
-  .founder-card{max-width:820px;margin:40px auto 0;background:linear-gradient(180deg,var(--card2),var(--card));
-    border:1px solid var(--line2);border-radius:22px;padding:34px 30px;box-shadow:0 24px 60px rgba(0,0,0,.45)}
-  .founder-perks{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;margin:24px 0 28px}
-  .perk{display:flex;gap:12px;align-items:flex-start}
-  .perk .ck{flex:none;width:26px;height:26px;border-radius:8px;background:var(--ac);color:var(--ink);
-    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px}
-  .perk b{font-family:var(--disp);font-size:15px;display:block;margin-bottom:2px}
-  .perk span{font-size:13.5px;color:var(--muted)}
-  .btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;
-    background:var(--ac);color:var(--ink);border-radius:13px;font-family:var(--disp);font-weight:800;font-size:16px;padding:15px;
-    box-shadow:0 10px 26px rgba(139,255,31,.2);transition:transform .12s}
-  .btn-ghost:hover{transform:translateY(-1px)}
-
-  /* faq */
-  .faq{max-width:760px;margin:40px auto 0;display:flex;flex-direction:column;gap:12px}
-  .qa{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
-  .qa h3{font-family:var(--disp);font-weight:800;font-size:15.5px;margin-bottom:7px}
-  .qa p{font-size:14px;color:var(--muted)}
-
-  /* final cta */
-  .final{text-align:center;padding:70px 0 40px}
-  .final .btn-main{display:inline-block;width:auto;padding:16px 34px;margin-top:26px}
-
-  /* footer */
-  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--faint);font-size:13px}
-  .foot-in{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-  .foot-links{display:flex;gap:20px;flex-wrap:wrap}
-  .foot-links a{color:var(--muted);font-weight:600}
-  .foot-links a:hover{color:var(--ac)}
-
-  @media(max-width:860px){
-    .hero-in{grid-template-columns:1fr;gap:32px}
-    .glow{left:50%;top:-220px}
-    .grid3,.steps{grid-template-columns:1fr}
-    .prob-grid{grid-template-columns:1fr}
-    .founder-perks{grid-template-columns:1fr}
-    .hero{padding:44px 0 40px}
-    section.blk{padding:52px 0}
-  }
-  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  .foot{position:fixed;bottom:22px;left:0;right:0;z-index:2;text-align:center;color:#6f7865;font-size:12.5px;font-weight:600}
 </style>
 </head>
 <body>
+  <div class="bg"></div>
+  <div class="orb"></div>
 
-<nav>
-  <div class="wrap nav-in">
-    <a href="/" class="logo">P<i>ii</i>k</a>
-    <a class="nav-cta" id="entrarBtn" href="login.html">Entrar &rarr;</a>
+  <div class="top"><a class="entrar" id="entrarBtn" href="login.html">Entrar &rarr;</a></div>
+
+  <div class="content">
+    <div class="kicker"><span class="dot"></span> Lançamento em breve</div>
+    <div class="logo">P<i>ii</i>k</div>
+    <div class="tag">Seu método, <b>com a sua marca.</b></div>
+
+    <div class="bar"><i></i></div>
+    <div class="barlabel">Estamos chegando</div>
+
+    <a class="cta" href="https://www.instagram.com/usepiik/" target="_blank" rel="noopener">📸 Acompanhe os bastidores &nbsp;·&nbsp; @usepiik</a>
+    <div class="ctahint">Siga pra ser um dos primeiros a saber quando abrir.</div>
   </div>
-</nav>
 
-<!-- ===== HERO ===== -->
-<header class="hero">
-  <div class="glow"></div>
-  <div class="wrap hero-in">
-    <div>
-      <span class="kicker"><span class="dot"></span> Lançamento em breve · Vagas de Fundador</span>
-      <h1>Tenha o seu próprio <b>app de treinos</b>. Com a sua marca.</h1>
-      <p class="sub">O Piik deixa o personal trainer mais profissional: você monta os treinos, seu aluno treina por um app com a <b>sua identidade</b>, e você acompanha tudo — presença, evolução e pagamentos — num lugar só.</p>
-      <div class="trust">
-        <span><span class="ck">✓</span> Seu logo e suas cores</span>
-        <span><span class="ck">✓</span> App para o aluno</span>
-        <span><span class="ck">✓</span> Feito no Brasil</span>
-      </div>
-    </div>
-
-    <!-- FORM -->
-    <div class="form-card" id="formCard">
-      <div class="form-body">
-        <span class="fc-badge">🏆 Condição de Fundador</span>
-        <div class="fc-tit">Entre na lista de espera</div>
-        <div class="fc-desc">Os primeiros personais a entrar garantem a condição de Fundador. Avisamos você em primeira mão quando abrir.</div>
-        <form id="wlForm" novalidate>
-          <div class="field">
-            <label for="nome">Seu nome</label>
-            <input id="nome" name="nome" type="text" autocomplete="name" placeholder="ex: João Silva" required>
-          </div>
-          <div class="field">
-            <label for="email">E-mail</label>
-            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com" required>
-          </div>
-          <div class="field">
-            <label for="whats">WhatsApp</label>
-            <input id="whats" name="whats" type="tel" autocomplete="tel" inputmode="numeric" placeholder="(11) 90000-0000" required>
-          </div>
-          <button class="btn-main" id="wlBtn" type="submit">Quero minha vaga de Fundador</button>
-          <div class="fc-msg" id="wlMsg"></div>
-          <p class="fc-fine">Grátis pra entrar na lista. Sem spam — só o aviso do lançamento e novidades do Piik.</p>
-        </form>
-      </div>
-      <div class="fc-ok" id="wlOk">
-        <div class="big">🎉</div>
-        <h3>Você está na lista!</h3>
-        <p id="okName">Assim que o Piik abrir, você é avisado em primeira mão — com a sua condição de Fundador.</p>
-        <a class="ig" href="https://www.instagram.com/usepiik/" target="_blank" rel="noopener">📸 Siga @usepiik pelos bastidores</a>
-      </div>
-    </div>
-  </div>
-</header>
-
-<!-- ===== PROBLEMA ===== -->
-<section class="blk prob">
-  <div class="wrap">
-    <div class="eyebrow">Por que o Piik</div>
-    <h2 class="h2">Seu trabalho é de primeira. Suas ferramentas deveriam ser também.</h2>
-    <div class="prob-grid">
-      <div class="prob-col bad">
-        <h3>😵 Do jeito de hoje</h3>
-        <ul>
-          <li><span class="mk">✕</span> Treino no papel, no bloco de notas ou em print de WhatsApp</li>
-          <li><span class="mk">✕</span> Você não sabe se o aluno treinou de verdade</li>
-          <li><span class="mk">✕</span> Planilha pra cobrar mensalidade e controlar quem pagou</li>
-          <li><span class="mk">✕</span> Nenhuma marca sua — parece amador</li>
-        </ul>
-      </div>
-      <div class="prob-col good">
-        <h3>🚀 Com o Piik</h3>
-        <ul>
-          <li><span class="mk">✓</span> Treinos montados em minutos, com biblioteca de exercícios e vídeos</li>
-          <li><span class="mk">✓</span> O aluno treina pelo app e você vê presença e evolução</li>
-          <li><span class="mk">✓</span> Mensalidades e Pix organizados automaticamente</li>
-          <li><span class="mk">✓</span> App com o seu logo e as suas cores — a sua marca</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== BENEFÍCIOS ===== -->
-<section class="blk">
-  <div class="wrap">
-    <div class="eyebrow">Tudo num lugar só</div>
-    <h2 class="h2">O que você tem no Piik</h2>
-    <div class="grid3">
-      <div class="card"><div class="ic">🎨</div><h3>A sua marca</h3><p>Coloque seu logo e suas cores. O aluno usa um app que é a sua cara — não a de uma marca genérica.</p></div>
-      <div class="card"><div class="ic">🏋️</div><h3>Treinos profissionais</h3><p>Monte fichas por dia, escolha exercícios de uma biblioteca com vídeos, defina séries, cargas e descanso.</p></div>
-      <div class="card"><div class="ic">📊</div><h3>Acompanhamento real</h3><p>Veja quem treinou, quem sumiu, o esforço percebido e o retorno de cada treino. Pare de treinar no escuro.</p></div>
-      <div class="card"><div class="ic">🔔</div><h3>Avisos automáticos</h3><p>Treino alterado, avaliação chegando, mensalidade vencendo — o Piik avisa você e o aluno na hora certa.</p></div>
-      <div class="card"><div class="ic">💳</div><h3>Financeiro sem planilha</h3><p>Mensalidades, cobranças e Pix organizados. Você sabe quem está em dia e quem precisa de um empurrão.</p></div>
-      <div class="card"><div class="ic">📱</div><h3>App para o aluno</h3><p>Seu aluno treina, marca presença e dá feedback pelo celular. Você monta pelo computador ou pelo app.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== COMO FUNCIONA ===== -->
-<section class="blk prob">
-  <div class="wrap">
-    <div class="eyebrow">Simples assim</div>
-    <h2 class="h2">Como funciona</h2>
-    <div class="steps">
-      <div class="step"><div class="n">1</div><h3>Você monta o treino</h3><p>Cria a ficha do aluno com os exercícios, séries e cargas — rápido, com a sua marca em tudo.</p></div>
-      <div class="step"><div class="n">2</div><h3>O aluno treina pelo app</h3><p>Ele acompanha o treino, marca o que fez e manda o feedback direto pelo celular.</p></div>
-      <div class="step"><div class="n">3</div><h3>Você acompanha tudo</h3><p>Presença, evolução, avaliações e pagamentos num painel só. Menos WhatsApp, mais resultado.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== FUNDADOR ===== -->
-<section class="blk founder">
-  <div class="wrap">
-    <div class="eyebrow">Oferta de estreia</div>
-    <h2 class="h2">Seja um dos Fundadores do Piik</h2>
-    <p class="lead">Quem entra na lista e assina no lançamento garante uma condição que não volta.</p>
-    <div class="founder-card">
-      <div class="founder-perks">
-        <div class="perk"><span class="ck">✓</span><div><b>3 meses grátis</b><span>Comece a usar sem pagar nada nos primeiros meses.</span></div></div>
-        <div class="perk"><span class="ck">✓</span><div><b>Preço de estreia travado</b><span>O valor de Fundador fica congelado — mesmo quando o preço subir.</span></div></div>
-        <div class="perk"><span class="ck">✓</span><div><b>Acesso antecipado</b><span>Entra antes de todo mundo e ajuda a moldar o app.</span></div></div>
-        <div class="perk"><span class="ck">✓</span><div><b>Suporte de perto</b><span>Fala direto com quem faz o Piik e tem prioridade nas novidades.</span></div></div>
-      </div>
-      <a class="btn-ghost" href="#topo">🏆 Quero garantir minha vaga de Fundador</a>
-    </div>
-  </div>
-</section>
-
-<!-- ===== FAQ ===== -->
-<section class="blk">
-  <div class="wrap">
-    <div class="eyebrow">Dúvidas</div>
-    <h2 class="h2">Perguntas rápidas</h2>
-    <div class="faq">
-      <div class="qa"><h3>Quando o Piik lança?</h3><p>Estamos nos ajustes finais. Quem está na lista de espera é avisado em primeira mão, antes da abertura pública.</p></div>
-      <div class="qa"><h3>Preciso ter muitos alunos?</h3><p>Não. O Piik serve desde quem está começando até quem já tem a agenda cheia — você organiza do seu jeito.</p></div>
-      <div class="qa"><h3>Quanto vai custar?</h3><p>Vamos ter planos para diferentes tamanhos de operação. Entrando como Fundador, você trava a condição de estreia.</p></div>
-      <div class="qa"><h3>O aluno precisa baixar app?</h3><p>Sim, o aluno usa o app no celular para treinar e dar feedback. Você monta e acompanha pelo computador ou pelo app.</p></div>
-      <div class="qa"><h3>Entrar na lista me compromete com algo?</h3><p>Nada. É gratuito e sem compromisso — serve só para te avisar no lançamento e garantir a condição de Fundador.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== CTA FINAL ===== -->
-<section class="blk final">
-  <div class="wrap">
-    <div class="eyebrow">Última chamada</div>
-    <h2 class="h2">Comece o Piik com a sua marca desde o dia 1</h2>
-    <p class="lead">Entre na lista de espera e seja um dos primeiros personais a ter o próprio app de treinos.</p>
-    <a class="btn-main" href="#topo">Entrar na lista de espera</a>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap foot-in">
-    <span>© <span id="ano">2026</span> Piik · O app que deixa o personal trainer mais profissional.</span>
-    <div class="foot-links">
-      <a href="https://www.instagram.com/usepiik/" target="_blank" rel="noopener">Instagram</a>
-      <a href="login.html">Entrar</a>
-    </div>
-  </div>
-</footer>
-
-<span id="topo" style="position:absolute;top:0"></span>
+  <div class="foot">O app que deixa o personal trainer mais profissional. · Piik</div>
 
 <script>
-  document.getElementById("ano").textContent = new Date().getFullYear();
-
-  /* ===== Supabase ===== */
-  var SB_URL = "https://qpsraxnzgybehbwrtqjd.supabase.co";
-  var SB_KEY = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
-  var sb = (window.supabase && window.supabase.createClient)
-    ? window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"implicit" } })
-    : null;
-
-  /* ===== Se já estiver logado, "Entrar" vira o nome ===== */
+  /* Se já estiver logado, o botão "Entrar" vira o nome do usuário e leva pro painel */
   (function(){
     var el = document.getElementById("entrarBtn");
-    if(!el || !sb) return;
-    var escapa=function(s){return String(s||"").replace(/[&<>"]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m];});};
-    sb.auth.getSession().then(function(r){
-      var s = r && r.data ? r.data.session : null;
-      if(!s) return;
-      sb.from("profiles").select("full_name").eq("id", s.user.id).single().then(function(pr){
-        var nome=(pr&&pr.data&&pr.data.full_name)?pr.data.full_name:((s.user.email||"").split("@")[0]);
-        var primeiro=(nome||"").trim().split(/\s+/)[0]||"Minha conta";
-        el.href="app.html"; el.title="Ir para o meu painel";
-        el.innerHTML='<span class="av">'+escapa(primeiro.charAt(0).toUpperCase())+'</span> '+escapa(primeiro)+' &rarr;';
+    if(!el || !window.supabase) return;
+    try{
+      var sb = window.supabase.createClient(
+        "https://qpsraxnzgybehbwrtqjd.supabase.co",
+        "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_",
+        { auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true } }
+      );
+      var escapa = function(s){ return String(s||"").replace(/[&<>"]/g, function(m){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]; }); };
+      sb.auth.getSession().then(function(r){
+        var s = r && r.data ? r.data.session : null;
+        if(!s) return;   // não logado: mantém "Entrar →"
+        sb.from("profiles").select("full_name").eq("id", s.user.id).single().then(function(pr){
+          var nome = (pr && pr.data && pr.data.full_name) ? pr.data.full_name : ((s.user.email||"").split("@")[0]);
+          var primeiro = (nome||"").trim().split(/\s+/)[0] || "Minha conta";
+          var inicial = primeiro.charAt(0).toUpperCase();
+          el.href = "app.html";
+          el.title = "Ir para o meu painel";
+          el.innerHTML = '<span class="av">'+escapa(inicial)+'</span> '+escapa(primeiro)+' &rarr;';
+        });
       });
-    });
+    }catch(e){}
   })();
-
-  /* ===== Máscara de WhatsApp (BR) ===== */
-  var whats = document.getElementById("whats");
-  whats.addEventListener("input", function(){
-    var d = this.value.replace(/\D/g,"").slice(0,11);
-    var out = d;
-    if(d.length > 2)  out = "("+d.slice(0,2)+") "+d.slice(2);
-    if(d.length > 7)  out = "("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7);
-    else if(d.length > 6) out = "("+d.slice(0,2)+") "+d.slice(2,6)+"-"+d.slice(6);
-    this.value = out;
-  });
-
-  /* ===== Envio do formulário ===== */
-  var form = document.getElementById("wlForm");
-  var card = document.getElementById("formCard");
-  var btn  = document.getElementById("wlBtn");
-  var msg  = document.getElementById("wlMsg");
-
-  function erro(t){ msg.textContent=t; msg.className="fc-msg err"; }
-  function limpaErro(){ msg.textContent=""; msg.className="fc-msg"; }
-
-  form.addEventListener("submit", async function(e){
-    e.preventDefault();
-    limpaErro();
-    var nome = document.getElementById("nome").value.trim();
-    var email = document.getElementById("email").value.trim();
-    var wnum = whats.value.replace(/\D/g,"");
-
-    if(nome.length < 2){ erro("Digite o seu nome."); return; }
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ erro("Digite um e-mail válido."); return; }
-    if(wnum.length < 10){ erro("Digite um WhatsApp válido com DDD."); return; }
-    if(!sb){ erro("Sem conexão no momento. Tente novamente em instantes."); return; }
-
-    btn.disabled = true; btn.textContent = "Enviando…";
-
-    var { error } = await sb.from("lista_espera").insert({
-      nome: nome, email: email.toLowerCase(), whatsapp: whats.value.trim(),
-      origem: "landing", user_agent: (navigator.userAgent||"").slice(0,300)
-    });
-
-    if(error && error.code !== "23505"){   // 23505 = e-mail já cadastrado → tratamos como sucesso
-      btn.disabled=false; btn.textContent="Quero minha vaga de Fundador";
-      erro("Não consegui te cadastrar agora. Tente de novo em instantes.");
-      return;
-    }
-
-    try{ localStorage.setItem("piik_wl","1"); }catch(_e){}
-    var okName = document.getElementById("okName");
-    var primeiro = nome.split(/\s+/)[0];
-    if(error && error.code === "23505"){
-      okName.textContent = "Esse e-mail já estava na lista, "+primeiro+" 😉 Fica tranquilo: você é avisado em primeira mão quando o Piik abrir.";
-    }else{
-      okName.textContent = "Prontinho, "+primeiro+"! Assim que o Piik abrir, você é avisado em primeira mão — com a sua condição de Fundador.";
-    }
-    card.classList.add("is-done");
-    card.scrollIntoView({ behavior:"smooth", block:"center" });
-  });
 </script>
 </body>
 </html>
