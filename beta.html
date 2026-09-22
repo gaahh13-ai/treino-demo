@@ -3,251 +3,258 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Piik — Convite Beta Tester</title>
+<title>Piik — Convite para o Beta</title>
+<meta name="description" content="Você foi convidado para o beta do Piik: acesso antecipado e gratuidade vitalícia para os personais que ajudarem a construir a plataforma. Apenas 20 vagas.">
+<meta property="og:title" content="Convite para o Beta do Piik 🎟️">
+<meta property="og:description" content="Acesso antecipado + gratuidade vitalícia para os primeiros personais. Apenas 20 vagas.">
+<meta property="og:type" content="website">
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{ --ac:#8bff1f; --ac2:#6fe00a; --ink:#07090b; --txt:#e9eee4; --muted:#9aa48f; --line:#232a1c; --card:#12170f; }
+  :root{
+    --ac:#8bff1f; --ac-deep:#5fbf00; --ink:#07090b; --gold:#ffce54;
+    --bg:#07090b; --bg2:#0b0f0a; --card:#0f140c; --card2:#131a0f; --line:#1e271a; --line2:#2a3622;
+    --txt:#eaf0e4; --muted:#9aa48f; --faint:#727c67;
+    --disp:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
   *{margin:0;padding:0;box-sizing:border-box}
-  html,body{min-height:100%}
-  body{font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt);
-    background:radial-gradient(120% 90% at 50% 6%,#16210d 0%,#0b1108 52%,#07090b 100%);
-    min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
-  .orb{position:fixed;z-index:0;border-radius:50%;filter:blur(90px);opacity:.4;
-    background:radial-gradient(circle,rgba(139,255,31,.35),transparent 70%);
-    width:560px;height:560px;left:50%;top:2%;transform:translateX(-50%)}
-  .stage{position:relative;z-index:2;width:100%;max-width:520px}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--txt);font-family:var(--body);line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
 
-  .logo{text-align:center;font-weight:900;font-size:34px;letter-spacing:-.02em;color:#fff;margin-bottom:6px}
+  nav{position:sticky;top:0;z-index:40;background:rgba(7,9,11,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{font-family:var(--disp);font-weight:900;font-size:26px;letter-spacing:-.02em;color:#fff}
   .logo i{color:var(--ac);font-style:normal}
+  .nav-tag{font-family:var(--disp);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
 
-  .prog{display:flex;align-items:center;gap:7px;justify-content:center;margin:14px 0 20px;min-height:9px}
-  .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.14);transition:all .2s}
-  .dot.on{background:var(--ac);width:22px;border-radius:99px}
-  .dot.done{background:rgba(139,255,31,.5)}
+  /* HERO */
+  .hero{position:relative;padding:56px 0 52px;overflow:hidden}
+  .glow{position:absolute;z-index:0;border-radius:50%;filter:blur(95px);opacity:.5;pointer-events:none;
+    background:radial-gradient(circle,rgba(139,255,31,.3),transparent 70%);width:680px;height:680px;left:58%;top:-180px;transform:translateX(-50%)}
+  .hero-in{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:46px;align-items:center}
+  .ticket{display:inline-flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);background:rgba(255,206,84,.09);border:1px solid rgba(255,206,84,.32);border-radius:999px;padding:8px 15px}
+  h1{font-family:var(--disp);font-weight:900;letter-spacing:-.025em;line-height:1.03;font-size:clamp(33px,5.2vw,54px);margin:22px 0 0}
+  h1 b{color:var(--ac)}
+  .sub{font-size:clamp(16px,2.2vw,19px);color:var(--muted);margin-top:20px;max-width:540px}
+  .sub b{color:var(--txt);font-weight:600}
+  .hl{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .hl-item{display:inline-flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:11px 15px;font-weight:700;font-size:14px}
+  .hl-item .e{font-size:18px}
+  .hl-item.star{border-color:rgba(255,206,84,.4);background:rgba(255,206,84,.07);color:#ffe9b0}
 
-  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:30px 26px;
-    box-shadow:0 24px 60px rgba(0,0,0,.5)}
-  .kicker{font-weight:800;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ac);margin-bottom:12px}
-  .big-emoji{font-size:46px;line-height:1;margin-bottom:14px}
-  h1{font-weight:900;font-size:27px;line-height:1.12;letter-spacing:-.02em;color:#fff;margin-bottom:12px;text-wrap:balance}
-  h1 .g{color:var(--ac)}
-  p.lead{font-size:16px;line-height:1.55;color:#cdd4c4;margin-bottom:10px}
-  p.lead b{color:#fff}
-  .list{margin:12px 0 4px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
-  .list li{display:flex;gap:11px;align-items:flex-start;font-size:15px;line-height:1.45;color:#cdd4c4}
-  .list li .ic{flex:0 0 auto;color:var(--ac);font-weight:900;margin-top:1px}
+  /* FORM */
+  .form-card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line2);border-radius:20px;padding:26px 24px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .fc-badge{display:inline-flex;align-items:center;gap:7px;font-family:var(--disp);font-weight:800;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink);background:var(--ac);border-radius:999px;padding:5px 12px}
+  .fc-tit{font-family:var(--disp);font-weight:800;font-size:22px;margin:14px 0 4px}
+  .fc-desc{font-size:13.5px;color:var(--muted);margin-bottom:18px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12.5px;font-weight:700;color:#c3cdb6;margin-bottom:6px}
+  .field input{width:100%;background:var(--bg2);color:var(--txt);border:1px solid var(--line2);border-radius:12px;padding:13px 14px;font-size:15px;font-family:var(--body);transition:border-color .15s,box-shadow .15s}
+  .field input::placeholder{color:var(--faint)}
+  .field input:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px rgba(139,255,31,.16)}
+  .field input:-webkit-autofill,.field input:-webkit-autofill:focus{-webkit-text-fill-color:var(--txt);-webkit-box-shadow:0 0 0 60px var(--bg2) inset;caret-color:var(--txt)}
+  .btn-main{width:100%;margin-top:8px;background:var(--ac);color:var(--ink);border:none;border-radius:12px;font-family:var(--disp);font-weight:800;font-size:16px;padding:15px;cursor:pointer;box-shadow:0 10px 26px rgba(139,255,31,.22);transition:transform .12s,filter .12s}
+  .btn-main:hover{transform:translateY(-1px);filter:brightness(1.05)}
+  .btn-main:disabled{opacity:.6;cursor:default;transform:none}
+  .fc-fine{font-size:12px;color:var(--faint);margin-top:11px;text-align:center;line-height:1.5}
+  .fc-msg{font-size:13px;font-weight:600;margin-top:12px;text-align:center;display:none}
+  .fc-msg.err{display:block;color:#ff8a7a}
+  .fc-ok{display:none;text-align:center;padding:8px 4px}
+  .fc-ok .big{font-size:44px;line-height:1}
+  .fc-ok h3{font-family:var(--disp);font-weight:800;font-size:22px;margin:12px 0 6px}
+  .fc-ok p{font-size:14px;color:var(--muted)}
+  .fc-ok .ig{display:inline-flex;align-items:center;gap:8px;margin-top:16px;font-weight:700;font-size:14px;background:rgba(139,255,31,.1);border:1px solid rgba(139,255,31,.3);border-radius:999px;padding:10px 18px;color:#d6e6c4}
+  .is-done .form-body{display:none}
+  .is-done .fc-ok{display:block}
 
-  label{display:block;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
-  input{width:100%;background:#0d1209;border:1px solid var(--line);border-radius:12px;color:#fff;
-    padding:13px 14px;font-size:16px;font-family:inherit}
-  input:focus{outline:none;border-color:var(--ac)}
-  input:disabled{opacity:.6}
-  .msg{font-size:14px;margin-top:12px;line-height:1.45;min-height:0}
-  .msg.err{color:#ff8f8f}
-  .msg.ok{color:var(--ac)}
+  section.blk{padding:60px 0}
+  .eyebrow{font-family:var(--disp);font-weight:800;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);text-align:center}
+  .h2{font-family:var(--disp);font-weight:900;letter-spacing:-.02em;font-size:clamp(25px,3.4vw,36px);text-align:center;margin:12px auto 0;max-width:740px;line-height:1.1}
+  .lead{text-align:center;color:var(--muted);font-size:16px;max-width:640px;margin:16px auto 0}
 
-  .row{display:flex;gap:10px;margin-top:22px}
-  .btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
-    background:var(--ac);color:var(--ink);border:none;border-radius:13px;font-weight:800;font-size:16px;
-    padding:14px 18px;cursor:pointer;font-family:inherit;transition:transform .12s,opacity .12s}
-  .btn:hover{transform:translateY(-1px)}
-  .btn:disabled{opacity:.55;cursor:default;transform:none}
-  .btn.ghost{background:transparent;color:var(--txt);border:1.5px solid var(--line);flex:0 0 auto;padding:14px 18px}
-  .btn.ghost:hover{border-color:var(--ac)}
-  .btn.link{background:transparent;border:1px solid rgba(139,255,31,.4);color:var(--ac)}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:44px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;transition:border-color .15s,transform .15s}
+  .card:hover{border-color:var(--line2);transform:translateY(-2px)}
+  .card.star{border-color:rgba(255,206,84,.38);background:linear-gradient(180deg,rgba(255,206,84,.06),transparent)}
+  .card .ic{width:46px;height:46px;border-radius:12px;background:rgba(139,255,31,.1);border:1px solid rgba(139,255,31,.24);display:flex;align-items:center;justify-content:center;font-size:23px}
+  .card.star .ic{background:rgba(255,206,84,.12);border-color:rgba(255,206,84,.35)}
+  .card h3{font-family:var(--disp);font-weight:800;font-size:18px;margin:16px 0 8px}
+  .card.star h3{color:#ffe9b0}
+  .card p{font-size:14px;color:var(--muted);line-height:1.6}
 
-  .foot{text-align:center;margin-top:18px;color:var(--muted);font-size:12.5px}
-  .foot a{color:var(--ac);text-decoration:none;font-weight:700}
-  .hide{display:none!important}
-  .fadein{animation:fi .28s ease}
-  @keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .deal{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .deal-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:36px}
+  .deal-col{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+  .deal-col h3{font-family:var(--disp);font-size:16px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+  .deal-col ul{list-style:none;display:flex;flex-direction:column;gap:11px}
+  .deal-col li{display:flex;gap:10px;font-size:14.5px;color:#cdd6c2}
+  .deal-col li .mk{flex:none;font-weight:900;color:var(--ac)}
+
+  .faq{max-width:760px;margin:40px auto 0;display:flex;flex-direction:column;gap:12px}
+  .qa{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .qa h3{font-family:var(--disp);font-weight:800;font-size:15.5px;margin-bottom:7px}
+  .qa p{font-size:14px;color:var(--muted)}
+
+  .final{text-align:center;padding:66px 0 40px}
+  .final .btn-main{display:inline-block;width:auto;padding:16px 34px;margin-top:24px}
+
+  footer{border-top:1px solid var(--line);padding:32px 0;color:var(--faint);font-size:13px}
+  .foot-in{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .foot-in a{color:var(--muted);font-weight:600}
+  .foot-in a:hover{color:var(--ac)}
+
+  @media(max-width:860px){
+    .hero-in{grid-template-columns:1fr;gap:30px}
+    .glow{left:50%;top:-230px}
+    .grid3{grid-template-columns:1fr}
+    .deal-grid{grid-template-columns:1fr}
+    .hero{padding:38px 0 36px}
+    section.blk{padding:48px 0}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-  <div class="orb"></div>
-  <div class="stage">
-    <div class="logo">P<i>ii</i>k</div>
-    <div class="prog" id="prog"></div>
-    <div class="card" id="card"><div class="lead">Carregando…</div></div>
-    <div class="foot" id="foot"></div>
+
+<nav>
+  <div class="wrap nav-in">
+    <a href="/" class="logo">P<i>ii</i>k</a>
+    <span class="nav-tag">🎟️ Convite Beta</span>
   </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="glow"></div>
+  <div class="wrap hero-in">
+    <div>
+      <span class="ticket">🎟️ Convite pessoal · só 20 vagas</span>
+      <h1>Você foi convidado pra testar o Piik — e <b>usar de graça pra sempre</b>.</h1>
+      <p class="sub">Estamos escolhendo <b>apenas 20 personais</b> pra construir o Piik junto com a gente. Quem entrar agora ajuda a moldar a plataforma e ganha <b>gratuidade vitalícia</b> — nunca paga mensalidade.</p>
+      <div class="hl">
+        <span class="hl-item star"><span class="e">♾️</span> Gratuidade vitalícia</span>
+        <span class="hl-item"><span class="e">🚀</span> Acesso antecipado</span>
+        <span class="hl-item"><span class="e">🎨</span> App com a sua marca</span>
+      </div>
+    </div>
+
+    <div class="form-card" id="formCard">
+      <span class="fc-badge">🎟️ Seu convite</span>
+      <div class="fc-tit">Aceitar o convite</div>
+      <div class="fc-desc">São só <b style="color:var(--gold)">20 vagas</b>. Crie sua conta em 1 minuto e comece a usar — de graça, pra sempre.</div>
+      <ul style="list-style:none;margin:6px 0 20px;display:flex;flex-direction:column;gap:9px">
+        <li style="display:flex;gap:9px;font-size:14px;color:#cdd6c2"><span style="color:var(--gold);font-weight:900">✓</span> Gratuidade vitalícia — nunca paga mensalidade</li>
+        <li style="display:flex;gap:9px;font-size:14px;color:#cdd6c2"><span style="color:var(--ac);font-weight:900">✓</span> Acesso antecipado, com a sua marca</li>
+        <li style="display:flex;gap:9px;font-size:14px;color:#cdd6c2"><span style="color:var(--ac);font-weight:900">✓</span> App para os seus alunos</li>
+      </ul>
+      <a class="btn-main" id="ctaHero" href="cadastro.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Aceitar convite e criar conta 🎟️</a>
+      <p class="fc-fine">Sem custo agora nem depois. Seu link é pessoal e vale <b>uma</b> inscrição.</p>
+    </div>
+  </div>
+</header>
+
+<!-- O QUE É -->
+<section class="blk">
+  <div class="wrap">
+    <div class="eyebrow">O que é o beta</div>
+    <h2 class="h2">Você entra antes de todo mundo e ajuda a construir</h2>
+    <p class="lead">O Piik ainda está sendo lançado. Como beta tester, você usa a plataforma de verdade com seus alunos, aponta o que dá pra melhorar e vê suas ideias virarem funcionalidades. Em troca, o acesso é seu — de graça, pra sempre.</p>
+  </div>
+</section>
+
+<!-- O QUE VOCÊ GANHA -->
+<section class="blk deal">
+  <div class="wrap">
+    <div class="eyebrow">Por que vale a pena</div>
+    <h2 class="h2">O que você ganha como beta tester</h2>
+    <div class="grid3">
+      <div class="card star"><div class="ic">♾️</div><h3>Gratuidade vitalícia</h3><p>Você nunca paga mensalidade do Piik. É o nosso obrigado por entrar cedo e ajudar a construir.</p></div>
+      <div class="card"><div class="ic">🚀</div><h3>Acesso antecipado</h3><p>Usa a plataforma antes do lançamento público e sai na frente da concorrência.</p></div>
+      <div class="card"><div class="ic">🎨</div><h3>App com a sua marca</h3><p>Seu logo e suas cores no app do aluno. Um app profissional que é a sua cara.</p></div>
+      <div class="card"><div class="ic">🗣️</div><h3>Voz no produto</h3><p>Seu feedback fala direto com quem faz o Piik e vira funcionalidade de verdade.</p></div>
+      <div class="card"><div class="ic">🤝</div><h3>Suporte de perto</h3><p>Canal direto pra tirar dúvidas e resolver qualquer coisa rápido, sem fila.</p></div>
+      <div class="card"><div class="ic">🏅</div><h3>Selo de pioneiro</h3><p>Você entra pra história como um dos primeiros personais a acreditar no Piik.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- O TRATO -->
+<section class="blk">
+  <div class="wrap">
+    <div class="eyebrow">É uma parceria</div>
+    <h2 class="h2">O trato é simples</h2>
+    <div class="deal-grid">
+      <div class="deal-col">
+        <h3>🎁 A gente te dá</h3>
+        <ul>
+          <li><span class="mk">✓</span> Gratuidade vitalícia na plataforma</li>
+          <li><span class="mk">✓</span> Acesso antecipado, antes do público</li>
+          <li><span class="mk">✓</span> Seu app com a sua marca</li>
+          <li><span class="mk">✓</span> Suporte direto e prioridade nas novidades</li>
+        </ul>
+      </div>
+      <div class="deal-col">
+        <h3>🙌 A gente pede</h3>
+        <ul>
+          <li><span class="mk">✓</span> Usar o Piik de verdade com seus alunos</li>
+          <li><span class="mk">✓</span> Mandar feedback honesto do que funciona e do que não</li>
+          <li><span class="mk">✓</span> Avisar quando encontrar algum errinho (bug)</li>
+          <li><span class="mk">✓</span> Topar trocar uma ideia com a gente de vez em quando</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="blk deal">
+  <div class="wrap">
+    <div class="eyebrow">Dúvidas</div>
+    <h2 class="h2">Perguntas rápidas</h2>
+    <div class="faq">
+      <div class="qa"><h3>Vou pagar alguma coisa?</h3><p>Não — nem agora, nem depois. A gratuidade vitalícia vale pra quem entra no beta e continua com a gente.</p></div>
+      <div class="qa"><h3>Preciso ter muitos alunos?</h3><p>Não. O importante é usar o Piik de verdade com os alunos que você tem, pra dar um feedback real.</p></div>
+      <div class="qa"><h3>Quanto tempo dura o beta?</h3><p>Algumas semanas até o lançamento público. Você fica com a gente durante todo o período — e depois também.</p></div>
+      <div class="qa"><h3>E se eu não gostar?</h3><p>Sem problema. É sem compromisso: você testa, dá seu feedback e decide. Mas a gente aposta que vai gostar 😄</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="blk final">
+  <div class="wrap">
+    <div class="eyebrow">Só 20 vagas</div>
+    <h2 class="h2">Bora construir o Piik juntos?</h2>
+    <p class="lead">São apenas 20 personais no beta. Aceite o convite, garanta sua gratuidade vitalícia e seja um dos primeiros a testar o Piik.</p>
+    <a class="btn-main cta-cad" href="cadastro.html">Aceitar meu convite 🎟️</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <span>© <span id="ano">2026</span> Piik · Convite exclusivo pro beta.</span>
+    <a href="https://www.instagram.com/usepiik/" target="_blank" rel="noopener">@usepiik</a>
+  </div>
+</footer>
+
+<span id="topo" style="position:absolute;top:0"></span>
 
 <script>
-const SUPABASE_URL  = "https://qpsraxnzgybehbwrtqjd.supabase.co";
-const SUPABASE_ANON = "sb_publishable_NEniZZkP5vimXDwv-pnuaw_FFpma8g_";
-const APP_URL = "https://piik.com.br/app.html";
-const MANUAL_URL = "https://piik.com.br/manual.html";
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth:{ flowType:"implicit", detectSessionInUrl:true, persistSession:true, autoRefreshToken:true } });
+  document.getElementById("ano").textContent = new Date().getFullYear();
 
-const $ = id => document.getElementById(id);
-const card = $("card"), progEl = $("prog"), footEl = $("foot");
-let GATED_EMAIL = "", GATED_NOME = "";
-
-/* ---- telas de apresentação ---- */
-const SLIDES = [
-  { emoji:"🎉", kicker:"Você está dentro", h:'Bem-vindo(a) ao <span class="g">beta do Piik</span>.',
-    body:'<p class="lead">Você é um dos <b>primeiros</b> a testar o Piik — e isso te dá uma <b>condição especial e vitalícia</b>: o plano completo, liberado pra você, sem mensalidade, pra sempre.</p><p class="lead">Nas próximas telas a gente te explica tudo. É rapidinho. 💚</p>' },
-  { emoji:"💪", kicker:"O que é o Piik", h:'Seu método, <span class="g">com a sua marca</span>.',
-    body:'<p class="lead">O Piik deixa o personal mais profissional: você monta treinos, faz avaliação física, acompanha a evolução do aluno e ainda coloca <b>a sua logo e as suas cores</b> no app.</p><p class="lead">Seu aluno abre o app e vê <b>a sua marca</b> — não a nossa.</p>' },
-  { emoji:"🎁", kicker:"Sua condição", h:'O que você <span class="g">ganha</span> no beta.',
-    body:'<ul class="list"><li><span class="ic">✓</span><span><b>Plano You Piik liberado</b> — completo, com a sua marca no app, sem pagar.</span></li><li><span class="ic">✓</span><span><b>Condição vitalícia</b> — você entra agora e mantém pra sempre.</span></li><li><span class="ic">✓</span><span><b>Acesso antecipado</b> a tudo que a gente lançar primeiro.</span></li><li><span class="ic">✓</span><span><b>Voz no produto</b> — o que você pedir tem prioridade.</span></li></ul>' },
-  { emoji:"🤝", kicker:"O combinado", h:'O que a gente <span class="g">precisa de você</span>.',
-    body:'<ul class="list"><li><span class="ic">1</span><span><b>Usar de verdade</b>, com alunos reais — é assim que o Piik melhora.</span></li><li><span class="ic">2</span><span><b>Dar feedback sincero</b>: o que falta, o que travou, o que te ajudou. Tem um botão de feedback dentro do app.</span></li><li><span class="ic">3</span><span><b>Falar quando algo der errado</b> — bug, dúvida, ideia. É só chamar.</span></li></ul>' },
-  { emoji:"📘", kicker:"Antes de começar", h:'Dá uma olhada no <span class="g">manual</span>.',
-    body:'<p class="lead">Preparamos um guia rápido explicando como aproveitar o Piik ao máximo desde o primeiro dia.</p><p class="lead">Sem pressa: o manual <b>fica sempre disponível no site</b>, então você pode consultar quando quiser — inclusive depois de criar sua conta.</p><div class="row" style="margin-top:16px"><a class="btn link" href="'+MANUAL_URL+'" target="_blank" rel="noopener">📘 Abrir o manual completo</a></div>' }
-];
-const TOTAL = SLIDES.length + 1; // slides + cadastro
-
-/* ---- utils ---- */
-function soDigitos(s){ return (s||"").replace(/\D/g,""); }
-function emailValido(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e||""); }
-function cpfValido(cpf){
-  cpf = soDigitos(cpf); if(cpf.length!==11 || /^(\d)\1{10}$/.test(cpf)) return false;
-  let s=0; for(let i=0;i<9;i++) s+=parseInt(cpf[i])*(10-i);
-  let d1=(s*10)%11; if(d1===10) d1=0; if(d1!==parseInt(cpf[9])) return false;
-  s=0; for(let i=0;i<10;i++) s+=parseInt(cpf[i])*(11-i);
-  let d2=(s*10)%11; if(d2===10) d2=0; return d2===parseInt(cpf[10]);
-}
-function mascaraCpf(v){ v=soDigitos(v).slice(0,11);
-  return v.replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{1,2})$/,"$1-$2"); }
-
-/* ---- barra de progresso ---- */
-function renderProg(stepAtual){ // stepAtual: 0=gate (sem dots), 1..TOTAL
-  if(stepAtual<1){ progEl.innerHTML=""; return; }
-  let h="";
-  for(let i=1;i<=TOTAL;i++){ h += '<span class="dot '+(i===stepAtual?"on":(i<stepAtual?"done":""))+'"></span>'; }
-  progEl.innerHTML=h;
-}
-
-/* ================= PORTÃO (e-mail) ================= */
-function telaGate(prefill){
-  renderProg(0);
-  footEl.innerHTML = 'Já tem conta? <a href="'+APP_URL+'">Entrar no app</a>';
-  card.className="card fadein";
-  card.innerHTML =
-    '<div class="kicker">Convite exclusivo</div>'+
-    '<h1>Você foi convidado(a)<br>pro <span class="g">beta do&nbsp;Piik</span>.</h1>'+
-    '<p class="lead">Digite o <b>e-mail do convite</b> para começar.</p>'+
-    '<label for="gEmail">Seu e-mail</label>'+
-    '<input id="gEmail" type="email" inputmode="email" autocomplete="email" placeholder="voce@email.com" value="'+(prefill||"")+'">'+
-    '<div id="gMsg" class="msg"></div>'+
-    '<div class="row"><button class="btn" id="gBtn" onclick="validarGate()">Começar →</button></div>';
-  const inp=$("gEmail"); if(inp){ inp.focus(); inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); validarGate(); } }; }
-}
-async function validarGate(){
-  const inp=$("gEmail"), msg=$("gMsg"), btn=$("gBtn");
-  const email=(inp.value||"").trim().toLowerCase();
-  if(!emailValido(email)){ msg.className="msg err"; msg.textContent="Digite um e-mail válido."; return; }
-  msg.className="msg"; msg.textContent="Conferindo seu convite…"; btn.disabled=true;
-  try{
-    const { data, error } = await sb.rpc("checar_convite_beta", { p_email: email });
-    btn.disabled=false;
-    const r = data || {};
-    if(error){ msg.className="msg err"; msg.textContent="Não consegui validar agora. Tente de novo em instantes."; return; }
-    if(r.ok){ GATED_EMAIL=email; GATED_NOME=r.nome||""; irSlide(0); return; }
-    if(r.motivo==="ja_usado"){
-      msg.className="msg err";
-      msg.innerHTML='Esse e-mail <b>já criou a conta</b>. É só <a href="'+APP_URL+'" style="color:var(--ac)">entrar no app</a>.';
-    } else {
-      msg.className="msg err";
-      msg.innerHTML='Não encontramos esse e-mail na lista de convidados. Confira se digitou <b>igual ao que você passou pra gente</b> — ou fale com quem te convidou.';
-    }
-  }catch(e){ btn.disabled=false; msg.className="msg err"; msg.textContent="Erro: "+e.message; }
-}
-
-/* ================= SLIDES ================= */
-function irSlide(i){
-  if(i<0) i=0; if(i>=SLIDES.length){ telaCadastro(); return; }
-  const s=SLIDES[i]; renderProg(i+1);
-  footEl.innerHTML = "Etapa "+(i+1)+" de "+TOTAL;
-  card.className="card fadein";
-  const voltar = i>0 ? '<button class="btn ghost" onclick="irSlide('+(i-1)+')">Voltar</button>' : '';
-  const proxLbl = (i===SLIDES.length-1) ? "Criar minha conta →" : "Avançar →";
-  card.innerHTML =
-    '<div class="big-emoji">'+s.emoji+'</div>'+
-    '<div class="kicker">'+s.kicker+'</div>'+
-    '<h1>'+s.h+'</h1>'+ s.body +
-    '<div class="row">'+voltar+'<button class="btn" onclick="irSlide('+(i+1)+')">'+proxLbl+'</button></div>';
-}
-
-/* ================= CADASTRO ================= */
-function telaCadastro(){
-  renderProg(TOTAL);
-  footEl.innerHTML = "Etapa "+TOTAL+" de "+TOTAL+" — quase lá!";
-  card.className="card fadein";
-  card.innerHTML =
-    '<div class="big-emoji">🚀</div>'+
-    '<div class="kicker">Sua conta</div>'+
-    '<h1>Bora criar sua conta de <span class="g">Beta Tester</span>.</h1>'+
-    '<p class="lead">Só faltam alguns dados. Seu acesso já vem com a <b>condição vitalícia</b>.</p>'+
-    '<label for="cNome">Nome completo</label>'+
-    '<input id="cNome" type="text" autocomplete="name" placeholder="Seu nome">'+
-    '<label for="cCpf">CPF</label>'+
-    '<input id="cCpf" type="text" inputmode="numeric" placeholder="000.000.000-00">'+
-    '<label for="cEmail">E-mail (do convite)</label>'+
-    '<input id="cEmail" type="email" value="'+GATED_EMAIL+'" disabled>'+
-    '<label for="cPass">Crie uma senha</label>'+
-    '<input id="cPass" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres">'+
-    '<div id="cMsg" class="msg"></div>'+
-    '<div class="row"><button class="btn ghost" onclick="irSlide('+(SLIDES.length-1)+')">Voltar</button>'+
-    '<button class="btn" id="cBtn" onclick="finalizarCadastro()">Criar minha conta</button></div>';
-  const cpf=$("cCpf"); if(cpf) cpf.oninput=()=>{ cpf.value=mascaraCpf(cpf.value); };
-  const nome=$("cNome"); if(nome) nome.focus();
-}
-async function finalizarCadastro(){
-  const nome=($("cNome").value||"").trim();
-  const cpf=soDigitos($("cCpf").value);
-  const pass=$("cPass").value;
-  const msg=$("cMsg"), btn=$("cBtn");
-  if(!nome){ msg.className="msg err"; msg.textContent="Digite seu nome."; return; }
-  if(!cpfValido(cpf)){ msg.className="msg err"; msg.textContent="Digite um CPF válido."; return; }
-  if(!pass || pass.length<6){ msg.className="msg err"; msg.textContent="A senha precisa ter ao menos 6 caracteres."; return; }
-  btn.disabled=true; msg.className="msg"; msg.textContent="Criando sua conta…";
-  // CPF já usado como personal?
-  try{
-    const { data: emUso } = await sb.rpc("cpf_em_uso", { p_cpf: cpf, p_categoria: "personal" });
-    if(emUso){ btn.disabled=false; msg.className="msg err"; msg.textContent="Já existe uma conta de personal com esse CPF. Se a conta é sua, entre com o e-mail dela."; return; }
-  }catch(_){}
-  try{
-    const { data, error } = await sb.auth.signUp({
-      email: GATED_EMAIL, password: pass,
-      options: { data:{ full_name: nome, role:"professional", cpf }, emailRedirectTo: APP_URL }
-    });
-    if(error && !/already registered|already been registered|exists|registered/i.test(error.message||"")){
-      throw error;
-    }
-    // libera a condição vitalícia + trava o convite (só funciona porque a conta acaba de existir)
-    try{ await sb.rpc("ativar_beta", { p_email: GATED_EMAIL }); }catch(_){}
-    if(!error && data && data.session){ location.href = APP_URL; return; }
-    telaConfirma();
-  }catch(e){
-    btn.disabled=false; msg.className="msg err";
-    msg.textContent = /rate|Email rate|29 seconds|too many/i.test(e.message||"") ? "Muitas tentativas. Aguarde um minuto e tente de novo." : ("Não consegui criar: "+e.message);
-  }
-}
-function telaConfirma(){
-  renderProg(TOTAL); footEl.innerHTML="";
-  card.className="card fadein";
-  card.innerHTML =
-    '<div class="big-emoji">📩</div>'+
-    '<div class="kicker">Falta um passo</div>'+
-    '<h1>Confirme seu <span class="g">e-mail</span>.</h1>'+
-    '<p class="lead">Enviamos um link de confirmação para <b>'+GATED_EMAIL+'</b>. Abra o e-mail, confirme, e você já entra no Piik com tudo liberado.</p>'+
-    '<p class="lead" style="color:var(--muted);font-size:14px">Não chegou? Olhe o spam/promoções. Pode levar 1 ou 2 minutos.</p>'+
-    '<div class="row"><a class="btn" href="'+APP_URL+'">Ir para o app</a></div>';
-}
-
-/* ================= INÍCIO ================= */
-(function init(){
-  let pref=""; try{ pref=(new URLSearchParams(location.search).get("e")||"").trim().toLowerCase(); }catch(e){}
-  telaGate(pref);
-})();
+  // leva o token do convite (?c=...) do link até a tela de cadastro
+  var TOKEN = (new URLSearchParams(location.search).get("c") || "").trim();
+  var destino = "cadastro.html" + (TOKEN ? ("?c=" + encodeURIComponent(TOKEN)) : "");
+  document.querySelectorAll('a[href="cadastro.html"], #ctaHero').forEach(function(a){ a.setAttribute("href", destino); });
 </script>
 </body>
 </html>

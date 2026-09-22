@@ -75,15 +75,17 @@ input.inp:-webkit-autofill:focus{border-color:var(--pink-deep)}
 .err a{color:#fff;font-weight:700;text-decoration:underline}
 .info{background:rgba(127,255,0,.08);border:1px solid rgba(127,255,0,.35);color:#cdeeb0}
 
-/* sucesso (confirme e-mail) */
-.ok-panel{display:none;text-align:center}
-.ok-panel .ok-emoji{font-size:48px;line-height:1}
-.ok-panel h2{font-family:Rajdhani,sans-serif;font-weight:700;font-size:24px;color:#fff;margin:12px 0 8px}
-.ok-panel p{font-size:14px;color:var(--muted);line-height:1.6}
+/* painéis de estado (confirme e-mail / só por convite) */
+.ok-panel,.gate-panel{display:none;text-align:center}
+.ok-panel .ok-emoji,.gate-panel .ok-emoji{font-size:48px;line-height:1}
+.ok-panel h2,.gate-panel h2{font-family:Rajdhani,sans-serif;font-weight:700;font-size:24px;color:#fff;margin:12px 0 8px}
+.ok-panel p,.gate-panel p{font-size:14px;color:var(--muted);line-height:1.6}
 .ok-panel .mail{color:var(--txt);font-weight:700;word-break:break-all}
-.ok-panel .btn{margin-top:22px}
-.is-ok .form-wrap{display:none}
+.ok-panel .btn,.gate-panel .btn{margin-top:22px}
+.gate-panel .btn.ghost{background:transparent;color:var(--muted);box-shadow:none;border:1px solid var(--line)}
+.is-ok .form-wrap,.is-gated .form-wrap{display:none}
 .is-ok .ok-panel{display:block}
+.is-gated .gate-panel{display:block}
 
 @media (max-width:980px){
   .page{grid-template-columns:1fr}
@@ -157,6 +159,15 @@ input.inp:-webkit-autofill:focus{border-color:var(--pink-deep)}
         <a class="voltar" href="https://piik.com.br">← Voltar ao site</a>
       </div>
 
+      <!-- cadastro bloqueado / convite inválido -->
+      <div class="gate-panel" id="gatePanel">
+        <div class="ok-emoji" id="gateEmoji">🔒</div>
+        <h2 id="gateTit">Cadastro por convite</h2>
+        <p id="gateMsg">Por enquanto, criar conta no Piik é <b>só por convite</b>. Se você recebeu um convite nosso, abra o link que enviamos pra você.</p>
+        <a class="btn" href="https://piik.com.br" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Voltar ao site</a>
+        <a class="btn ghost" href="login.html" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:10px">Já tenho conta — entrar</a>
+      </div>
+
       <!-- confirme e-mail -->
       <div class="ok-panel" id="okPanel">
         <div class="ok-emoji">📧</div>
@@ -178,7 +189,14 @@ input.inp:-webkit-autofill:focus{border-color:var(--pink-deep)}
   });
 
   const $ = (s)=>document.querySelector(s);
-  const IS_BETA = /(^|[?&])convite=beta(&|$)/.test(location.search);
+
+  // ===== Convite por link único =====
+  // No Dia 0 do lançamento, mude para true: o cadastro abre pro público (sem token = conta normal).
+  // Quem vier com um token de convite (link do e-mail) continua ganhando o benefício.
+  const CADASTRO_ABERTO = false;
+  const params = new URLSearchParams(location.search);
+  const TOKEN = (params.get("c") || "").trim();
+  let LIBERADO = false;   // só deixa enviar o formulário quando true
 
   // ===== CPF: máscara + validação =====
   const soDigitos = (v)=> (v||"").replace(/\D/g,"");
@@ -197,24 +215,72 @@ input.inp:-webkit-autofill:focus{border-color:var(--pink-deep)}
   }
   $("#cpf").addEventListener("input", function(){ mascaraCpf(this); });
 
-  // modo beta: mostra o selo e ajusta o texto
-  if(IS_BETA){
-    $("#heroPanel").classList.add("beta");
-    $("#cardSub").textContent = "Bem-vindo ao beta 🎟️ Crie sua conta de personal.";
+  function bloquear(titulo, msg){
+    $("#gateTit").textContent = titulo;
+    $("#gateMsg").innerHTML = msg;
+    $("#card").classList.add("is-gated");
   }
 
-  // já logado? vai pro app
-  sb.auth.getSession().then(({data})=>{ if(data && data.session) location.replace("app.html"); });
+  // decide se libera o formulário (valida o token do convite)
+  async function iniciar(){
+    // já logado? vai pro app
+    try{ const { data } = await sb.auth.getSession(); if(data && data.session){ location.replace("app.html"); return; } }catch(e){}
+
+    if(TOKEN){
+      try{
+        const { data:v, error } = await sb.rpc("convite_validar", { p_token: TOKEN });
+        if(error){ bloquear("Não deu pra validar", "Tivemos um probleminha pra checar seu convite. Recarregue a página em instantes."); return; }
+        if(v && v.ok){
+          LIBERADO = true;
+          $("#heroPanel").classList.add("beta");
+          $("#cardSub").textContent = (v.tipo === "fundador")
+            ? "Convite de Fundador 🏆 Crie sua conta de personal."
+            : "Bem-vindo ao beta 🎟️ Crie sua conta de personal.";
+          return;
+        }
+        if(v && v.motivo === "usado"){
+          bloquear("Convite já utilizado", "Este link de convite já foi usado para criar uma conta. Cada convite vale <b>uma inscrição</b>. Se acha que é engano, fale com a gente.");
+        }else{
+          bloquear("Convite inválido", "Não reconhecemos este link de convite. Confira se você abriu o link completo que enviamos pra você.");
+        }
+        return;
+      }catch(e){ bloquear("Não deu pra validar", "Tivemos um probleminha pra checar seu convite. Recarregue a página em instantes."); return; }
+    }
+
+    // sem token
+    if(CADASTRO_ABERTO){ LIBERADO = true; return; }     // lançamento: cadastro aberto
+    bloquear("Cadastro por convite", "Por enquanto, criar conta no Piik é <b>só por convite</b>. Se você recebeu um convite nosso, abra o link que enviamos pra você.");
+  }
+  iniciar();
 
   const showErr  = (html)=>{ const e=$("#err");  e.innerHTML=html; e.style.display="block"; $("#info").style.display="none"; };
   const hideErr  = ()=>{ $("#err").style.display="none"; };
 
-  // seletor de tipo (aluno é apenas visual por enquanto)
-  $("#tabAluno").addEventListener("click",(e)=>{ e.preventDefault(); });
+  // seletor de tipo Personal / Aluno
+  // Antes do Dia 0: só Personal (Aluno desabilitado). No Dia 0 (CADASTRO_ABERTO), o Aluno é liberado.
+  let ROLE = "personal";
+  const tP = $("#tabPersonal"), tA = $("#tabAluno");
+  function setRole(r){
+    ROLE = r;
+    tP.classList.toggle("on", r==="personal"); tP.classList.toggle("off", r!=="personal");
+    tA.classList.toggle("on", r==="aluno");    tA.classList.toggle("off", r!=="aluno");
+    $("#btnCriar").textContent = (r==="aluno") ? "Criar conta de aluno" : "Criar conta de personal";
+  }
+  if(CADASTRO_ABERTO){
+    tA.disabled = false;
+    tA.classList.remove("off");
+    const _sn = tA.querySelector(".soon"); if(_sn) _sn.remove();
+    const _h  = tA.querySelector(".rt-hint"); if(_h) _h.textContent = "Sou aluno";
+    tP.addEventListener("click", ()=> setRole("personal"));
+    tA.addEventListener("click", ()=> setRole("aluno"));
+  } else {
+    tA.addEventListener("click",(e)=>{ e.preventDefault(); });  // travado no beta
+  }
 
   $("#cadForm").addEventListener("submit", async (ev)=>{
     ev.preventDefault();
     hideErr();
+    if(!LIBERADO){ showErr("Este cadastro é por convite. Abra o link que enviamos pra você."); return; }
     const nome  = $("#nome").value.trim();
     const cpf   = soDigitos($("#cpf").value);
     const email = $("#email").value.trim().toLowerCase();
@@ -234,7 +300,7 @@ input.inp:-webkit-autofill:focus{border-color:var(--pink-deep)}
       const { data, error } = await sb.auth.signUp({
         email, password: s1,
         options:{
-          data:{ role:"professional", full_name: nome, cpf: cpf, origem: IS_BETA ? "beta" : "site" },
+          data:{ role: (ROLE==="aluno" ? "student" : "professional"), full_name: nome, cpf: cpf, convite_token: (ROLE==="personal" ? (TOKEN || null) : null), origem: (ROLE==="aluno" ? "aluno-site" : (TOKEN ? "convite" : "site")) },
           emailRedirectTo: location.origin + "/login.html"
         }
       });
