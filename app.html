@@ -447,6 +447,11 @@
   .treino-setup select{width:100%;background:var(--card2,#12161b);color:var(--txt,#e8eaee);border:1px solid var(--line,#2a2f37);border-radius:10px;padding:10px;font-size:14px;font-family:inherit}
   /* Treinos: topo (atual/passados + novo), barra de info, passados */
   .tr-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .tr-lbl{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:0 2px 8px}
+  .ficha-titrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding-right:28px}
+  .ficha-titrow h3{margin:0}
+  .tr-reg{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:14px;cursor:pointer;border-radius:11px;padding:10px 15px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;background:color-mix(in srgb, var(--pink) 14%, transparent);border:1.5px solid var(--pink);color:var(--pink)}
+  .tr-reg:hover{background:color-mix(in srgb, var(--pink) 22%, transparent)}
   .tr-seg{display:inline-flex;background:var(--pk-surf,#15171c);border:1px solid var(--line);border-radius:12px;padding:4px}
   .trseg{font-family:'Rajdhani','Inter',sans-serif;font-weight:700;font-size:14px;padding:9px 15px;border-radius:9px;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px}
   .trseg.on{background:var(--pink,#7fff00);color:var(--on-accent,#0a0b0d)}
@@ -1257,7 +1262,7 @@
   }
   setInterval(expirouSessao, 60*1000);
 
-  async function sair(){ localStorage.removeItem("sessao_inicio"); await sb.auth.signOut(); location.href = "login.html"; }
+  async function sair(){ localStorage.removeItem("sessao_inicio"); try{ localStorage.removeItem("piik_brand_vars"); }catch(e){} await sb.auth.signOut(); location.href = "login.html"; }
   function esc(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
   function fmtDate(d){ if(!d) return "—"; const p=String(d).slice(0,10).split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; }
   function shortId(id){ return String(id||"").slice(0,8); }
@@ -1407,6 +1412,14 @@
     if(!ME.cpf && user.user_metadata && user.user_metadata.cpf){
       try{ await sb.from("profiles").update({ cpf:user.user_metadata.cpf }).eq("id", ME.id); ME.cpf = user.user_metadata.cpf; }catch(e){}
     }
+    // resgata o convite (benefício do beta/fundador) na 1ª entrada — concede plano + selo embaixador
+    try{
+      const _tok = user.user_metadata && user.user_metadata.convite_token;
+      if(_tok && ME.embaixador !== true){
+        const { data:_rg } = await sb.rpc("convite_resgatar", { p_token: _tok });
+        if(_rg && _rg.ok && _rg.novo){ if(_rg.plano) ME.plano = _rg.plano; ME.embaixador = true; }
+      }
+    }catch(e){}
     // downgrade agendado cujo período já venceu → aplica agora (vira o plano mais barato)
     if(ME.plano_agendado && ME.assinatura_vencimento && new Date(ME.assinatura_vencimento).getTime() <= Date.now()){
       const _novo = ME.plano_agendado;
@@ -4853,7 +4866,7 @@
 
       <div class="card" id="fichaCard" style="display:none">
         <span class="close-x" onclick="fecharTreino()">✕</span>
-        <h3 style="margin-bottom:14px">🏋️ Treino — <span id="fichaAluno"></span></h3>
+        <div class="ficha-titrow"><h3>🏋️ Treino — <span id="fichaAluno"></span></h3><span id="fichaRegBtn"></span></div>
         <input type="hidden" id="fichaStudentId">
         <div id="fichaHeader" class="ficha-head"></div>
         <div id="fichaDias" style="margin:12px 0"></div>
@@ -8306,10 +8319,17 @@
     const passOn  = VENDO_PASSADOS || FICHA_READONLY;
     const seg = `<div class="tr-seg">
         <button class="trseg ${atualOn?'on':''}" onclick="verTreinoAtual()">📋 Treino atual</button>
-        ${nPass ? `<button class="trseg ${passOn?'on':''}" onclick="verTreinosPassados()">🕐 Passados <span class="trseg-cnt">${nPass}</span></button>` : ``}
+        <button class="trseg ${passOn?'on':''}" onclick="verTreinosPassados()">🕐 Anteriores <span class="trseg-cnt">${nPass}</span></button>
       </div>`;
     const novo = FICHA_READONLY ? `` : `<button class="tr-novo" onclick="novoTreino()">＋ Novo treino</button>`;
-    h.innerHTML = `<div class="tr-top">${seg}${novo}</div>`;
+    h.innerHTML = `<div style="width:100%">
+        <div class="tr-lbl">Qual treino você está vendo</div>
+        <div class="tr-top" style="margin-bottom:0">${seg}${novo}</div>
+      </div>`;
+    // botão de registrar dia treinado — fica no topo, ao lado do título (separado de montar o treino)
+    const rb = document.getElementById("fichaRegBtn");
+    if(rb) rb.innerHTML = (!FICHA_READONLY && FICHA_DIAS.length)
+      ? `<button class="tr-reg" onclick="abrirRegistroTreino()">📓 Registrar dia treinado</button>` : "";
   }
   // faixa de identidade do treino (dias, criação, vencimento, prazo) ou aviso de somente leitura
   function renderInfoBar(){
@@ -8506,9 +8526,10 @@
       renderSetupTreino();
       return;
     }
-    const head = renderInfoBar() + presencaBlockHTML();
+    const head = renderInfoBar();
     // barra de modo: Kanban (tudo aberto) x Um dia por vez + dica de edição
-    const toggle = `<div class="tr-subrow">
+    const montarLbl = FICHA_READONLY ? `` : `<div class="tr-lbl" style="margin-top:18px">Montar o treino</div>`;
+    const toggle = montarLbl + `<div class="tr-subrow">
         <div class="ficha-modos">
           <button class="fm ${KANBAN?"on":""}" onclick="setKanban(true)">▦ Kanban</button>
           <button class="fm ${KANBAN?"":"on"}" onclick="setKanban(false)">☰ Um dia por vez</button>
@@ -9710,7 +9731,19 @@
     try{ window.PIIK_BRAND = { logo_url: pz.logo_url||null, accent: pz.accent||null }; }catch(e){}   // logo do personal p/ o card de parabéns
     try{ localStorage.setItem('piik_brand_vars', JSON.stringify(_saved)); }catch(e){}   // guarda p/ aplicar cedo na próxima carga (evita flash preto)
   }
-  function _limparBrandCache(){ try{ localStorage.removeItem('piik_brand_vars'); }catch(e){} }
+  function _limparBrandCache(){
+    try{
+      var R=document.documentElement.style;
+      // reverte TODAS as variáveis que o anti-flash/aplicar possam ter setado inline → volta ao padrão do CSS
+      var KEYS=['--pink','--pink-deep','--pink-soft','--blue','--blue-deep','--lilac','--on-accent',
+                '--pk-bg','--pk-surf','--pk-surf2','--pk-elev','--card','--card2','--line','--pk-nav','--txt','--muted'];
+      try{ var cv=JSON.parse(localStorage.getItem('piik_brand_vars')||'null'); if(cv&&typeof cv==='object'){ for(var k in cv){ if(KEYS.indexOf(k)<0) KEYS.push(k); } } }catch(e){}
+      for(var i=0;i<KEYS.length;i++) R.removeProperty(KEYS[i]);
+      R.removeProperty('background-color'); document.documentElement.style.backgroundColor='';
+      window.PIIK_BRAND = null;
+      localStorage.removeItem('piik_brand_vars');
+    }catch(e){}
+  }
 
   async function run(){
     try{
