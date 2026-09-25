@@ -3486,18 +3486,236 @@
     mostrarParabens(_info);
   }
 
+  // ===== Frases do fim de treino (1 por card) =====
+  const FRASES_FIM_TREINO = {
+    geral: [
+      "Treino pago. Você cumpriu o que prometeu pra si mesmo.",
+      "Ninguém viu, mas o seu eu do futuro agradece.",
+      "Hoje você venceu a pessoa mais difícil: você mesmo.",
+      "Constância é mais importante que intensidade. E hoje teve as duas.",
+      "Mais um tijolo na construção.",
+      "O resultado vem de quem aparece. Você apareceu.",
+      "Disciplina é fazer mesmo sem vontade. Parabéns.",
+      "Um treino não muda nada. Todos eles juntos mudam tudo.",
+      "Você não treinou por obrigação. Treinou por respeito a si mesmo.",
+      "Ontem era plano. Hoje é treino feito.",
+      "Suor de hoje, orgulho de amanhã.",
+      "Seu corpo guarda cada treino. Hoje ele guardou mais um.",
+      "Devagar também chega. Parado é que não.",
+      "A desculpa perdeu de novo.",
+      "Evolução não se anuncia. Ela aparece.",
+      "Tá pago. Agora pode comer. Com moderação. Talvez.",
+      "O sofá sentiu sua falta, mas ele entende.",
+      "Seus músculos estão reclamando. É sinal de que funcionou.",
+      "O frango de ontem ficou pra trás.",
+      "Missão cumprida. Pode ir se olhar no espelho do vestiário.",
+      "Hoje você foi mais constante que o Wi-Fi da academia.",
+      "Tá pago. O boleto da preguiça foi cancelado.",
+      "Parabéns, você é oficialmente mais forte que a sua desculpa favorita.",
+      "Se não postar, será que treinou mesmo?",
+      "Suou tanto que o ar-condicionado pediu arrego.",
+      "O shape agradece. O cansaço também, mas bem baixinho.",
+      "Mais um treino e ninguém cobra você no grupo da família.",
+      "Hoje foi treino. Amanhã é dor. Depois é orgulho.",
+      "Tá pago. Pode andar devagar pro carro, ninguém tá olhando.",
+      "O único peso que você não levantou foi a preguiça. Ela ficou no chão.",
+      "Tá pago e sem parcelamento.",
+      "Mais um pra conta. Tá pago.",
+      "Modo monstro: concluído.",
+      "Hoje não teve desculpa, teve treino.",
+      "Check no treino, check na disciplina.",
+      "Chegou, treinou, venceu.",
+      "O treino acabou. O foco continua.",
+      "Menos conversa, mais repetição.",
+      "Hoje eu escolhi evoluir.",
+      "Treino feito. Mente leve.",
+      "Meu corpo, minhas regras, meu treino pago.",
+      "TÁ PAGO.",
+      "MAIS UM.",
+      "SEM DESCULPA.",
+      "FEITO > PERFEITO.",
+      "BORA DE NOVO AMANHÃ?",
+      "Você não precisa ser o melhor da academia. Só melhor que você de ontem.",
+      "Cada repetição é um voto no tipo de pessoa que você quer ser.",
+      "Não foi fácil. Foi feito.",
+      "Motivação te trouxe. Hábito vai te manter.",
+      "O treino de hoje é o resultado que você vai ver lá na frente.",
+      "Você escolheu o difícil de hoje pra ter o fácil de amanhã.",
+      "Tem gente pensando em começar. Você já terminou.",
+      "Cansado é diferente de derrotado.",
+      "Progresso pequeno ainda é progresso.",
+      "O dia pode ter sido ruim. O treino não foi.",
+      "Ninguém se arrepende de um treino feito.",
+      "Hoje você investiu em você. Sem taxa, sem carência.",
+      "Não espere vontade. Crie o hábito.",
+      "Você é a prova de que dá tempo.",
+      "Resultado não tem atalho. Tem repetição.",
+      "Hoje você fez sua parte. O corpo faz a dele.",
+      "Todo shape começou num dia como hoje.",
+      "A versão mais forte de você agradece a presença.",
+      "Treinar é o tipo de promessa que só você pode cumprir.",
+      "Mais forte que ontem. Mais fraco que amanhã.",
+      "Você transformou \"vou começar\" em \"tô fazendo\".",
+      "Uma hora por dia. Uma vida inteira de diferença.",
+      "Seu único adversário saiu derrotado agora.",
+      "Quem constrói devagar constrói pra durar.",
+      "O esforço de hoje não some. Ele acumula.",
+      "Você não veio pra ser perfeito. Veio pra ser constante.",
+      "A mente cansou antes. O corpo foi até o fim.",
+      "Treino difícil, pessoa forte.",
+      "O começo é o mais difícil. E você já passou dele.",
+      "Uma boa decisão por dia. Hoje foi o treino.",
+      "Você está exatamente onde deveria: no caminho.",
+      "A gente não treina pra ter orgulho. Mas ele vem junto.",
+      "Mais um dia provando que você consegue.",
+      "Não é sobre o espelho. É sobre quem você está virando.",
+      "O difícil de hoje vira o aquecimento de amanhã.",
+      "Tá pago. O personal pode dormir tranquilo hoje.",
+      "Seus músculos pediram férias. Negado.",
+      "Você suou. A garrafinha secou. O treino acabou.",
+      "Parabéns! Você acaba de desbloquear: fome.",
+      "O shake tá te esperando.",
+      "Hoje o banho vai ser merecido.",
+      "Treino feito. Agora aquele cochilo tá justificado.",
+      "Se ninguém te viu treinar, o suor conta a história.",
+      "Se cansaço fosse dinheiro, você tava rico agora.",
+      "Sua playlist trabalhou tanto quanto você.",
+      "Tá pago. Nem o despertador conseguiu te impedir.",
+      "Pode tirar foto no espelho. Hoje tá autorizado.",
+      "Tá pago. Já pode contar pra todo mundo sem ninguém perguntar.",
+      "Ninguém pediu, mas você merece esse pós-treino.",
+      "Suor não é sujeira. É prova.",
+      "Seu eu de ontem jamais faria isso. Olha você aí.",
+      "A preguiça ligou. Mandei dizer que você tá ocupado.",
+      "Seus músculos estão em reunião. Assunto: crescer.",
+      "Tá pago. O rango tá liberado. O rodízio, nem tanto.",
+      "Treino feito. Dor garantida. Satisfação também.",
+      "Só falta alguém perguntar \"tá treinando, né?\".",
+      "A balança pode mentir. O treino pago não.",
+      "Parabéns, você fez o que o grupo do \"segunda eu começo\" só promete.",
+      "Treinou mais que o boneco do posto.",
+      "Hoje nem a desculpa do trânsito colou.",
+      "Sua mãe ficaria orgulhosa. Seu sofá, nem tanto.",
+      "Tem gente ainda procurando a chave do carro pra ir. Você já voltou.",
+      "Suou a camisa. Literalmente.",
+      "Se treino fosse série, hoje foi final de temporada.",
+      "Tá pago e com nota fiscal.",
+      "Treino concluído. Pode ativar o modo zumbi.",
+      "Tá pago. Seu personal manda um joinha.",
+      "Nem choveu, nem teve feriado. Não teve desculpa.",
+      "A barra agradece a visita. Volte sempre.",
+      "Hoje você foi o assunto da conversa entre os halteres.",
+      "Treino feito, dever cumprido, fome desbloqueada.",
+      "O corpo pede água. A alma pede açaí.",
+      "Hoje o \"só mais uma\" foi sério.",
+      "Seu cardio subiu. Seu ego também.",
+      "Tá pago. Já pode andar como quem ganhou campeonato.",
+      "Fechou o treino. Abriu o apetite.",
+      "Treino do dia: riscado.",
+      "Presente. Suado. Satisfeito.",
+      "Dia de treino, dia de vitória.",
+      "Um treino de cada vez.",
+      "Mais forte a cada check.",
+      "Eu vim. Eu treinei. Eu venci.",
+      "Tá registrado: hoje eu não falhei.",
+      "Todo dia é dia de fazer o meu.",
+      "Hoje eu fui a minha prioridade.",
+      "Quem treina, colhe.",
+      "Foco no processo.",
+      "Treino feito é melhor que treino planejado.",
+      "Um dia de cada vez, um treino de cada vez.",
+      "Pequenas vitórias, grandes mudanças.",
+      "Hoje eu cumpri. Amanhã eu repito.",
+      "Minha rotina, meu resultado.",
+      "Movido a disciplina.",
+      "Menos desculpa, mais resultado.",
+      "Nada muda se eu não mudar.",
+      "É assim que se constrói.",
+      "MISSÃO CUMPRIDA.",
+      "VOCÊ VENCEU.",
+      "CONSTÂNCIA.",
+      "MAIS FORTE.",
+      "É ISSO.",
+      "PRESENTE!",
+      "NO FOCO.",
+      "SEGUE O PLANO.",
+      "DEVER CUMPRIDO.",
+      "ORGULHO."
+    ],
+    carnaval: [
+      "Enquanto uns aquecem pro bloco, você aqueceu no supino.",
+      "Carnaval dura uma semana. O shape é o ano todo.",
+      "Treinou no Carnaval. Isso é outro nível de compromisso.",
+      "O bloco pode esperar uma hora.",
+      "A melhor fantasia é o shape em dia.",
+      "Pode ir pro bloco. O treino já tá pago.",
+      "Tem gente pulando Carnaval. Você pulou a desculpa.",
+      "Aquecimento feito. Agora pode sambar.",
+      "A folia dura cinco dias. O resultado fica.",
+      "Confete no cabelo, treino no currículo.",
+      "Nem o Carnaval quebrou a sua sequência."
+    ],
+    quarta_cinzas: [
+      "Quarta de cinzas? Aqui é quarta de treino."
+    ],
+    // RESERVA: só quando o app souber o grupo muscular do treino
+    perna: [
+      "Treinou perna e ainda conseguiu clicar aqui. Respeito.",
+      "Amanhã a escada vai lembrar de você.",
+      "Pulou o treino de perna? Esse app sabe de tudo. Hoje não pulou."
+    ],
+    braco: [
+      "Seus braços mandaram dizer que vão ficar tremendo um pouquinho."
+    ]
+  };
+
+  // Sorteio sem repetição (só repete depois que todas saíram)
+  function sortearSemRepetir(lista, chave){
+    if(!lista || !lista.length) return "";
+    let vistas = [];
+    try{ vistas = JSON.parse(localStorage.getItem(chave) || "[]"); }catch(e){}
+    let disponiveis = lista.filter(f => vistas.indexOf(f) < 0);
+    if(disponiveis.length === 0){
+      const ultima = vistas[vistas.length - 1];
+      vistas = [];
+      disponiveis = lista.filter(f => f !== ultima);
+      if(disponiveis.length === 0) disponiveis = lista.slice();
+    }
+    const escolhida = disponiveis[Math.floor(Math.random() * disponiveis.length)];
+    vistas.push(escolhida);
+    try{ localStorage.setItem(chave, JSON.stringify(vistas)); }catch(e){}
+    return escolhida;
+  }
+
+  // Contexto da frase por data (Carnaval / Quarta de Cinzas) — senão, geral
+  function _pascoaGregoriana(ano){
+    const a=ano%19, b=Math.floor(ano/100), c=ano%100, d=Math.floor(b/4), e=b%4,
+          f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30,
+          i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7, m=Math.floor((a+11*h+22*l)/451),
+          mes=Math.floor((h+l-7*m+114)/31), dia=((h+l-7*m+114)%31)+1;
+    return new Date(ano, mes-1, dia);
+  }
+  function contextoFimTreino(){
+    try{
+      const hoje=new Date(); hoje.setHours(0,0,0,0);
+      const pascoa=_pascoaGregoriana(hoje.getFullYear());
+      const cinzas=new Date(pascoa); cinzas.setDate(cinzas.getDate()-46);   // quarta de cinzas
+      const terca =new Date(pascoa); terca.setDate(terca.getDate()-47);     // terça de carnaval
+      const inicio=new Date(terca);  inicio.setDate(inicio.getDate()-4);    // sexta antes
+      const t=hoje.getTime();
+      if(t===cinzas.getTime()) return "quarta_cinzas";
+      if(t>=inicio.getTime() && t<=terca.getTime()) return "carnaval";
+    }catch(e){}
+    return "geral";
+  }
+
   // ===== Card de parabéns no fim do treino (instagramável) =====
   function mostrarParabens(info){
     window.PB_INFO = info;
     if(document.getElementById("parabensOv")) return;
-    const frases = [
-      "Você apareceu. É isso que constrói resultado. 🔥",
-      "Mais um dia mais forte que ontem. 💪",
-      "Disciplina venceu a preguiça hoje. 👏",
-      "Constância é o segredo — e você tá nela. 🚀",
-      "Treino feito é vitória garantida. 🏆"
-    ];
-    const frase = frases[((info.feitos||0) + (info.dur||0)) % frases.length];
+    const _ctx = contextoFimTreino();
+    const _lista = FRASES_FIM_TREINO[_ctx] || FRASES_FIM_TREINO.geral;
+    const frase = sortearSemRepetir(_lista, "piik_frases_" + _ctx + "_" + ((typeof ME!=="undefined" && ME && ME.id) || "anon"));
     let dataFull = "";
     try{ dataFull = new Date().toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" }); }catch(e){ dataFull = ""; }
     // marca personalizada: usa o LOGO do personal; senão, o logo do Piik
