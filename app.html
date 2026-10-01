@@ -9800,7 +9800,7 @@
     async function renderHist(){
       var box=document.getElementById('piik-fb-hist'); if(!box) return;
       try{
-        var r=await _sb.from('feedback').select('tipo,texto,created_at').eq('user_id',user.id).order('created_at',{ascending:false});
+        var r=await _sb.from('feedback').select('tipo,texto,created_at,anexos').eq('user_id',user.id).order('created_at',{ascending:false});
         var ls=(r.data||[]);
         if(!ls.length){ box.innerHTML='<div style="color:#6f7865;font-size:13px;background:#12161b;border:1px solid #2a2f37;border-radius:12px;padding:16px">Você ainda não enviou nenhum feedback. Seus envios vão aparecer aqui.</div>'; return; }
         var TIPOS={ideia:'💡 Ideia',sugestao:'✍️ Sugestão',erro:'🐞 Erro'};
@@ -9811,13 +9811,34 @@
           var dt=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()+' às '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
           var tp=TIPOS[it.tipo]||it.tipo||'Feedback';
           var txt=String(it.texto||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          var nAx=(it.anexos&&it.anexos.length)?it.anexos.length:0;
+          var axBox=nAx?('<div id="piik-fb-ax-'+i+'" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><div style="font-size:12px;color:#6f7865">Carregando anexo'+(nAx>1?'s':'')+'…</div></div>'):'';
           html+='<div style="background:#12161b;border:1px solid #2a2f37;border-radius:12px;padding:14px 16px;margin-bottom:10px">'+
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">'+
               '<span style="font-size:12px;font-weight:800;color:#e8eaee;background:#0e1319;border:1px solid #2a2f37;border-radius:999px;padding:3px 10px">'+tp+'</span>'+
               '<span style="font-size:12px;color:#6f7865">'+dt+'</span></div>'+
-            '<div style="font-size:14px;color:#c7ccd6;line-height:1.5;white-space:pre-wrap">'+txt+'</div></div>';
+            '<div style="font-size:14px;color:#c7ccd6;line-height:1.5;white-space:pre-wrap">'+txt+'</div>'+axBox+'</div>';
         }
         box.innerHTML=html;
+        // carrega os anexos (miniaturas que abrem em tamanho real) via signed URL
+        for(var j=0;j<ls.length;j++){
+          (function(idx,anexos){
+            if(!anexos||!anexos.length) return;
+            var cont=document.getElementById('piik-fb-ax-'+idx); if(!cont) return;
+            cont.innerHTML='';
+            anexos.forEach(function(path){
+              if(!path) return;
+              _sb.storage.from('feedback-anexos').createSignedUrl(path,3600).then(function(res){
+                var url=res&&res.data?res.data.signedUrl:null; if(!url) return;
+                var a=document.createElement('a');
+                a.href=url; a.target='_blank'; a.rel='noopener'; a.title='Abrir anexo';
+                a.style.cssText='display:block;width:72px;height:72px;border-radius:9px;overflow:hidden;border:1px solid #2a2f37;background:#0e1216';
+                a.innerHTML='<img src="'+url+'" style="width:100%;height:100%;object-fit:cover;display:block">';
+                cont.appendChild(a);
+              }).catch(function(){});
+            });
+          })(j, ls[j].anexos);
+        }
       }catch(e){ box.innerHTML='<div style="color:#ff7a7a;font-size:13px">Não consegui carregar seu histórico agora. Tente reabrir a tela.</div>'; }
     }
     async function abrir(){
