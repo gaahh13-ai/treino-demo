@@ -2219,7 +2219,7 @@
     }
     const p = document.getElementById("panel"); if(!p) return;
 
-    if(id === "dash")     { p.innerHTML = viewDash(); if(ME.role==="student") carregarMeuAcordo(); }
+    if(id === "dash")     { p.innerHTML = viewDash(); }
     else if(id === "avaliacoes"){ p.innerHTML = viewAvaliacoes(); carregarMinhasAvaliacoes(); }
     else if(id === "meutreino"){  p.innerHTML = viewMeuTreino();  carregarMeuTreino(); }
     else if(id === "consultas"){  p.innerHTML = viewConsultas();  carregarMinhasConsultas(); }
@@ -2307,9 +2307,7 @@
         </div>
         <button class="btn" onclick="go('meutreino')">Acessar meu treino →</button>
       </div>` : "";
-    const acordoCard = (ME.role === "student") ? `<div class="card meu-acordo" id="meuAcordoCard" style="display:none"></div>` : "";
     return `<h2>Dashboard</h2>
-      ${acordoCard}
       ${heroTreino}
       <div class="treino-hero">
         <div class="ico-big">📊</div>
@@ -2382,12 +2380,14 @@
       piikAlert("Não consegui registrar sua ciência: "+error.message); return;
     }
     MEU_ACORDO.aceito = true; MEU_ACORDO.aceito_em = new Date().toISOString();
-    renderMeuAcordo();
+    if(MEU_FIN && MEU_FIN.acordo && MEU_FIN.acordo.id===MEU_ACORDO.id){ MEU_FIN.acordo.aceito=true; MEU_FIN.acordo.aceito_em=MEU_ACORDO.aceito_em; }
+    if(document.getElementById("meuAcordoCard")) renderMeuAcordo();
+    if(document.getElementById("meuFinBox")) renderMeuFinanceiro();
     piikAlert({ emoji:"🤝", titulo:"Ciência registrada!", msg:"Seu personal foi avisado de que você está ciente do acordo." });
   }
 
   /* ---------- ALUNO: FINANCEIRO (acompanhar pagamentos) ---------- */
-  let MEU_FIN = { acordo:null, pags:[], cobs:[] };
+  let MEU_FIN = { acordo:null, acordos:[], pags:[], cobs:[] };
   function viewMeuFinanceiro(){
     return `<h2>Financeiro</h2>
       <div id="meuFinBox"><div class="empty">Carregando…</div></div>`;
@@ -2406,10 +2406,12 @@
     const box = document.getElementById("meuFinBox"); if(!box) return;
     let a=null;
     try{
-      const { data } = await sb.from("acordos").select("*").eq("student_id", ME.id).eq("ativo",true).order("criado_em",{ascending:false}).limit(1);
-      a = data && data[0];
+      const { data } = await sb.from("acordos").select("*").eq("student_id", ME.id).order("criado_em",{ascending:false});
+      MEU_FIN.acordos = data || [];
+      a = (data||[]).find(x=>x.ativo) || null;
     }catch(e){ box.innerHTML = `<div class="card"><div class="empty">Não consegui carregar seus dados agora.</div></div>`; return; }
     MEU_FIN.acordo = a || null;
+    MEU_ACORDO = a || null;
     if(!a){ box.innerHTML = `<div class="card"><h3>💳 Financeiro</h3><div class="empty">Seu personal ainda não definiu um acordo de pagamento com você.</div></div>`; return; }
     try{
       const { data: pags } = await sb.from("pagamentos").select("*").eq("student_id", ME.id).order("competencia",{ascending:false});
@@ -2424,14 +2426,22 @@
   function renderMeuFinanceiro(){
     const box = document.getElementById("meuFinBox"); if(!box) return;
     const a = MEU_FIN.acordo; if(!a) return;
-    const valTxt = a.modelo==="aula" ? `${fmtBRL(a.valor)} por aula`
-                 : a.modelo==="treino" ? `${fmtBRL(a.valor)} por treino`
-                 : `${fmtBRL(a.valor)}/mês`;
+    const valTxt = a.modelo==="aula" ? `<b>${fmtBRL(a.valor)}</b> por aula`
+                 : a.modelo==="treino" ? `<b>${fmtBRL(a.valor)}</b> por treino`
+                 : `<b>${fmtBRL(a.valor)}</b>/mês`;
     const venc = a.modelo==="treino" ? "" : ` · vence dia ${a.dia_venc||5}`;
-    const resumo = `<div class="card">
-      <h3>🤝 Seu acordo</h3>
-      <div class="ma-line" style="margin-top:6px"><b>${acModeloLabel(a)}</b> · <b style="color:var(--pink-deep)">${valTxt}</b>${venc} · ${acFormaLabel(a.forma_pgto)}</div>
-      <div class="meta-sm">${a.aceito ? `✓ Você deu ciência em ${fmtDate(a.aceito_em)}` : "⏳ Você ainda não deu ciência deste acordo (veja no Dashboard)."}</div>
+    const grpsR = acHorGrupos(a);
+    const aulasR = grpsR.length
+      ? `<div class="ma-aulas">Aulas: ${grpsR.map(g=>`${esc(g.d)} ${g.horas.map(esc).join("/")}`).join(" · ")}</div>` : "";
+    const cienciaR = a.aceito
+      ? `<div class="ma-ciente">✓ Você deu ciência deste acordo em ${fmtDate(a.aceito_em)}</div>`
+      : `<button class="btn" id="btnCiente" style="margin-top:12px" onclick="aceitarMeuAcordo()">✓ Estou ciente deste acordo</button>`;
+    const resumo = `<div class="card meu-acordo">
+      <h3>🤝 Seu acordo com o personal</h3>
+      <div class="ma-line" style="margin-top:6px">${acModeloLabel(a)} · ${valTxt}${venc} · ${acFormaLabel(a.forma_pgto)} · desde ${fmtDate(a.data_inicio||a.criado_em)}</div>
+      ${aulasR}
+      ${a.obs?`<div class="ma-aulas">📝 ${esc(a.obs)}</div>`:""}
+      ${cienciaR}
     </div>`;
 
     let lista;
@@ -2470,7 +2480,22 @@
         <div class="fin-al-hist" style="border:none;padding:0;margin-top:8px">${linhas}</div>
       </div>`;
     }
-    box.innerHTML = resumo + lista;
+    const histAc = (MEU_FIN.acordos||[]).filter(x=>!x.ativo);
+    const histAcLinhas = histAc.length
+      ? histAc.map(x=>{
+          const per = x.modelo==="aula" ? `${fmtBRL(x.valor)}/aula` : (x.modelo==="treino" ? `${fmtBRL(x.valor)}/treino` : `${fmtBRL(x.valor)}/mês`);
+          const ini = fmtDate(x.data_inicio||x.criado_em);
+          const fim = x.encerrado_em ? fmtDate(x.encerrado_em) : "—";
+          const obs = x.obs ? `<br><span class="meta-sm" style="margin:0">📝 ${esc(x.obs)}</span>` : "";
+          return `<div class="fin-hist-row"><span><b>${acModeloLabel(x)}</b> · ${per} · ${acFormaLabel(x.forma_pgto)}${obs}</span><span class="meta-sm" style="margin:0">${ini} → ${fim}</span></div>`;
+        }).join("")
+      : `<div class="empty">Nenhum acordo anterior.</div>`;
+    const histAcordosCard = `<div class="card">
+      <h3>📜 Histórico de acordos</h3>
+      <p class="meta-sm">Acordos anteriores com seu personal.</p>
+      <div class="fin-al-hist" style="border:none;padding:0;margin-top:8px">${histAcLinhas}</div>
+    </div>`;
+    box.innerHTML = resumo + lista + histAcordosCard;
   }
 
   async function conectarPeloDash(){
