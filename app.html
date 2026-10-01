@@ -9767,7 +9767,11 @@
         var res=await _sb.functions.invoke('enviar-feedback',{ body:{ tipo:selTipo, texto:txt, anexos:paths } });
         if(res.error) throw new Error(res.error.message||'Erro ao enviar.');
         msg.style.color='#7fff00'; msg.textContent='✅ Enviado! Muito obrigado pelo retorno. 💚';
-        setTimeout(fechar,1400);
+        document.getElementById('piik-fb-txt').value='';
+        selTipo=''; estilizaTipos();
+        UP.forEach(function(it){ try{ URL.revokeObjectURL(it.url); }catch(e){} }); UP=[]; renderPrev();
+        btn.disabled=false;
+        renderHist();
       }catch(e){
         btn.disabled=false; msg.style.color='#ff5a5a'; msg.textContent='Erro: '+(e.message||e);
       }
@@ -9785,6 +9789,29 @@
         '<td style="padding:12px 14px;font-weight:700;line-height:1.4;color:#e8eaee">'+nome+'</td>'+
         '<td style="padding:12px 10px;color:#c7ccd6;white-space:nowrap">'+feito+'</td>'+
         '<td style="padding:12px 12px;text-align:center;font-size:18px">'+(ok?'✅':'⬜')+'</td></tr>';
+    }
+    async function renderHist(){
+      var box=document.getElementById('piik-fb-hist'); if(!box) return;
+      try{
+        var r=await _sb.from('feedback').select('tipo,texto,created_at').eq('user_id',user.id).order('created_at',{ascending:false});
+        var ls=(r.data||[]);
+        if(!ls.length){ box.innerHTML='<div style="color:#6f7865;font-size:13px;background:#12161b;border:1px solid #2a2f37;border-radius:12px;padding:16px">Você ainda não enviou nenhum feedback. Seus envios vão aparecer aqui.</div>'; return; }
+        var TIPOS={ideia:'💡 Ideia',sugestao:'✍️ Sugestão',erro:'🐞 Erro'};
+        var html='';
+        for(var i=0;i<ls.length;i++){
+          var it=ls[i];
+          var d=new Date(it.created_at);
+          var dt=('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()+' às '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+          var tp=TIPOS[it.tipo]||it.tipo||'Feedback';
+          var txt=String(it.texto||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          html+='<div style="background:#12161b;border:1px solid #2a2f37;border-radius:12px;padding:14px 16px;margin-bottom:10px">'+
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">'+
+              '<span style="font-size:12px;font-weight:800;color:#e8eaee;background:#0e1319;border:1px solid #2a2f37;border-radius:999px;padding:3px 10px">'+tp+'</span>'+
+              '<span style="font-size:12px;color:#6f7865">'+dt+'</span></div>'+
+            '<div style="font-size:14px;color:#c7ccd6;line-height:1.5;white-space:pre-wrap">'+txt+'</div></div>';
+        }
+        box.innerHTML=html;
+      }catch(e){ box.innerHTML='<div style="color:#ff7a7a;font-size:13px">Não consegui carregar seu histórico agora. Tente reabrir a tela.</div>'; }
     }
     async function abrir(){
       if(document.getElementById('piik-bt-ov')) return;
@@ -9846,6 +9873,9 @@
             '<div id="piik-fb-prev" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div></div>'+
             '<button id="piik-fb-send" style="width:100%;margin-top:14px;background:#7fff00;color:#07090b;border:none;border-radius:11px;padding:12px;font:inherit;font-size:15px;font-weight:800;cursor:pointer">Enviar</button>'+
             '<div id="piik-fb-msg" style="font-size:13px;margin-top:8px;min-height:16px"></div></div>'+
+          '<h3 style="margin:26px 0 10px;font-size:16px">🕑 Seus envios</h3>'+
+          '<p style="color:#6f7865;font-size:12px;margin:-4px 2px 10px;line-height:1.5">Tudo que você enviar fica registrado aqui, com data e hora. O histórico não pode ser apagado.</p>'+
+          '<div id="piik-fb-hist"><div style="color:#6f7865;font-size:13px">Carregando…</div></div>'+
         '</div>';
       document.body.appendChild(ov);
       estilizaTipos();
@@ -9864,6 +9894,7 @@
         this.value=''; renderPrev();
       });
       document.getElementById('piik-fb-send').addEventListener('click',enviar);
+      renderHist();
     }
 
     function inject(){
