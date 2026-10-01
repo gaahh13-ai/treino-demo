@@ -1474,7 +1474,33 @@
     aberturaPosLogin();
     checarConsentimentoContato();
     mostrarBoasVindas();
+    checarAcordoPendente();
   }
+
+  /* ===== Aluno: popup de acordo pendente de aprovação (aparece a cada acesso até dar ciência) ===== */
+  async function checarAcordoPendente(){
+    if(!ME || ME.role !== "student") return;
+    try{
+      const { data } = await sb.from("acordos").select("id,aceito").eq("student_id", ME.id).eq("ativo", true).order("criado_em",{ascending:false}).limit(1);
+      const a = data && data[0];
+      if(a && a.aceito !== true) mostrarPopupAcordoPendente();
+    }catch(e){}
+  }
+  function mostrarPopupAcordoPendente(){
+    if(document.getElementById("acPendOv")) return;
+    const o = document.createElement("div"); o.className = "modal-ov"; o.id = "acPendOv";
+    o.innerHTML = `<div class="modal-cx" style="max-width:420px;text-align:center">
+      <div style="font-size:42px;line-height:1">🤝</div>
+      <h3 style="margin:10px 0 6px">Você tem um acordo para aprovar</h3>
+      <p class="meta-sm" style="margin:0 0 18px;line-height:1.55">Seu personal definiu (ou atualizou) o acordo de pagamento com você. Confira os detalhes no Financeiro e dê sua ciência para confirmar que está tudo certo.</p>
+      <button class="btn" style="width:100%" onclick="irAprovarAcordo()">Ver e aprovar o acordo</button>
+      <button class="btn ghost" style="width:100%;margin-top:10px" onclick="fecharPopupAcordoPendente()">Agora não</button>
+    </div>`;
+    document.body.appendChild(o);
+    o.addEventListener("click", (e)=>{ if(e.target===o) fecharPopupAcordoPendente(); });
+  }
+  function fecharPopupAcordoPendente(){ const m = document.getElementById("acPendOv"); if(m) m.remove(); }
+  function irAprovarAcordo(){ fecharPopupAcordoPendente(); go('financeiro'); }
 
   // recém-confirmou o e-mail (?planos=1) → abre a Assinatura já na seção de Planos
   function aberturaPosLogin(){
