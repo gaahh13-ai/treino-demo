@@ -6515,7 +6515,7 @@
               ${["pix","dinheiro","cartao","transferencia","boleto"].map(f=>`<option value="${f}" ${base.forma_pgto===f?"selected":""}>${acFormaLabel(f)}</option>`).join("")}
             </select></div>
           <div class="ac-fld"><label>Vigente desde</label>
-            <input type="date" id="acInicio" value="${base.data_inicio? String(base.data_inicio).slice(0,10) : hoje}"></div>
+            <input type="date" id="acInicio" value="${editar && base.data_inicio ? String(base.data_inicio).slice(0,10) : hoje}"></div>
         </div>
         <div class="ac-fld" id="acAulasWrap" style="display:${m0==="treino"?"none":"flex"}"><label>Dias e horários das aulas (presencial) <span class="meta-sm" style="margin:0;font-weight:400">— opcional, pode ter mais de um horário no dia</span></label>
           <div class="ac-dias">${diasHTML}</div></div>
