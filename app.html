@@ -6274,7 +6274,7 @@
       itens.push(gi("Vigente desde", fmtDate(a.data_inicio||a.criado_em)));
       curHTML = `<div class="ac-sec ac-cur">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
-          <div class="ac-t">Acordo atual<span class="piik-info" tabindex="0" role="note" aria-label="O que é o acordo" title="O acordo é a combinação de pagamento entre você e o aluno (valor, forma e vencimento). O aluno precisa aceitar pelo app, tocando em ‘Estou ciente deste acordo’.">!<span class="piik-tip"><b>O que é o acordo:</b> é a combinação de pagamento entre você e o aluno — valor, forma de pagamento e vencimento.<br><br><b>O aluno precisa aceitar pelo app:</b> ele toca em “Estou ciente deste acordo” no painel dele. Enquanto não confirma, aparece como “Aguardando ciência do aluno”.</span></span></div>${ciente}
+          <div class="ac-t">Acordo atual</div>${ciente}
         </div>
         <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:2px 0 16px">
           <span style="font-size:30px;font-weight:800;letter-spacing:-.5px;color:var(--txt)">${fmtBRL(a.valor)}</span>
@@ -6290,7 +6290,7 @@
         </div>
       </div>`;
     }else{
-      curHTML = `<div class="ac-empty">Nenhum acordo definido ainda.<span class="piik-info" tabindex="0" role="note" aria-label="O que é o acordo" title="O acordo é a combinação de pagamento entre você e o aluno (valor, forma e vencimento). O aluno precisa aceitar pelo app, tocando em ‘Estou ciente deste acordo’.">!<span class="piik-tip"><b>O que é o acordo:</b> é a combinação de pagamento entre você e o aluno — valor, forma de pagamento e vencimento.<br><br><b>O aluno precisa aceitar pelo app:</b> ele toca em “Estou ciente deste acordo” no painel dele. Enquanto não confirma, aparece como “Aguardando ciência do aluno”.</span></span><br><br>
+      curHTML = `<div class="ac-empty">Nenhum acordo definido ainda.<br><br>
         <button class="btn small" onclick="abrirNovoAcordo('${id}')">＋ Definir acordo</button></div>`;
     }
 
@@ -6315,10 +6315,11 @@
     const cobrHTML = _finCobsListaHTML(id);
 
     // duas seções bem separadas: Acordo (acordo atual + histórico) e Cobranças
-    const secHdr2 = (emoji,txt)=>`<div style="display:flex;align-items:center;gap:10px;margin:6px 2px 12px"><span style="font-size:13px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--txt)">${emoji} ${txt}</span><span style="flex:1;height:1px;background:var(--line)"></span></div>`;
+    const secHdr2 = (emoji,txt,extra)=>`<div style="display:flex;align-items:center;gap:10px;margin:6px 2px 12px"><span style="font-size:13px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--txt);display:inline-flex;align-items:center">${emoji} ${txt}${extra||""}</span><span style="flex:1;height:1px;background:var(--line)"></span></div>`;
+    const acInfo = '<span class="piik-info" tabindex="0" role="note" aria-label="O que é o acordo" title="O acordo reúne o combinado entre você e o aluno: valor, forma de pagamento e vencimento, além de detalhes do serviço como os dias de treino e se é presencial ou online. O aluno precisa aceitar pelo app, tocando em ‘Estou ciente deste acordo’.">!<span class="piik-tip"><b>O que é o acordo:</b> é o combinado do serviço entre você e o aluno — valor, forma de pagamento e vencimento. Pode trazer também detalhes da prestação de serviço, como os <b>dias de treino</b> e se é <b>presencial ou online</b>.<br><br><b>O aluno precisa aceitar pelo app:</b> ele toca em “Estou ciente deste acordo” no painel dele. Enquanto não confirma, aparece como “Aguardando ciência do aluno”.</span></span>';
     const bStyle = "border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:22px;background:var(--pk-elev,#0f1116)";
     el.innerHTML = `<div class="acordo-wrap">`
-      + secHdr2("🤝","Acordo") + `<div style="${bStyle}">${curHTML}${histHTML}</div>`
+      + secHdr2("🤝","Acordo", acInfo) + `<div style="${bStyle}">${curHTML}${histHTML}</div>`
       + secHdr2("💵","Cobranças") + `<div style="${bStyle}">${cobrHTML}</div>`
       + `</div>`;
     // abre no topo: mês atual primeiro; o personal rola para baixo para ver os futuros
