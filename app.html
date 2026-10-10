@@ -6199,8 +6199,9 @@
       const btn = c.pago
         ? `<button class="btn ghost small" style="width:100%" onclick="cobPagar('${id}','${c.id}',false)">Desfazer</button>`
         : `<button class="btn small" style="width:100%" onclick="cobPagar('${id}','${c.id}',true)">Registrar pagamento</button>`;
-      const del = rec ? "" : `<button class="cob-x" title="Excluir cobrança" onclick="cobExcluir('${id}','${c.id}')">✕</button>`;
-      return `<div class="fin-parc${destaque?' atual':''}" data-comp="${compDe(c)}" style="display:grid;grid-template-columns:minmax(0,1fr) 92px 106px 154px 30px;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${destaque?'var(--pink,#7fff00)':'var(--line,#262a33)'};border-radius:10px;margin-bottom:6px;background:${destaque?'rgba(127,255,0,.06)':'transparent'}">
+      const editBtn = `<button class="cob-x" title="Editar cobrança" onclick="cobEditar('${id}','${c.id}')">✏️</button>`;
+      const del = `<button class="cob-x" title="Excluir cobrança" onclick="cobExcluir('${id}','${c.id}')">✕</button>`;
+      return `<div class="fin-parc${destaque?' atual':''}" data-comp="${compDe(c)}" style="display:grid;grid-template-columns:minmax(0,1fr) 92px 106px 154px 70px;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${destaque?'var(--pink,#7fff00)':'var(--line,#262a33)'};border-radius:10px;margin-bottom:6px;background:${destaque?'rgba(127,255,0,.06)':'transparent'}">
         <div style="min-width:0">
           <div style="font-weight:700">${titulo}${destaque?` <span style="font-size:10px;font-weight:800;color:#0a0b0d;background:var(--pink,#7fff00);border-radius:6px;padding:1px 6px;vertical-align:middle">ATUAL</span>`:''}</div>
           <div class="meta-sm" style="margin-top:2px">${venc}</div>
@@ -6208,7 +6209,7 @@
         <div style="font-weight:800;white-space:nowrap;text-align:right">${fmtBRL(c.valor)}</div>
         <div>${chip}</div>
         <div>${btn}</div>
-        <div style="text-align:center">${del}</div>
+        <div style="display:flex;gap:4px;justify-content:center;align-items:center">${editBtn}${del}</div>
       </div>`;
     };
     const secHdr = t => `<div style="font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted,#9aa0ab);margin:12px 2px 6px">${t}</div>`;
@@ -6496,6 +6497,49 @@
     FIN_AL.cobs = FIN_AL.cobs.filter(x=>x.id!==cobId);
     renderFinAluno(id);
   }
+  function cobEditar(id, cobId){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    const c = (FIN_AL.cobs||[]).find(x=>x.id===cobId);
+    if(!c){ piikAlert("Cobrança não encontrada."); return; }
+    const rec = /^Mensalidade/.test(c.descricao||"");
+    const vencVal = c.vencimento ? String(c.vencimento).slice(0,10) : "";
+    const o=document.createElement("div"); o.className="modal-ov"; o.id="cobEdOv";
+    o.innerHTML = `<div class="modal-cx" style="max-width:440px;text-align:left">
+      <h3 style="margin:0 0 4px">Editar cobrança</h3>
+      <p class="meta-sm" style="margin:0 0 16px">Ajuste o valor ou o vencimento desta cobrança específica. Não altera o acordo nem as outras parcelas.</p>
+      <div class="ac-form">
+        <div class="ac-fld"><label>Descrição</label>
+          <input type="text" id="cobEdDesc" value="${esc(c.descricao||"")}" ${rec?'readonly style="opacity:.6;cursor:not-allowed"':""}></div>
+        ${rec?`<div class="meta-sm" style="margin:-8px 0 2px">Parcela recorrente — a descrição não muda. Você pode ajustar o valor e o vencimento.</div>`:""}
+        <div class="ac-frow">
+          <div class="ac-fld"><label>Valor (R$)</label>
+            <input type="number" step="0.01" min="0" id="cobEdValor" value="${c.valor!=null?c.valor:""}" placeholder="0,00"></div>
+          <div class="ac-fld"><label>Vencimento</label>
+            <input type="date" id="cobEdVenc" value="${vencVal}"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button class="btn" style="flex:1" onclick="salvarEdicaoCobranca('${id}','${cobId}',${rec})">Salvar alterações</button>
+          <button class="btn ghost" style="flex:0 0 auto" onclick="document.getElementById('cobEdOv').remove()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(o);
+    o.addEventListener("click",e=>{ if(e.target===o) o.remove(); });
+  }
+  async function salvarEdicaoCobranca(id, cobId, rec){
+    if(contaCongelada()){ avisoCongelada(); return; }
+    const valor = Math.max(0, Number((document.getElementById("cobEdValor")||{}).value)||0);
+    if(!valor){ piikAlert("Informe o valor da cobrança."); return; }
+    const venc = (document.getElementById("cobEdVenc")||{}).value || null;
+    const patch = { valor, vencimento: venc };
+    if(!rec){ const d=((document.getElementById("cobEdDesc")||{}).value||"").trim(); if(d) patch.descricao=d; }
+    const { error } = await sb.from("cobrancas_aluno").update(patch).eq("id", cobId);
+    if(error){ piikAlert("Não consegui salvar: "+error.message); return; }
+    const c = (FIN_AL.cobs||[]).find(x=>x.id===cobId);
+    if(c){ c.valor=valor; c.vencimento=venc; if(patch.descricao) c.descricao=patch.descricao; }
+    const ov=document.getElementById("cobEdOv"); if(ov) ov.remove();
+    renderFinAluno(id);
+  }
 
   /* ----- Modal: Novo acordo ----- */
   function abrirNovoAcordo(id, editar){
@@ -6704,10 +6748,22 @@
       return;
     }
 
-    // encerra o acordo ativo atual
+    // encerra o acordo ativo atual e remove as cobranças que ainda NÃO aconteceram
+    // (não pagas, do mês atual em diante) para não duplicar com o novo acordo
+    let _idsRemovidos = [];
     if(FIN_AL.ativo){
-      const { error:e1 } = await sb.from("acordos").update({ ativo:false, encerrado_em:new Date().toISOString() }).eq("id", FIN_AL.ativo.id);
+      const antigoId = FIN_AL.ativo.id;
+      const { error:e1 } = await sb.from("acordos").update({ ativo:false, encerrado_em:new Date().toISOString() }).eq("id", antigoId);
       if(e1){ piikAlert("Não consegui encerrar o acordo anterior: "+e1.message); return; }
+      try{
+        const _compAtual = compAtual();
+        const { data: cobsAntigas } = await sb.from("cobrancas_aluno")
+          .select("id,vencimento,pago").eq("acordo_id", antigoId).eq("pago", false);
+        _idsRemovidos = (cobsAntigas||[])
+          .filter(c => !c.vencimento || String(c.vencimento).slice(0,7) >= _compAtual)
+          .map(c => c.id);
+        if(_idsRemovidos.length){ await sb.from("cobrancas_aluno").delete().in("id", _idsRemovidos); }
+      }catch(e){}
     }
     // insere o novo
     const { data:novo, error:e2 } = await sb.from("acordos").insert({
@@ -6722,9 +6778,11 @@
       { onConflict:"student_id" });
     if(btnOv) btnOv.remove();
     // recarrega estado
+    if(_idsRemovidos.length){ const _rm=new Set(_idsRemovidos); FIN_AL.cobs = (FIN_AL.cobs||[]).filter(c=>!_rm.has(c.id)); }
     FIN_AL.acordos.unshift(novo);
     if(FIN_AL.ativo){ const old=FIN_AL.acordos.find(a=>a.id===FIN_AL.ativo.id); if(old){ old.ativo=false; old.encerrado_em=new Date().toISOString(); } }
     FIN_AL.ativo = novo;
+    if(typeof garantirCobrancasRecorrentes==="function"){ try{ await garantirCobrancasRecorrentes(id, novo); }catch(e){} }
     renderFinAluno(id);
     piikAlert({ emoji:"🤝", titulo:"Acordo salvo!", msg:"O aluno vai ver o novo acordo no app dele e poderá dar <b>ciência</b>." });
   }
